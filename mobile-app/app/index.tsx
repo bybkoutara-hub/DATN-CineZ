@@ -19,7 +19,7 @@ export default function WelcomeScreen() {
 
   const [langModalVisible, setLangModalVisible] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("English");
-  const slideAnim = useRef(new Animated.Value(400)).current; // Tăng khoảng cách giấu ban đầu của sheet
+  const slideAnim = useRef(new Animated.Value(400)).current;
 
   const openLangModal = () => {
     setLangModalVisible(true);
@@ -42,12 +42,13 @@ export default function WelcomeScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
 
-      {/* 1. THANH HEADER (LOGO & NGÔN NGỮ) */}
+      {/* 1. THANH HEADER (SỬA THEO FIGMA: CINEZ) */}
       <View style={styles.header}>
         <View style={styles.logoContainer}>
-          <Text style={styles.logoTextBold}>MB</Text>
-          <View style={styles.logoDot} />
-          <Text style={styles.logoTextBold}>oking</Text>
+          <Text style={styles.logoTextBold}>Cine</Text>
+          <Text style={[styles.logoTextBold, { color: PRIMARY_YELLOW }]}>
+            Z
+          </Text>
         </View>
 
         <TouchableOpacity
@@ -59,22 +60,21 @@ export default function WelcomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* 2. KHU VỰC TRUNG TÂM: BANNER POSTER PHIM (Tối ưu chiếm không gian lớn nhất) */}
+      {/* 2. KHU VỰC BANNER POSTER PHIM */}
       <View style={styles.imageSection}>
         <View style={styles.imageContainer}>
           <Image
-            source={require("../assets/images/infinity_war.png")}
+            source={require("../assets/images/infinity_war.png")} // Đảm bảo đúng file ảnh của bạn
             style={styles.posterImage}
             resizeMode="cover"
           />
         </View>
       </View>
 
-      {/* 3. KHU VỰC ĐÁY (TEXT, INDICATORS, BUTTONS, FOOTER) */}
+      {/* 3. KHU VỰC ĐÁY (SỬA CHỮ MBOOKING -> CINEZ HELLO!) */}
       <View style={styles.bottomSection}>
-        {/* PHẦN CHỮ GIỚI THIỆU */}
         <View style={styles.textContainer}>
-          <Text style={styles.titleText}>MBooking hello!</Text>
+          <Text style={styles.titleText}>CineZ hello!</Text>
           <Text style={styles.subtitleText}>Enjoy your favorite movies</Text>
         </View>
 
@@ -100,7 +100,7 @@ export default function WelcomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ĐIỀU KHOẢN SỬ DỤNG */}
+        {/* ĐIỀU KHOẢN SỬ DỤNG (SỬA CHÍNH TẢ PRIVAC Y -> PRIVACY) */}
         <Text style={styles.footerText}>
           By sign in or sign up, you agree to our Terms of Service{"\n"}and
           Privacy Policy
@@ -206,14 +206,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: BACKGROUND_BLACK,
-    paddingTop: Platform.OS === "android" ? 45 : 10,
+    paddingTop: Platform.OS === "android" ? 40 : 10,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 24,
-    height: 50,
+    paddingHorizontal: 32,
+    height: 60,
   },
   logoContainer: {
     flexDirection: "row",
@@ -221,56 +221,45 @@ const styles = StyleSheet.create({
   },
   logoTextBold: {
     color: "#ffffff",
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: "bold",
     letterSpacing: -0.5,
   },
-  logoDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: PRIMARY_YELLOW,
-    marginHorizontal: 3,
-    alignSelf: "center",
-    marginTop: 6,
-  },
   langButton: {
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "rgba(255, 255, 255, 0.4)",
     borderRadius: 20,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 6,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
   },
   langText: {
     color: "#ffffff",
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
   },
-  // Khối ảnh co giãn linh hoạt chiếm trọn vùng giữa màn hình giống Figma
   imageSection: {
-    flex: 55,
+    flex: 52,
     justifyContent: "center",
-    paddingHorizontal: 24,
-    marginVertical: 10,
+    alignItems: "center",
+    paddingHorizontal: 32,
   },
   imageContainer: {
     width: "100%",
     height: "100%",
-    maxHeight: 400, // Khống chế chiều cao tối đa không để bị lố trên màn hình dài
-    borderRadius: 24,
+    borderRadius: 28,
     overflow: "hidden",
   },
   posterImage: {
     width: "100%",
     height: "100%",
   },
-  // Khối chứa các thành phần tương tác ở dưới đáy
   bottomSection: {
-    flex: 45,
+    flex: 48,
     paddingHorizontal: 24,
-    justifyContent: "flex-end", // Đẩy tất cả sát xuống đáy tự nhiên
+    justifyContent: "center",
     alignItems: "center",
+    paddingTop: 10,
   },
   textContainer: {
     alignItems: "center",
@@ -278,49 +267,50 @@ const styles = StyleSheet.create({
   },
   titleText: {
     color: "#ffffff",
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: "bold",
     letterSpacing: 0.3,
   },
   subtitleText: {
     color: "rgba(255, 255, 255, 0.6)",
-    fontSize: 15,
-    marginTop: 6,
+    fontSize: 16,
+    marginTop: 8,
     textAlign: "center",
   },
   indicatorContainer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: 36,
   },
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
-    marginHorizontal: 4,
+    marginHorizontal: 5,
   },
   activeDot: {
     backgroundColor: PRIMARY_YELLOW,
-    width: 20, // Kéo dài chấm tròn đang active chuẩn hiệu ứng Carousel của Figma
+    width: 24,
   },
   buttonContainer: {
     width: "100%",
     gap: 14,
-    marginBottom: 24,
+    marginBottom: 28,
+    paddingHorizontal: 8,
   },
   signInButton: {
     backgroundColor: PRIMARY_YELLOW,
     width: "100%",
-    height: 54,
-    borderRadius: 27,
+    height: 56,
+    borderRadius: 28,
     justifyContent: "center",
     alignItems: "center",
   },
   signInText: {
     color: "#000000",
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "bold",
   },
   signUpButton: {
@@ -328,14 +318,14 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "rgba(255, 255, 255, 0.8)",
     width: "100%",
-    height: 54,
-    borderRadius: 27,
+    height: 56,
+    borderRadius: 28,
     justifyContent: "center",
     alignItems: "center",
   },
   signUpText: {
     color: "#ffffff",
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "bold",
   },
   footerText: {
@@ -343,7 +333,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: "center",
     lineHeight: 18,
-    marginBottom: Platform.OS === "ios" ? 10 : 20,
+    marginBottom: Platform.OS === "ios" ? 10 : 15,
   },
 
   // STYLES BOTTOM SHEET
