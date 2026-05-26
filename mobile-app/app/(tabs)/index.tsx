@@ -2,37 +2,44 @@ import { Feather, FontAwesome, Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import {
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+// 1. Nhập Hook điều hướng chuẩn của Expo Router
+import { useRouter } from "expo-router";
+
+// ==========================================
+// HỆ MÀU SẮC CHUẨN FIGMA TOÀN DIỆN
+// ==========================================
+const PRIMARY_YELLOW = "#E2A43B";
+const BACKGROUND_BLACK = "#000000";
+const SURFACE_DARK = "#151517";
 
 // ==========================================
 // CÁC THÀNH PHẦN DÙNG CHUNG (Reusable Components)
 // ==========================================
 
-// 1. Tiêu đề các mục (Đã sửa nút See all kèm dấu > chuẩn Figma)
 const SectionHeader = ({ title }: { title: string }) => (
   <View style={styles.sectionHeader}>
     <Text style={styles.sectionTitle}>{title}</Text>
     <TouchableOpacity activeOpacity={0.7} style={styles.seeAllBtn}>
-      <Text style={styles.seeAllText}>See all </Text>
+      <Text style={styles.seeAllText}>See all</Text>
       <Feather
         name="chevron-right"
         size={14}
         color={PRIMARY_YELLOW}
-        style={{ marginTop: 2 }}
+        style={{ marginLeft: 2 }}
       />
     </TouchableOpacity>
   </View>
 );
 
-// 2. Các mục Dịch vụ
 const ServiceItem = ({
   title,
   iconImage,
@@ -52,6 +59,9 @@ const ServiceItem = ({
 // MÀN HÌNH CHÍNH (HomeScreen)
 // ==========================================
 export default function HomeScreen() {
+  // 2. Khởi tạo router điều hướng bên trong Component
+  const router = useRouter();
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar style="light" />
@@ -92,7 +102,13 @@ export default function HomeScreen() {
 
         {/* 3. NOW PLAYING SECTION */}
         <SectionHeader title="Now playing" />
-        <View style={styles.nowPlayingCard}>
+
+        {/* 3. ĐÃ SỬA: Dùng router.push để điều hướng chính xác sang trang movie-detail */}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={styles.nowPlayingCard}
+          onPress={() => router.push("/movie-detail")}
+        >
           <Image
             source={{
               uri: "https://image.tmdb.org/t/p/w500/7WsyChQLEftFiDOVTGkv3hFpyyt.jpg",
@@ -114,15 +130,15 @@ export default function HomeScreen() {
             <View style={[styles.dot, styles.dotActive]} />
             <View style={styles.dot} />
           </View>
-        </View>
+        </TouchableOpacity>
 
-        {/* 4. COMING SOON SECTION (Đã đồng bộ màu text màu cam/vàng chuẩn Figma) */}
+        {/* 4. COMING SOON SECTION */}
         <SectionHeader title="Coming soon" />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.horizontalList}
-          contentContainerStyle={{ paddingHorizontal: 24, gap: 16 }}
+          contentContainerStyle={styles.horizontalListContent}
         >
           {/* Phim 1: Avatar 2 */}
           <View style={styles.comingSoonCard}>
@@ -163,11 +179,11 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
 
-        {/* 5. PROMO & DISCOUNT (Sửa triệt để lỗi mất ảnh hiển thị) */}
+        {/* 5. PROMO & DISCOUNT */}
         <SectionHeader title="Promo & Discount" />
         <TouchableOpacity activeOpacity={0.9} style={styles.promoCard}>
           <Image
-            source={require("../../assets/images/Promo&Discount.png")}
+            source={require("../../assets/images/PromoDiscount.png")}
             style={styles.promoImage}
           />
         </TouchableOpacity>
@@ -199,7 +215,7 @@ export default function HomeScreen() {
           horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.horizontalList}
-          contentContainerStyle={{ paddingHorizontal: 24, gap: 16 }}
+          contentContainerStyle={styles.horizontalListContent}
         >
           <View style={styles.newsCard}>
             <Image
@@ -225,19 +241,11 @@ export default function HomeScreen() {
           </View>
         </ScrollView>
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 110 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-// ==========================================
-// HỆ MÀU SẮC & PHONG CÁCH GIAO DIỆN (Styles)
-// ==========================================
-const PRIMARY_YELLOW = "#D2A13A"; // Màu vàng đồng chuẩn thiết kế sang trọng
-const TEXT_GOLD = "#D5A53B"; // Màu vàng cam riêng cho tiêu đề phim sắp chiếu
-const BACKGROUND_BLACK = "#000000";
-const SURFACE_DARK = "#151517"; // Màu xám đen chuẩn nút/khung nền
 
 const styles = StyleSheet.create({
   container: {
@@ -257,9 +265,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   greetingText: {
-    color: "#999999",
+    color: "#888888",
     fontSize: 14,
-    marginBottom: 4,
+    marginBottom: 2,
     fontWeight: "400",
   },
   welcomeText: {
@@ -269,12 +277,12 @@ const styles = StyleSheet.create({
   },
   notificationBtn: {
     position: "relative",
-    padding: 4,
+    padding: 2,
   },
   notificationDot: {
     position: "absolute",
-    top: 6,
-    right: 6,
+    top: 2,
+    right: 2,
     width: 8,
     height: 8,
     backgroundColor: "#4CD964",
@@ -286,7 +294,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: SURFACE_DARK,
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 16,
     height: 48,
     marginHorizontal: 24,
@@ -311,7 +319,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 24,
     marginBottom: 16,
-    marginTop: 12,
+    marginTop: 8,
   },
   sectionTitle: {
     color: "#ffffff",
@@ -336,7 +344,7 @@ const styles = StyleSheet.create({
   },
   nowPlayingImage: {
     width: "100%",
-    height: 400,
+    height: 410,
     borderRadius: 16,
     marginBottom: 16,
   },
@@ -348,7 +356,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   movieSubText: {
-    color: "#999999",
+    color: "#888888",
     fontSize: 13,
     marginBottom: 8,
   },
@@ -358,7 +366,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   ratingScore: {
-    color: "#ffffff",
+    color: PRIMARY_YELLOW,
     fontSize: 14,
     fontWeight: "700",
   },
@@ -381,22 +389,25 @@ const styles = StyleSheet.create({
     width: 18,
   },
 
-  // Coming Soon (Đã đổi màu chữ sang màu vàng đồng của Figma)
+  // Horizontal list configs
   horizontalList: {
-    marginHorizontal: -24,
     marginBottom: 24,
   },
+  horizontalListContent: {
+    paddingHorizontal: 24,
+    gap: 16,
+  },
   comingSoonCard: {
-    width: 150,
+    width: 145,
   },
   comingSoonImage: {
     width: "100%",
-    height: 220,
-    borderRadius: 12,
+    height: 215,
+    borderRadius: 14,
     marginBottom: 10,
   },
   comingSoonTitle: {
-    color: TEXT_GOLD,
+    color: "#ffffff",
     fontSize: 14,
     fontWeight: "700",
     marginBottom: 6,
@@ -409,22 +420,24 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   infoText: {
-    color: "#999999",
-    fontSize: 11,
+    color: "#888888",
+    fontSize: 12,
   },
 
-  // Promo Section (SỬA FIX LỖI ẢNH ĐEN: Đưa width/height chuẩn xác)
+  // Promo & Discount
   promoCard: {
     marginHorizontal: 24,
-    height: 150,
-    borderRadius: 14,
+    borderRadius: 24,
     overflow: "hidden",
     marginBottom: 28,
+    aspectRatio: 327 / 167,
+    width: "88%",
+    alignSelf: "center",
   },
   promoImage: {
     width: "100%",
     height: "100%",
-    resizeMode: "stretch",
+    resizeMode: "cover",
   },
 
   // Service Section
@@ -436,15 +449,13 @@ const styles = StyleSheet.create({
   },
   serviceItem: {
     alignItems: "center",
-    width: 70,
+    width: 72,
   },
   serviceIconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     overflow: "hidden",
-    justifyContent: "center",
-    alignItems: "center",
     marginBottom: 8,
   },
   serviceCustomImage: {
@@ -453,7 +464,7 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   serviceTitle: {
-    color: "#999999",
+    color: "#ffffff",
     fontSize: 12,
     fontWeight: "500",
   },
