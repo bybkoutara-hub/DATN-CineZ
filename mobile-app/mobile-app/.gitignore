@@ -1,21 +1,4 @@
-node_modules/
-.expo/
-.expo-shared/
-dist/
-build/
-android/
-ios/
-.vscode/
-.DS_Store
-*.log
-.env
-package-lock.json
-yarn.lock
-*.keystore
-*.p12
-coverage/
-/.history
-assets/images/AvengersInfinity War.png# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # dependencies
 node_modules/

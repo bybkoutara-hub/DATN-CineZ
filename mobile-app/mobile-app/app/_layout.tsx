@@ -13,22 +13,6 @@ export default function RootLayout() {
           animation: "slide_from_right", // Hiệu ứng lướt từ phải sang chuẩn Figma
         }}
       />
-
-      {/* 3. Trang chọn ghế */}
-      <Stack.Screen
-        name="select-seat"
-        options={{
-          animation: "slide_from_right",
-        }}
-      />
-
-      {/* 4. Trang thanh toán */}
-      <Stack.Screen
-        name="payment"
-        options={{
-          animation: "slide_from_right",
-        }}
-      />
     </Stack>
   );
 }

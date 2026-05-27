@@ -282,11 +282,7 @@ export default function MovieDetailScreen() {
 
       {/* 8. FIXED BOTTOM CONTINUE BUTTON */}
       <View style={styles.bottomActionContainer}>
-        <TouchableOpacity
-          activeOpacity={0.9}
-          style={styles.continueButton}
-          onPress={() => router.push("/select-seat")}
-        >
+        <TouchableOpacity activeOpacity={0.9} style={styles.continueButton}>
           <Text style={styles.continueButtonText}>Continue</Text>
         </TouchableOpacity>
       </View>
