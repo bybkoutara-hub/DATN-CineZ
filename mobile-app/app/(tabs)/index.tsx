@@ -1,7 +1,10 @@
 import { Feather, FontAwesome, Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Dimensions,
   Image,
   ScrollView,
   StyleSheet,
@@ -11,8 +14,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-// 1. Nhập Hook điều hướng chuẩn của Expo Router
-import { useRouter } from "expo-router";
+
+// Import các API services chính xác
+import {
+  getComingSoonMovies,
+  getNowPlayingMovies,
+} from "../../services/movieService";
 
 // ==========================================
 // HỆ MÀU SẮC CHUẨN FIGMA TOÀN DIỆN
@@ -20,11 +27,11 @@ import { useRouter } from "expo-router";
 const PRIMARY_YELLOW = "#E2A43B";
 const BACKGROUND_BLACK = "#000000";
 const SURFACE_DARK = "#151517";
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 // ==========================================
 // CÁC THÀNH PHẦN DÙNG CHUNG (Reusable Components)
 // ==========================================
-
 const SectionHeader = ({ title }: { title: string }) => (
   <View style={styles.sectionHeader}>
     <Text style={styles.sectionTitle}>{title}</Text>
@@ -59,8 +66,53 @@ const ServiceItem = ({
 // MÀN HÌNH CHÍNH (HomeScreen)
 // ==========================================
 export default function HomeScreen() {
-  // 2. Khởi tạo router điều hướng bên trong Component
   const router = useRouter();
+
+  // Quản lý State dữ liệu từ API
+  const [nowPlaying, setNowPlaying] = useState<any[]>([]);
+  const [comingSoon, setComingSoon] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Hàm lấy dữ liệu bất đồng bộ từ Backend
+  const fetchMoviesData = async () => {
+    try {
+      setLoading(true);
+      const [nowPlayingData, comingSoonData] = await Promise.all([
+        getNowPlayingMovies(),
+        getComingSoonMovies(),
+      ]);
+
+      console.log("Dữ liệu Now Playing từ API thành công:", nowPlayingData);
+
+      // Cập nhật dữ liệu thật nhận từ server vào State
+      setNowPlaying(nowPlayingData || []);
+      setComingSoon(comingSoonData || []);
+    } catch (error) {
+      console.log("Lỗi gọi API hệ thống phim:", error);
+    } finally {
+      setLoading(false); // Đảm bảo luôn tắt loading sau khi xử lý xong
+    }
+  };
+
+  // Kích hoạt gọi dữ liệu thật khi màn hình được tải lần đầu
+  useEffect(() => {
+    fetchMoviesData();
+  }, []);
+
+  // Màn hình hiển thị vòng xoay đang tải dữ liệu
+  if (loading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <ActivityIndicator size="large" color={PRIMARY_YELLOW} />
+        <Text style={{ color: "#888", marginTop: 12 }}>Đang tải phim...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -69,7 +121,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* 1. HEADER */}
+        {/* HEADER */}
         <View style={styles.header}>
           <View>
             <Text style={styles.greetingText}>Hi, Angelina 👋</Text>
@@ -81,7 +133,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 2. SEARCH BAR */}
+        {/* SEARCH BAR */}
         <View style={styles.searchContainer}>
           <Feather
             name="search"
@@ -100,86 +152,110 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 3. NOW PLAYING SECTION */}
+        {/* NOW PLAYING SECTION */}
         <SectionHeader title="Now playing" />
+        {nowPlaying.length === 0 ? (
+          <Text style={styles.emptyText}>Không có phim đang chiếu</Text>
+        ) : (
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+          >
+            {nowPlaying.map((movie, index) => (
+              <TouchableOpacity
+                key={movie._id || index.toString()}
+                activeOpacity={0.9}
+                style={[styles.nowPlayingCard, { width: SCREEN_WIDTH }]}
+                onPress={() =>
+                  router.push({
+                    pathname: "/movie-detail",
+                    params: { id: movie._id },
+                  })
+                }
+              >
+                <Image
+                  source={{
+                    uri: movie.poster_url || "https://via.placeholder.com/500x750",
+                  }}
+                  style={styles.nowPlayingImage}
+                />
+                <Text style={styles.movieTitle}>{movie.title}</Text>
+                <Text style={styles.movieSubText}>
+                  {movie.duration}m • {movie.genres?.join(", ") || "Action"}
+                </Text>
+                <View style={styles.ratingRow}>
+                  <FontAwesome name="star" size={14} color={PRIMARY_YELLOW} />
+                  <Text style={styles.ratingScore}> {movie.rating || "4.5"}</Text>
+                  <Text style={styles.ratingCount}>
+                    {" "}
+                    ({movie.total_reviews || "0"})
+                  </Text>
+                </View>
 
-        {/* 3. ĐÃ SỬA: Dùng router.push để điều hướng chính xác sang trang movie-detail */}
-        <TouchableOpacity
-          activeOpacity={0.9}
-          style={styles.nowPlayingCard}
-          onPress={() => router.push("/movie-detail")}
-        >
-          <Image
-            source={{
-              uri: "https://image.tmdb.org/t/p/w500/7WsyChQLEftFiDOVTGkv3hFpyyt.jpg",
-            }}
-            style={styles.nowPlayingImage}
-          />
-          <Text style={styles.movieTitle}>Avengers - Infinity War</Text>
-          <Text style={styles.movieSubText}>
-            2h29m • Action, adventure, sci-fi
-          </Text>
-          <View style={styles.ratingRow}>
-            <FontAwesome name="star" size={14} color={PRIMARY_YELLOW} />
-            <Text style={styles.ratingScore}> 4.8</Text>
-            <Text style={styles.ratingCount}> (1.222)</Text>
-          </View>
-          {/* Pagination Dots */}
-          <View style={styles.paginationDots}>
-            <View style={styles.dot} />
-            <View style={[styles.dot, styles.dotActive]} />
-            <View style={styles.dot} />
-          </View>
-        </TouchableOpacity>
+                {/* Pagination Dots */}
+                <View style={styles.paginationDots}>
+                  {nowPlaying.map((_, dotIndex) => (
+                    <View
+                      key={dotIndex}
+                      style={[styles.dot, index === dotIndex && styles.dotActive]}
+                    />
+                  ))}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
-        {/* 4. COMING SOON SECTION */}
+        {/* COMING SOON SECTION */}
         <SectionHeader title="Coming soon" />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.horizontalList}
-          contentContainerStyle={styles.horizontalListContent}
-        >
-          {/* Phim 1: Avatar 2 */}
-          <View style={styles.comingSoonCard}>
-            <Image
-              source={require("../../assets/images/avatar.png")}
-              style={styles.comingSoonImage}
-            />
-            <Text style={styles.comingSoonTitle} numberOfLines={2}>
-              Avatar 2: The Way Of Water
-            </Text>
-            <View style={styles.infoRow}>
-              <Ionicons name="film-outline" size={12} color="#999999" />
-              <Text style={styles.infoText}>Adventure, Sci-fi</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="calendar-outline" size={12} color="#999999" />
-              <Text style={styles.infoText}>20.12.2022</Text>
-            </View>
-          </View>
+        {comingSoon.length === 0 ? (
+          <Text style={styles.emptyText}>Không có phim sắp chiếu</Text>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.horizontalList}
+            contentContainerStyle={styles.horizontalListContent}
+          >
+            {comingSoon.map((movie, index) => (
+              <TouchableOpacity
+                key={movie._id || index.toString()}
+                style={styles.comingSoonCard}
+                onPress={() =>
+                  router.push({
+                    pathname: "/movie-detail",
+                    params: { id: movie._id },
+                  })
+                }
+              >
+                <Image
+                  source={{
+                    uri: movie.poster_url || "https://via.placeholder.com/300x450",
+                  }}
+                  style={styles.comingSoonImage}
+                />
+                <Text style={styles.comingSoonTitle} numberOfLines={2}>
+                  {movie.title}
+                </Text>
+                <View style={styles.infoRow}>
+                  <Ionicons name="film-outline" size={12} color="#999999" />
+                  <Text style={styles.infoText} numberOfLines={1}>
+                    {movie.genres?.join(", ") || "Sci-Fi"}
+                  </Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Ionicons name="calendar-outline" size={12} color="#999999" />
+                  <Text style={styles.infoText}>
+                    {movie.release_date || "Coming soon"}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
-          {/* Phim 2: Ant Man */}
-          <View style={styles.comingSoonCard}>
-            <Image
-              source={require("../../assets/images/AntMan.png")}
-              style={styles.comingSoonImage}
-            />
-            <Text style={styles.comingSoonTitle} numberOfLines={2}>
-              Ant Man Wasp: Quantumania
-            </Text>
-            <View style={styles.infoRow}>
-              <Ionicons name="film-outline" size={12} color="#999999" />
-              <Text style={styles.infoText}>Adventure, Sci-fi</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="calendar-outline" size={12} color="#999999" />
-              <Text style={styles.infoText}>26.12.2022</Text>
-            </View>
-          </View>
-        </ScrollView>
-
-        {/* 5. PROMO & DISCOUNT */}
+        {/* PROMO & DISCOUNT */}
         <SectionHeader title="Promo & Discount" />
         <TouchableOpacity activeOpacity={0.9} style={styles.promoCard}>
           <Image
@@ -188,7 +264,7 @@ export default function HomeScreen() {
           />
         </TouchableOpacity>
 
-        {/* 6. SERVICE */}
+        {/* SERVICE */}
         <SectionHeader title="Service" />
         <View style={styles.serviceRow}>
           <ServiceItem
@@ -209,7 +285,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* 7. MOVIE NEWS */}
+        {/* MOVIE NEWS */}
         <SectionHeader title="Movie news" />
         <ScrollView
           horizontal
@@ -247,6 +323,7 @@ export default function HomeScreen() {
   );
 }
 
+// Bổ sung thêm style thông báo trống dữ liệu cho app tinh tế hơn
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -255,8 +332,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 16,
   },
-
-  // Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -288,8 +363,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#4CD964",
     borderRadius: 4,
   },
-
-  // Search Bar
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -311,8 +384,6 @@ const styles = StyleSheet.create({
   filterIconBtn: {
     paddingLeft: 12,
   },
-
-  // Section Headers
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -335,8 +406,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
   },
-
-  // Now Playing
   nowPlayingCard: {
     alignItems: "center",
     paddingHorizontal: 24,
@@ -388,8 +457,6 @@ const styles = StyleSheet.create({
     backgroundColor: PRIMARY_YELLOW,
     width: 18,
   },
-
-  // Horizontal list configs
   horizontalList: {
     marginBottom: 24,
   },
@@ -423,8 +490,6 @@ const styles = StyleSheet.create({
     color: "#888888",
     fontSize: 12,
   },
-
-  // Promo & Discount
   promoCard: {
     marginHorizontal: 24,
     borderRadius: 24,
@@ -439,8 +504,6 @@ const styles = StyleSheet.create({
     height: "100%",
     resizeMode: "cover",
   },
-
-  // Service Section
   serviceRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -468,8 +531,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "500",
   },
-
-  // Movie News Section
   newsCard: {
     width: 240,
   },
@@ -484,5 +545,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     lineHeight: 20,
+  },
+  emptyText: {
+    color: "#666666",
+    fontSize: 14,
+    textAlign: "center",
+    marginVertical: 20,
+    fontStyle: "italic",
   },
 });

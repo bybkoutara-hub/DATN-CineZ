@@ -3,16 +3,19 @@ import { Link, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { loginApi } from "../services/authService";
 
 // Bảng màu chuẩn hệ thống Dark-Mode Figma
 const BACKGROUND_BLACK = "#000000";
@@ -24,41 +27,48 @@ const BORDER_COLOR = "#1C1C1F";
 
 export default function SignInScreen() {
   const router = useRouter();
-
-  // State quản lý dữ liệu nhập vào
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [secureText, setSecureText] = useState(true);
+  const [loading, setLoading] = useState(false); // Thêm state loading
 
-  // Xử lý sự kiện đăng nhập
-  const handleSignIn = () => {
-    console.log("Đăng nhập với:", email, password);
-    router.replace("/(tabs)");
+  const handleSignIn = async () => {
+    if (!email || !password) {
+      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await loginApi(email, password);
+      // Giả sử API trả về token, bạn có thể lưu vào AsyncStorage tại đây
+      Alert.alert("Thành công", "Đăng nhập thành công!");
+      router.replace("/(tabs)");
+    } catch (error) {
+      Alert.alert("Đăng nhập thất bại", "Email hoặc mật khẩu không chính xác");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
-
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Nút Back quay lại */}
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backButton}
-            activeOpacity={0.7}
           >
             <Ionicons name="chevron-back" size={28} color={TEXT_LIGHT} />
           </TouchableOpacity>
 
-          {/* Vùng Tiêu đề Chào mừng */}
           <View style={styles.welcomeContainer}>
             <Text style={styles.titleText}>Welcome back</Text>
             <Text style={styles.subtitleText}>
@@ -66,9 +76,7 @@ export default function SignInScreen() {
             </Text>
           </View>
 
-          {/* Form Nhập liệu */}
           <View style={styles.formContainer}>
-            {/* Ô nhập Email */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Email Address</Text>
               <View style={styles.inputWrapper}>
@@ -84,14 +92,12 @@ export default function SignInScreen() {
                   placeholderTextColor="#444446"
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  autoCorrect={false}
                   value={email}
                   onChangeText={setEmail}
                 />
               </View>
             </View>
 
-            {/* Ô nhập Mật khẩu */}
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Password</Text>
               <View style={styles.inputWrapper}>
@@ -106,8 +112,6 @@ export default function SignInScreen() {
                   placeholder="Enter your password"
                   placeholderTextColor="#444446"
                   secureTextEntry={secureText}
-                  autoCapitalize="none"
-                  autoCorrect={false}
                   value={password}
                   onChangeText={setPassword}
                 />
@@ -123,36 +127,28 @@ export default function SignInScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-
-            {/* Quên mật khẩu */}
-            <TouchableOpacity
-              onPress={() => console.log("Forgot password pressed")}
-              style={styles.forgotPasswordContainer}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-            </TouchableOpacity>
           </View>
 
-          {/* Nút Đăng nhập & Đăng ký */}
           <View style={styles.actionContainer}>
             <TouchableOpacity
               style={styles.signInButton}
               activeOpacity={0.85}
               onPress={handleSignIn}
+              disabled={loading}
             >
-              <Text style={styles.signInButtonText}>Sign In</Text>
+              {loading ? (
+                <ActivityIndicator color={BACKGROUND_BLACK} />
+              ) : (
+                <Text style={styles.signInButtonText}>Sign In</Text>
+              )}
             </TouchableOpacity>
 
-            {/* Điều hướng sang Sign Up */}
             <View style={styles.signUpRow}>
-              {/* Fix lỗi rò rỉ ký tự nháy đơn bằng cách dùng &apos; */}
               <Text style={styles.signUpText}>
                 Don&apos;t have an account?{" "}
               </Text>
-              {/* Ép kiểu tạm thời as any để vượt qua bộ lọc Router định tuyến tĩnh nếu file sign-up chưa sẵn sàng */}
-              <Link href={"/sign-up" as any} asChild>
-                <TouchableOpacity activeOpacity={0.7}>
+              <Link href={"/signup"} asChild>
+                <TouchableOpacity>
                   <Text style={styles.signUpLink}>Sign Up</Text>
                 </TouchableOpacity>
               </Link>

@@ -1,23 +1,52 @@
+import { Feather, FontAwesome } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-// Sử dụng các thư viện Icon có sẵn trong Expo
-import { Feather, FontAwesome } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+// Nhớ import API (giả định bạn có hàm registerWithPhone)
+// import { registerWithPhone } from "../services/authService";
 
 export default function SignUpScreen() {
   const router = useRouter();
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Hàm xử lý đăng ký bằng số điện thoại
+  const handleContinue = async () => {
+    // Basic validation
+    if (!phoneNumber || phoneNumber.length < 8) {
+      Alert.alert("Lỗi", "Vui lòng nhập số điện thoại hợp lệ.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Bỏ comment dòng dưới để gọi API thực tế
+      // await registerWithPhone(phoneNumber);
+
+      // Giả lập delay mạng
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Chuyển sang trang xác thực OTP
+      router.push("/verification");
+    } catch (error) {
+      Alert.alert("Lỗi", "Không thể gửi mã xác nhận. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -32,6 +61,7 @@ export default function SignUpScreen() {
           contentContainerStyle={{ flexGrow: 1 }}
           bounces={false}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           {/* 1. THANH TIÊU ĐỀ (HEADER chuẩn tỉ lệ Figma, dùng absolute cho nút back để title chính giữa tuyệt đối) */}
           <View style={styles.header}>
@@ -63,6 +93,7 @@ export default function SignUpScreen() {
                   keyboardType="phone-pad"
                   value={phoneNumber}
                   onChangeText={setPhoneNumber}
+                  editable={!loading}
                 />
               </View>
               {/* Đường gạch ngang mảnh chuẩn nét mảnh Figma */}
@@ -73,9 +104,14 @@ export default function SignUpScreen() {
             <TouchableOpacity
               activeOpacity={0.85}
               style={styles.continueButton}
-              onPress={() => router.push("/verification")}
+              onPress={handleContinue}
+              disabled={loading}
             >
-              <Text style={styles.continueText}>Continue</Text>
+              {loading ? (
+                <ActivityIndicator color={BACKGROUND_BLACK} />
+              ) : (
+                <Text style={styles.continueText}>Continue</Text>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -177,20 +213,20 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     color: "#ffffff",
-    fontSize: 20, // Hạ bớt từ 24 xuống 20 để vừa vặn, tinh tế và thanh thoát hơn giống hệt mẫu figma
+    fontSize: 20,
     fontWeight: "500",
     padding: 0,
   },
   inputUnderline: {
     height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.15)", // Làm mờ đường gạch nhẹ nhàng để giữ chiều sâu cho Dark Mode
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
     width: "100%",
     marginTop: 6,
   },
   continueButton: {
     backgroundColor: PRIMARY_YELLOW,
     width: "100%",
-    height: 54, // Đồng bộ độ cao 54px chuẩn với màn hình Welcome đã tinh chỉnh trước đó
+    height: 54,
     borderRadius: 27,
     justifyContent: "center",
     alignItems: "center",
@@ -223,13 +259,13 @@ const styles = StyleSheet.create({
   },
   socialContainer: {
     width: "100%",
-    gap: 14, // Khoảng cách gap thống nhất 14px
+    gap: 14,
     marginBottom: 32,
   },
   socialButton: {
     backgroundColor: INPUT_CONTAINER_BG,
     width: "100%",
-    height: 54, // Chiều cao nút bấm đồng bộ 54px thanh lịch
+    height: 54,
     borderRadius: 27,
     flexDirection: "row",
     justifyContent: "center",
@@ -238,7 +274,7 @@ const styles = StyleSheet.create({
   },
   socialIcon: {
     position: "absolute",
-    left: 28, // Đẩy lùi icon sang sát mép trái một chút giống Figma tỉ lệ chuẩn
+    left: 28,
   },
   socialText: {
     color: "#ffffff",
@@ -253,7 +289,7 @@ const styles = StyleSheet.create({
     marginBottom: Platform.OS === "ios" ? 10 : 20,
   },
   footerLinkText: {
-    color: PRIMARY_YELLOW, // Thêm điểm nhấn màu vàng nhẹ cho phần link điều khoản nếu Figma có tương tác
+    color: PRIMARY_YELLOW,
     fontWeight: "500",
   },
 });
