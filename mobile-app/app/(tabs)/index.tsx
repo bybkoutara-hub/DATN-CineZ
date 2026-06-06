@@ -72,6 +72,9 @@ export default function HomeScreen() {
   const [nowPlaying, setNowPlaying] = useState<any[]>([]);
   const [comingSoon, setComingSoon] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // 🌟 FIX LỖI 1: Thêm State quản lý trang hiện tại của Slider Now Playing
+  const [activePageIndex, setActivePageIndex] = useState(0);
 
   // Hàm lấy dữ liệu bất đồng bộ từ Backend
   const fetchMoviesData = async () => {
@@ -157,54 +160,65 @@ export default function HomeScreen() {
         {nowPlaying.length === 0 ? (
           <Text style={styles.emptyText}>Không có phim đang chiếu</Text>
         ) : (
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-          >
-            {nowPlaying.map((movie, index) => (
-              <TouchableOpacity
-                key={movie._id || index.toString()}
-                activeOpacity={0.9}
-                style={[styles.nowPlayingCard, { width: SCREEN_WIDTH }]}
-                onPress={() =>
-                  router.push({
-                    pathname: "/movie-detail",
-                    params: { id: movie._id },
-                  })
-                }
-              >
-                <Image
-                  source={{
-                    uri: movie.poster_url || "https://via.placeholder.com/500x750",
-                  }}
-                  style={styles.nowPlayingImage}
-                />
-                <Text style={styles.movieTitle}>{movie.title}</Text>
-                <Text style={styles.movieSubText}>
-                  {movie.duration}m • {movie.genres?.join(", ") || "Action"}
-                </Text>
-                <View style={styles.ratingRow}>
-                  <FontAwesome name="star" size={14} color={PRIMARY_YELLOW} />
-                  <Text style={styles.ratingScore}> {movie.rating || "4.5"}</Text>
-                  <Text style={styles.ratingCount}>
-                    {" "}
-                    ({movie.total_reviews || "0"})
-                  </Text>
-                </View>
-
-                {/* Pagination Dots */}
-                <View style={styles.paginationDots}>
-                  {nowPlaying.map((_, dotIndex) => (
-                    <View
-                      key={dotIndex}
-                      style={[styles.dot, index === dotIndex && styles.dotActive]}
+          <View>
+            {/* 🌟 FIX LỖI 2: Tách biệt cấu trúc Carousel lướt ngang độc lập */}
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              decelerationRate="fast"
+              snapToInterval={SCREEN_WIDTH}
+              onMomentumScrollEnd={(e) => {
+                const contentOffsetX = e.nativeEvent.contentOffset.x;
+                const currentIndex = Math.round(contentOffsetX / SCREEN_WIDTH);
+                setActivePageIndex(currentIndex);
+              }}
+            >
+              {nowPlaying.map((movie, index) => (
+                <View key={movie._id || index.toString()} style={{ width: SCREEN_WIDTH, alignItems: "center" }}>
+                  <TouchableOpacity
+                    activeOpacity={0.9}
+                    style={styles.nowPlayingCardInner}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/movie-detail",
+                        params: { id: movie._id },
+                      })
+                    }
+                  >
+                    <Image
+                      source={{
+                        uri: movie.poster_url || "https://via.placeholder.com/500x750",
+                      }}
+                      style={styles.nowPlayingImage}
                     />
-                  ))}
+                    <Text style={styles.movieTitle} numberOfLines={1}>{movie.title}</Text>
+                    <Text style={styles.movieSubText}>
+                      {movie.duration}m • {movie.genres?.join(", ") || "Action"}
+                    </Text>
+                    <View style={styles.ratingRow}>
+                      <FontAwesome name="star" size={14} color={PRIMARY_YELLOW} />
+                      <Text style={styles.ratingScore}> {movie.rating || "4.5"}</Text>
+                      <Text style={styles.ratingCount}>
+                        {" "}
+                        ({movie.total_reviews || "0"})
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+              ))}
+            </ScrollView>
+
+            {/* 🌟 FIX LỖI 3: Đưa cụm dấu chấm Pagination ra ngoài vòng lặp Card phim */}
+            <View style={styles.paginationDotsContainer}>
+              {nowPlaying.map((_, dotIndex) => (
+                <View
+                  key={dotIndex}
+                  style={[styles.dot, activePageIndex === dotIndex && styles.dotActive]}
+                />
+              ))}
+            </View>
+          </View>
         )}
 
         {/* COMING SOON SECTION */}
@@ -323,7 +337,9 @@ export default function HomeScreen() {
   );
 }
 
-// Bổ sung thêm style thông báo trống dữ liệu cho app tinh tế hơn
+// ==========================================
+// TỐI ƯU HÓA STYLESHEET TOÀN DIỆN
+// ==========================================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -406,10 +422,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
   },
-  nowPlayingCard: {
+  // Thiết kế lại Card bọc bên trong chuẩn chỉnh khoảng cách lề
+  nowPlayingCardInner: {
+    width: SCREEN_WIDTH - 48,
     alignItems: "center",
-    paddingHorizontal: 24,
-    marginBottom: 24,
   },
   nowPlayingImage: {
     width: "100%",
@@ -432,7 +448,7 @@ const styles = StyleSheet.create({
   ratingRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 10,
   },
   ratingScore: {
     color: PRIMARY_YELLOW,
@@ -443,9 +459,14 @@ const styles = StyleSheet.create({
     color: "#666666",
     fontSize: 13,
   },
-  paginationDots: {
+  // Thêm Container quản lý Dots nằm cân đối giữa màn hình
+  paginationDotsContainer: {
     flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     gap: 6,
+    marginTop: 4,
+    marginBottom: 24,
   },
   dot: {
     width: 6,
@@ -496,7 +517,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     marginBottom: 28,
     aspectRatio: 327 / 167,
-    width: "88%",
+    width: SCREEN_WIDTH - 48,
     alignSelf: "center",
   },
   promoImage: {
