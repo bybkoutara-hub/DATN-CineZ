@@ -73,7 +73,7 @@ export default function HomeScreen() {
   const [comingSoon, setComingSoon] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // 🌟 FIX LỖI 1: Thêm State quản lý trang hiện tại của Slider Now Playing
+  // Quản lý trang hiện tại của Slider Now Playing
   const [activePageIndex, setActivePageIndex] = useState(0);
 
   // Hàm lấy dữ liệu bất đồng bộ từ Backend
@@ -161,7 +161,6 @@ export default function HomeScreen() {
           <Text style={styles.emptyText}>Không có phim đang chiếu</Text>
         ) : (
           <View>
-            {/* 🌟 FIX LỖI 2: Tách biệt cấu trúc Carousel lướt ngang độc lập */}
             <ScrollView
               horizontal
               pagingEnabled
@@ -182,7 +181,7 @@ export default function HomeScreen() {
                     onPress={() =>
                       router.push({
                         pathname: "/movie-detail",
-                        params: { id: movie._id },
+                        params: { id: movie._id }, 
                       })
                     }
                   >
@@ -209,7 +208,6 @@ export default function HomeScreen() {
               ))}
             </ScrollView>
 
-            {/* 🌟 FIX LỖI 3: Đưa cụm dấu chấm Pagination ra ngoài vòng lặp Card phim */}
             <View style={styles.paginationDotsContainer}>
               {nowPlaying.map((_, dotIndex) => (
                 <View
@@ -261,7 +259,8 @@ export default function HomeScreen() {
                 <View style={styles.infoRow}>
                   <Ionicons name="calendar-outline" size={12} color="#999999" />
                   <Text style={styles.infoText}>
-                    {movie.release_date || "Coming soon"}
+                    {/* Hỗ trợ định dạng lại hiển thị ngày nếu cần thiết */}
+                    {movie.release_date ? new Date(movie.release_date).toLocaleDateString("vi-VN") : "Coming soon"}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -422,7 +421,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
   },
-  // Thiết kế lại Card bọc bên trong chuẩn chỉnh khoảng cách lề
   nowPlayingCardInner: {
     width: SCREEN_WIDTH - 48,
     alignItems: "center",
@@ -459,7 +457,6 @@ const styles = StyleSheet.create({
     color: "#666666",
     fontSize: 13,
   },
-  // Thêm Container quản lý Dots nằm cân đối giữa màn hình
   paginationDotsContainer: {
     flexDirection: "row",
     justifyContent: "center",

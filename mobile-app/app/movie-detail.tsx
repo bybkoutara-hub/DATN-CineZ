@@ -33,6 +33,9 @@ export default function MovieDetailScreen() {
 
   // State quản lý việc chọn rạp phim từ danh sách lịch chiếu động
   const [selectedCinema, setSelectedCinema] = useState<string | null>(null);
+  
+  // State quản lý suất chiếu cụ thể được chọn trực tiếp bởi người dùng
+  const [selectedShowtimeId, setSelectedShowtimeId] = useState<string | null>(null);
 
   // Gọi API Backend lấy thông tin chi tiết phim khi màn hình được load
   useEffect(() => {
@@ -85,9 +88,6 @@ export default function MovieDetailScreen() {
 
   // Lấy ra danh sách suất chiếu thuộc về rạp hiện tại đang được nhấn chọn
   const filteredShowtimes = showtimes.filter((s) => s.roomName === selectedCinema);
-
-  // Tìm suất chiếu được chọn đầu tiên khi ấn nút Continue (Hỗ trợ luồng chuyển trang mượt mà)
-  const currentSelectedShowtime = filteredShowtimes[0];
 
   return (
     <View style={styles.container}>
@@ -202,7 +202,10 @@ export default function MovieDetailScreen() {
                 <TouchableOpacity
                   key={index}
                   activeOpacity={0.85}
-                  onPress={() => setSelectedCinema(cinemaName)}
+                  onPress={() => {
+                    setSelectedCinema(cinemaName);
+                    setSelectedShowtimeId(null); // Reset lại suất chiếu đã chọn khi đổi rạp
+                  }}
                   style={[
                     styles.cinemaCard,
                     isSelected ? styles.cinemaCardSelected : styles.cinemaCardNormal,
@@ -237,21 +240,22 @@ export default function MovieDetailScreen() {
                     hour: "2-digit",
                     minute: "2-digit",
                   });
+                  const isTimeSelected = selectedShowtimeId === item._id;
+
                   return (
                     <TouchableOpacity
                       key={item._id}
-                      style={styles.timeButton}
+                      style={[
+                        styles.timeButton,
+                        isTimeSelected && styles.timeButtonSelected
+                      ]}
                       activeOpacity={0.7}
-                      onPress={() => {
-                        // Chuyển trực tiếp sang màn hình đặt ghế kèm theo ID suất chiếu
-                        router.push({
-                          pathname: "/select-seat",
-                          params: { showtimeId: item._id },
-                        });
-                      }}
+                      onPress={() => setSelectedShowtimeId(item._id)}
                     >
-                      <Text style={styles.timeText}>{timeDisplay}</Text>
-                      <Text style={styles.priceText}>
+                      <Text style={[styles.timeText, isTimeSelected && styles.timeTextSelected]}>
+                        {timeDisplay}
+                      </Text>
+                      <Text style={[styles.priceText, isTimeSelected && styles.priceTextSelected]}>
                         {item.price ? `${item.price.toLocaleString()}đ` : "Giá vé gốc"}
                       </Text>
                     </TouchableOpacity>
@@ -271,21 +275,21 @@ export default function MovieDetailScreen() {
           activeOpacity={0.9}
           style={[
             styles.continueButton,
-            !currentSelectedShowtime && { backgroundColor: "#333333" }
+            !selectedShowtimeId && { backgroundColor: "#333333" }
           ]}
-          disabled={!currentSelectedShowtime}
+          disabled={!selectedShowtimeId}
           onPress={() => {
-            if (currentSelectedShowtime) {
+            if (selectedShowtimeId) {
               router.push({
                 pathname: "/select-seat",
-                params: { showtimeId: currentSelectedShowtime._id },
+                params: { showtimeId: selectedShowtimeId },
               });
             }
           }}
         >
           <Text style={[
             styles.continueButtonText,
-            !currentSelectedShowtime && { color: "#666666" }
+            !selectedShowtimeId && { color: "#666666" }
           ]}>
             Continue
           </Text>
@@ -313,7 +317,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.5)", // Đệm tối mờ giúp nút quay lại nổi bật trên poster
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
   heroBackground: {
     width: "100%",
@@ -494,15 +498,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#333",
   },
+  timeButtonSelected: {
+    backgroundColor: PRIMARY_YELLOW,
+    borderColor: PRIMARY_YELLOW,
+  },
   timeText: {
     color: PRIMARY_YELLOW,
     fontSize: 16,
     fontWeight: "700",
   },
+  timeTextSelected: {
+    color: BACKGROUND_BLACK,
+  },
   priceText: {
     color: "#666",
     fontSize: 10,
     marginTop: 2,
+  },
+  priceTextSelected: {
+    color: BACKGROUND_BLACK,
+    fontWeight: "500",
   },
   bottomActionContainer: {
     position: "absolute",

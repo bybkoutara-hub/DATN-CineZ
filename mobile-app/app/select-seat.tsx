@@ -30,7 +30,7 @@ const TEXT_MUTED = "#8E8E93";
 const RESERVED_COLOR = "#262629"; 
 const AVAILABLE_BORDER = "#3A3A3C"; 
 
-// Cấu hình sơ đồ ghế phòng chiếu mặc định
+// Cấu hình sơ đồ ghế phòng chiếu mặc định (A -> J, 1 -> 12)
 const seatRows = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
 const seatColumns = Array.from({ length: 12 }, (_, index) => index + 1);
 
@@ -47,7 +47,7 @@ export default function SelectSeatScreen() {
 
   // Các State quản lý dữ liệu API
   const [showtimeData, setShowtimeData] = useState<any>(null);
-  const [reservedSeats, setReservedSeats] = useState<Set<string>>(new Set());
+  const [availableSeats, setAvailableSeats] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   // State tương tác của người dùng
@@ -60,7 +60,7 @@ export default function SelectSeatScreen() {
       const fetchShowtimeDetail = async () => {
         try {
           setLoading(true);
-          // Gọi tới endpoint chi tiết suất chiếu của bạn (ví dụ: /movies/showtimes/:id hoặc /showtimes/:id)
+          // Gọi tới endpoint chi tiết suất chiếu (GET /api/movies/showtimes/:id)
           const response = await api.get(`/movies/showtimes/${showtimeId}`);
           const data = response.data.data || response.data;
           
@@ -70,9 +70,16 @@ export default function SelectSeatScreen() {
             setTicketPrice(data.price);
           }
           
-          // Đưa danh sách các ghế đã đặt (ví dụ: ["A5", "B7"]) từ server vào Set để tìm kiếm nhanh O(1)
-          if (data.bookedSeats && Array.isArray(data.bookedSeats)) {
-            setReservedSeats(new Set(data.bookedSeats));
+          // Chuyển danh sách ghế còn trống (availableSeats) từ Server vào Set để kiểm tra O(1)
+          if (data.availableSeats && Array.isArray(data.availableSeats)) {
+            setAvailableSeats(new Set(data.availableSeats));
+          } else if (data.bookedSeats && Array.isArray(data.bookedSeats)) {
+            // Backup phương phòng nếu hệ thống đổi sang logic bookedSeats
+            const bookedSet = new Set<string>(data.bookedSeats);
+            const allSeats: string[] = [];
+            seatRows.forEach(r => seatColumns.forEach(c => allSeats.push(`${r}${c}`)));
+            const avail = allSeats.filter(s => !bookedSet.has(s));
+            setAvailableSeats(new Set(avail));
           }
         } catch (error) {
           console.error("Lỗi lấy thông tin suất chiếu từ Server:", error);
@@ -89,7 +96,9 @@ export default function SelectSeatScreen() {
   const total = useMemo(() => selectedSeats.length * ticketPrice, [selectedSeats, ticketPrice]);
 
   const toggleSeat = (seat: string) => {
-    if (reservedSeats.has(seat)) return; // Ghế đã bán thì không cho chọn
+    // Nếu ghế không nằm trong danh sách availableSeats nghĩa là ghế đã bị đặt trước (Reserved)
+    if (!availableSeats.has(seat)) return; 
+    
     setSelectedSeats((prev) =>
       prev.includes(seat)
         ? prev.filter((item) => item !== seat)
@@ -98,7 +107,8 @@ export default function SelectSeatScreen() {
   };
 
   const renderSeat = (seat: string) => {
-    const isReserved = reservedSeats.has(seat);
+    // Ghế đã đặt (Reserved) là ghế KHÔNG nằm trong danh sách ghế trống khả dụng từ Server
+    const isReserved = !availableSeats.has(seat);
     const isSelected = selectedSeats.includes(seat);
 
     return (
@@ -157,14 +167,14 @@ export default function SelectSeatScreen() {
           </View>
         )}
 
-        {/* Giả lập màn hình vòng cung cong mảnh hắt sáng nhẹ quyến rũ */}
+        {/* Giả lập màn hình vòng cung cong mảnh hắt sáng nhẹ */}
         <View style={styles.screenContainer}>
           <View style={styles.screenArc} />
           <View style={styles.screenGlow} />
           <Text style={styles.screenLabel}>SCREEN</Text>
         </View>
 
-        {/* Lưới chọn ghế thoáng sạch, không chứa ký tự chữ bên trong ô */}
+        {/* Lưới chọn ghế thoáng sạch */}
         <View style={styles.seatsGrid}>
           {seatRows.map((row) => (
             <View key={row} style={styles.rowContainer}>
@@ -227,9 +237,9 @@ export default function SelectSeatScreen() {
             selectedSeats.length === 0 && { backgroundColor: "#3A3A3C" }
           ]}
           activeOpacity={0.85}
-          disabled={selectedSeats.length === 0} // Vô hiệu hóa nút bấm nếu người dùng chưa chọn ghế nào
+          disabled={selectedSeats.length === 0}
           onPress={() => {
-            // Chuyển hướng sang màn hình chọn Combo, truyền theo toàn bộ dữ liệu động đã cấu hình
+            // Chuyển hướng sang màn hình chọn Combo, truyền kèm thông tin đặt chỗ hiện tại
             router.push({
               pathname: "/combo",
               params: {
