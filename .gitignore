@@ -1,0 +1,31 @@
+# ===== Dependencies =====
+node_modules/
+**/node_modules/
+
+# ===== Build / cache =====
+dist/
+build/
+.expo/
+*.tsbuildinfo
+.gradle/
+
+# ===== Env (không commit secret) =====
+.env
+.env.local
+**/.env
+!.env.example
+
+# ===== Logs =====
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.iml
