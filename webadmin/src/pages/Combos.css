@@ -1,0 +1,13 @@
+.combos-page {
+  padding-bottom: var(--space-xl);
+}
+
+.combo-card {
+  transition: all var(--transition-base);
+}
+
+.combo-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-glow);
+}
