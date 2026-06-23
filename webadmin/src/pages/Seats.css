@@ -1,0 +1,124 @@
+.seats-page {
+  padding-bottom: var(--space-xl);
+}
+
+.seat-map-container {
+  overflow-x: auto;
+  padding: var(--space-2xl) var(--space-lg);
+}
+
+.screen-indicator {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.screen-curve {
+  height: 40px;
+  border: 4px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 50% 50% / 0 0 100% 100%;
+  box-shadow: inset 0 -10px 20px rgba(255, 255, 255, 0.05);
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.02));
+}
+
+.seat-grid {
+  display: grid;
+  gap: 10px;
+  max-width: 900px;
+  margin: 0 auto;
+  justify-content: center;
+}
+
+.row-label {
+  width: 30px;
+  height: 36px;
+}
+
+.seat {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px 6px 12px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: white;
+  user-select: none;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  border-top: 3px solid rgba(255,255,255,0.2);
+}
+
+.seat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+}
+
+.seat:active {
+  transform: translateY(1px);
+}
+
+/* Seat Types */
+.seat.standard {
+  background: #475569;
+}
+
+.seat.vip {
+  background: #f59e0b;
+  border-top: 3px solid #fcd34d;
+}
+
+.seat.couple {
+  background: #ec4899;
+  border-top: 3px solid #f9a8d4;
+  width: 82px; /* spans 2 cols roughly */
+  grid-column: span 2;
+}
+
+/* Status */
+.seat.maintenance {
+  background: #334155;
+  color: #94a3b8;
+  opacity: 0.6;
+  border-top: 3px solid #1e293b;
+  cursor: not-allowed;
+}
+
+.seat.broken {
+  background: #ef4444;
+  color: white;
+  border-top: 3px solid #fca5a5;
+  cursor: not-allowed;
+}
+
+/* Legend */
+.seat-demo {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px 4px 8px 8px;
+  border-top: 2px solid rgba(255,255,255,0.2);
+}
+
+.seat-demo.standard { background: #475569; }
+.seat-demo.vip { background: #f59e0b; border-top-color: #fcd34d; }
+.seat-demo.couple { background: #ec4899; border-top-color: #f9a8d4; width: 50px; }
+.seat-demo.maintenance { background: #334155; opacity: 0.6; }
+.seat-demo.broken { background: #ef4444; }
+
+@media (max-width: 768px) {
+  .seat {
+    width: 28px;
+    height: 28px;
+    font-size: 10px;
+  }
+  .row-label {
+    width: 20px;
+    height: 28px;
+  }
+  .seat.couple {
+    width: 66px;
+  }
+}
