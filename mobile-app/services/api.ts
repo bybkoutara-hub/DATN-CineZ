@@ -1,11 +1,24 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
 // Dùng trực tiếp hàm create
 const api = axios.create({
-  // Đổi IP thành IP máy đang chạy API (không dùng localhost khi test trên thiết bị thật).
-  // Port 5000 phải khớp với api/server.ts (PORT mặc định).
-  baseURL: "http://192.168.50.114:5000/api",
+  baseURL: "http://192.168.1.181:5001/api", // (Hoặc localhost tùy máy bạn)
   timeout: 10000,
+});
+
+// Tự động đính kèm JWT token (nếu đã đăng nhập) vào header Authorization
+// cho mọi request, nhờ vậy các API cần bảo vệ (profile, lịch sử vé...) hoạt động.
+api.interceptors.request.use(async (config) => {
+  try {
+    const token = await AsyncStorage.getItem("userToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {
+    // Bỏ qua nếu không đọc được token, request vẫn gửi như khách
+  }
+  return config;
 });
 
 export default api;

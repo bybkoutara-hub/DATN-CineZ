@@ -33,7 +33,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "Trang chủ",
           tabBarIcon: ({ color, focused }) => (
             // Custom icon ngôi nhà có vạch kẻ giữa chuẩn hình ảnh
             <MaterialCommunityIcons
@@ -49,7 +49,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="ticket"
         options={{
-          title: "Ticket",
+          title: "Vé",
           tabBarIcon: ({ color, focused }) => (
             // Icon vé xem phim có 3 chấm dọc phân ranh giới giữa vé
             <MaterialCommunityIcons
@@ -67,7 +67,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="movie"
         options={{
-          title: "Movie",
+          title: "Phim",
           tabBarIcon: ({ color, focused }) => (
             // Sử dụng hoàn toàn MaterialCommunityIcons để tránh lỗi style và đồng bộ kích thước
             <MaterialCommunityIcons
@@ -84,7 +84,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
+          title: "Cá nhân",
           tabBarIcon: ({ color, focused }) =>
             focused ? (
               // Trạng thái bật: Icon user dạng đổ khối đặc màu vàng

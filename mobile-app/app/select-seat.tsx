@@ -43,7 +43,7 @@ const SEAT_SIZE = Math.floor(AVAILABLE_WIDTH / 12);
 export default function SelectSeatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { showtimeId } = useLocalSearchParams(); // Nhận showtimeId từ màn hình movie-detail truyền qua
+  const { showtimeId, movieTitle, moviePoster } = useLocalSearchParams(); // Nhận từ màn movie-detail
 
   // Các State quản lý dữ liệu API
   const [showtimeData, setShowtimeData] = useState<any>(null);
@@ -131,7 +131,7 @@ export default function SelectSeatScreen() {
     return (
       <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
         <ActivityIndicator size="large" color={PRIMARY_YELLOW} />
-        <Text style={{ color: TEXT_MUTED, marginTop: 12, fontSize: 14 }}>Loading cinema seats layout...</Text>
+        <Text style={{ color: TEXT_MUTED, marginTop: 12, fontSize: 14 }}>Đang tải sơ đồ ghế...</Text>
       </View>
     );
   }
@@ -151,7 +151,7 @@ export default function SelectSeatScreen() {
           >
             <Ionicons name="chevron-back" size={26} color={TEXT_LIGHT} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Select seat</Text>
+          <Text style={styles.headerTitle}>Chọn ghế</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -159,7 +159,7 @@ export default function SelectSeatScreen() {
         {showtimeData && (
           <View style={styles.infoSummary}>
             <Text style={styles.roomLabel}>
-              Phòng: {showtimeData.roomName || "Standard Room"}
+              Phòng: {showtimeData.roomName || "Phòng chiếu"}
             </Text>
             <Text style={styles.timeLabel}>
               Suất: {showtimeData.startTime ? new Date(showtimeData.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Đang cập nhật"}
@@ -171,7 +171,7 @@ export default function SelectSeatScreen() {
         <View style={styles.screenContainer}>
           <View style={styles.screenArc} />
           <View style={styles.screenGlow} />
-          <Text style={styles.screenLabel}>SCREEN</Text>
+          <Text style={styles.screenLabel}>MÀN HÌNH</Text>
         </View>
 
         {/* Lưới chọn ghế thoáng sạch */}
@@ -199,15 +199,15 @@ export default function SelectSeatScreen() {
         <View style={styles.legendRow}>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, styles.legendAvailable]} />
-            <Text style={styles.legendText}>Available</Text>
+            <Text style={styles.legendText}>Còn trống</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, styles.legendReserved]} />
-            <Text style={styles.legendText}>Reserved</Text>
+            <Text style={styles.legendText}>Đã đặt</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, styles.legendSelected]} />
-            <Text style={styles.legendText}>Selected</Text>
+            <Text style={styles.legendText}>Đang chọn</Text>
           </View>
         </View>
 
@@ -224,10 +224,10 @@ export default function SelectSeatScreen() {
       >
         <View style={styles.priceContainer}>
           <Text style={styles.totalLabel}>
-            Total {selectedSeats.length > 0 ? `(${selectedSeats.length} ghế)` : ""}
+            Tổng {selectedSeats.length > 0 ? `(${selectedSeats.length} ghế)` : ""}
           </Text>
           <Text style={styles.totalValue}>
-            {total.toLocaleString("vi-VN")} VND
+            {total.toLocaleString("vi-VN")} đ
           </Text>
         </View>
 
@@ -246,6 +246,10 @@ export default function SelectSeatScreen() {
                 showtimeId: showtimeId,
                 seats: selectedSeats.join(","),
                 totalPrice: total,
+                movieTitle: movieTitle,
+                moviePoster: moviePoster,
+                roomName: showtimeData?.roomName || "",
+                startTime: showtimeData?.startTime || "",
               },
             });
           }}
@@ -254,7 +258,7 @@ export default function SelectSeatScreen() {
             styles.buyButtonText,
             selectedSeats.length === 0 && { color: "#8E8E93" }
           ]}>
-            Buy ticket
+            Mua vé
           </Text>
         </TouchableOpacity>
       </View>

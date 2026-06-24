@@ -89,10 +89,10 @@ export default function VerificationScreen() {
           {/* CỤM NỘI DUNG CHÍNH */}
           <View style={styles.mainContent}>
             {/* 2. TIÊU ĐỀ LỚN MÀU VÀNG CHUẨN FIGMA */}
-            <Text style={styles.mainTitle}>Confirm OTP code</Text>
+            <Text style={styles.mainTitle}>Xác nhận mã OTP</Text>
             <Text style={styles.subTitle}>
-              You just need to enter the OTP sent to the registered{"\n"}phone
-              number <Text style={styles.phoneHighlight}>(704) 555-0127.</Text>
+              Bạn chỉ cần nhập mã OTP đã được gửi đến số{"\n"}điện thoại
+              đã đăng ký <Text style={styles.phoneHighlight}>(704) 555-0127.</Text>
             </Text>
 
             {/* 3. ĐIỀU KHIỂN KHỐI 6 Ô NHẬP OTP */}
@@ -140,7 +140,7 @@ export default function VerificationScreen() {
               onPress={() => router.push("/username")} // Khi đã có thư mục (tabs) hãy đổi thành router.push("/(tabs)")
               disabled={otp.includes("")} // Vô hiệu hóa nếu chưa điền đủ 6 số
             >
-              <Text style={styles.continueText}>Continue</Text>
+              <Text style={styles.continueText}>Tiếp tục</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

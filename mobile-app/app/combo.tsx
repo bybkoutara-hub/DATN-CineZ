@@ -1,5 +1,5 @@
-import { AntDesign, Feather } from "@expo/vector-icons"; // ✅ Đã thêm Feather vào đây để tránh crash
-import { useRouter } from "expo-router";
+import { AntDesign, Feather, MaterialCommunityIcons } from "@expo/vector-icons"; // ✅ Đã thêm Feather vào đây để tránh crash
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useMemo, useState } from "react";
 import {
@@ -20,12 +20,34 @@ const PRICE_MAP = {
   bapPhoMai: 80000,
 };
 
+// Tên hiển thị + giá để gửi danh sách combo sang bước thanh toán
+const COMBO_META = {
+  comboCapDoi: { name: "Combo Cặp Đôi", price: 250000 },
+  comboDon: { name: "Combo Đơn", price: 150000 },
+  nuocSuoi: { name: "Nước Suối", price: 50000 },
+  bapPhoMai: { name: "Bắp Phô Mai", price: 80000 },
+};
+
 export default function ComboScreen() {
   const router = useRouter();
 
-  // Tầng State quản lý số lượng bắp nước người dùng chọn chọn
+  // Nhận dữ liệu đặt chỗ từ màn chọn ghế (select-seat)
+  const params = useLocalSearchParams();
+  const showtimeId = params.showtimeId as string;
+  const seats = ((params.seats as string) || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const ticketTotal = Number(params.totalPrice || 0); // tiền vé (ghế)
+  const movieTitle = (params.movieTitle as string) || "Vé xem phim";
+  const moviePoster = (params.moviePoster as string) || "";
+  const roomName = (params.roomName as string) || "";
+  const startTime = params.startTime as string;
+
+  // Tầng State quản lý số lượng bắp nước người dùng chọn.
+  // Mặc định tất cả = 0, không ép khách mua combo ngoài ý muốn.
   const [quantities, setQuantities] = useState({
-    comboCapDoi: 1, // Mặc định chọn sẵn 1 theo UI cũ của bạn
+    comboCapDoi: 0,
     comboDon: 0,
     nuocSuoi: 0,
     bapPhoMai: 0,
@@ -46,14 +68,28 @@ export default function ComboScreen() {
     });
   };
 
-  // Tự động tính toán tổng tiền chính xác khi số lượng thay đổi
-  const totalAmount = useMemo(() => {
+  // Tổng tiền combo (bắp nước) tính động
+  const comboAmount = useMemo(() => {
     return (
       quantities.comboCapDoi * PRICE_MAP.comboCapDoi +
       quantities.comboDon * PRICE_MAP.comboDon +
       quantities.nuocSuoi * PRICE_MAP.nuocSuoi +
       quantities.bapPhoMai * PRICE_MAP.bapPhoMai
     );
+  }, [quantities]);
+
+  // Tổng thanh toán cuối = tiền vé (ghế) + tiền combo
+  const grandTotal = ticketTotal + comboAmount;
+
+  // Danh sách combo đã chọn (để gửi sang bước thanh toán & lưu booking)
+  const selectedCombos = useMemo(() => {
+    return (Object.keys(quantities) as (keyof typeof quantities)[])
+      .filter((key) => quantities[key] > 0)
+      .map((key) => ({
+        name: COMBO_META[key].name,
+        quantity: quantities[key],
+        price: COMBO_META[key].price,
+      }));
   }, [quantities]);
 
   return (
@@ -80,15 +116,19 @@ export default function ComboScreen() {
         <View style={styles.movieCard}>
           <Image
             source={{
-              uri: "https://m.media-amazon.com/images/M/MV5BMTExZmVjY2ItYTAzYi00MDdlLWFlOWItNTJhMDRjMzQ5ZGY0XkEyXkFqcGdeQXVyODIyOTEyMzY@._V1_.jpg",
+              uri: moviePoster || "https://via.placeholder.com/100x150",
             }}
             style={styles.moviePoster}
           />
           <View style={styles.movieInfo}>
-            <Text style={styles.movieTitle}>Eternals</Text>
-            <Text style={styles.movieDetails}>Hôm nay, 19:30 • CGV Vincom</Text>
+            <Text style={styles.movieTitle} numberOfLines={2}>{movieTitle}</Text>
+            <Text style={styles.movieDetails}>
+              {seats.length} ghế • {ticketTotal.toLocaleString("vi-VN")} đ
+            </Text>
             <View style={styles.seatBadge}>
-              <Text style={styles.seatText}>Ghế E5, E6</Text>
+              <Text style={styles.seatText}>
+                Ghế {seats.length > 0 ? seats.join(", ") : "chưa chọn"}
+              </Text>
             </View>
           </View>
         </View>
@@ -99,7 +139,7 @@ export default function ComboScreen() {
         {/* Card: Combo Cặp Đôi */}
         <View style={styles.itemCardRow}>
           <View style={styles.bestSellerBadge}>
-            <Text style={styles.bestSellerText}>Best Seller</Text>
+            <Text style={styles.bestSellerText}>Bán chạy</Text>
           </View>
           <Image
             source={require("../assets/images/cbcapdoi.png")}
@@ -109,7 +149,7 @@ export default function ComboScreen() {
             <Text style={styles.itemName}>Combo Cặp Đôi</Text>
             <Text style={styles.itemDesc}>2 bắp lớn + 2 nước lớn</Text>
             <Text style={styles.itemPriceYellow}>
-              {PRICE_MAP.comboCapDoi.toLocaleString("vi-VN")} VNĐ
+              {PRICE_MAP.comboCapDoi.toLocaleString("vi-VN")} đ
             </Text>
           </View>
 
@@ -141,7 +181,7 @@ export default function ComboScreen() {
             <Text style={styles.itemName}>Combo Đơn</Text>
             <Text style={styles.itemDesc}>1 bắp vừa + 1 nước lớn</Text>
             <Text style={styles.itemPriceWhite}>
-              {PRICE_MAP.comboDon.toLocaleString("vi-VN")} VNĐ
+              {PRICE_MAP.comboDon.toLocaleString("vi-VN")} đ
             </Text>
           </View>
 
@@ -178,7 +218,11 @@ export default function ComboScreen() {
           {/* Item 1: Nước Suối */}
           <View style={styles.gridCard}>
             <View style={styles.imagePlaceholder}>
-              <Text style={{ color: "#fff" }}>Ảnh Nước Suối</Text>
+              <MaterialCommunityIcons
+                name="bottle-soda-classic-outline"
+                size={48}
+                color="#FCC434"
+              />
             </View>
             <Text style={styles.itemNameGrid}>Nước Suối</Text>
             <View style={styles.gridBottomRow}>
@@ -223,7 +267,7 @@ export default function ComboScreen() {
           {/* Item 2: Bắp Phô Mai */}
           <View style={styles.gridCard}>
             <View style={styles.imagePlaceholder}>
-              <Text style={{ color: "#fff" }}>Ảnh Bắp Phô Mai</Text>
+              <MaterialCommunityIcons name="popcorn" size={48} color="#FCC434" />
             </View>
             <Text style={styles.itemNameGrid}>Bắp Phô Mai</Text>
             <View style={styles.gridBottomRow}>
@@ -272,16 +316,31 @@ export default function ComboScreen() {
       {/* 5. FOOTER THANH TOÁN */}
       <View style={styles.footer}>
         <View>
-          <Text style={styles.footerLabel}>Tổng cộng</Text>
-          {/* ✅ Hiển thị tổng tiền thật được tính toán động bằng useMemo */}
+          <Text style={styles.footerLabel}>Tổng cộng (vé + combo)</Text>
+          {/* ✅ Tổng = tiền vé (ghế) + tiền combo */}
           <Text style={styles.footerTotal}>
-            {totalAmount.toLocaleString("vi-VN")} VNĐ
+            {grandTotal.toLocaleString("vi-VN")} đ
           </Text>
         </View>
         <TouchableOpacity
           style={styles.checkoutBtn}
           onPress={() => {
-            router.push("/payment" as any);
+            // Truyền toàn bộ dữ liệu đặt vé sang màn thanh toán
+            router.push({
+              pathname: "/payment",
+              params: {
+                showtimeId,
+                seats: seats.join(","),
+                ticketTotal: String(ticketTotal),
+                comboTotal: String(comboAmount),
+                grandTotal: String(grandTotal),
+                combos: JSON.stringify(selectedCombos),
+                movieTitle,
+                moviePoster,
+                roomName,
+                startTime: startTime || "",
+              },
+            });
           }}
         >
           <Text style={styles.checkoutBtnText}>THANH TOÁN</Text>

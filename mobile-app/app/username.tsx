@@ -45,18 +45,18 @@ export default function EnterUsernameScreen() {
           {/* CỤM NỘI DUNG CHÍNH */}
           <View style={styles.mainContent}>
             {/* 2. TIÊU ĐỀ LỚN MÀU VÀNG LỆCH TRÁI */}
-            <Text style={styles.mainTitle}>Enter Username</Text>
+            <Text style={styles.mainTitle}>Nhập tên người dùng</Text>
 
             {/* 3. DÒNG PHỤ ĐỀ / GHI CHÚ */}
             <Text style={styles.subTitle}>
-              Latin characters, no emoji/symbols
+              Ký tự Latin, không dùng emoji/ký hiệu đặc biệt
             </Text>
 
             {/* 4. Ô NHẬP USERNAME */}
             <View style={styles.inputSection}>
               <TextInput
                 style={styles.textInput}
-                placeholder="Angelina"
+                placeholder="Nhập tên của bạn"
                 placeholderTextColor="rgba(255, 255, 255, 0.2)"
                 keyboardType="default" // FIX: Đảm bảo mở bàn phím chữ thay vì bị kẹt bàn phím số của trang OTP
                 autoCapitalize="words"
@@ -84,7 +84,7 @@ export default function EnterUsernameScreen() {
               onPress={() => router.push("/(tabs)")} // FIX: Sửa từ "./(tabs)" thành "/(tabs)" để không bị lỗi định tuyến Router
               disabled={username.trim() === ""}
             >
-              <Text style={styles.doneText}>Done</Text>
+              <Text style={styles.doneText}>Hoàn tất</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
