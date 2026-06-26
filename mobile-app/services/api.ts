@@ -1,11 +1,30 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-// Dùng trực tiếp hàm create
 const api = axios.create({
-  // Đổi IP thành IP máy đang chạy API (không dùng localhost khi test trên thiết bị thật).
-  // Port 5000 phải khớp với api/server.ts (PORT mặc định).
-  baseURL: "http://192.168.50.114:5000/api",
+  baseURL: "http://localhost:5000/api",
   timeout: 10000,
+});
+
+const isWeb = typeof window !== "undefined" && window.localStorage;
+
+const getToken = async (): Promise<string | null> => {
+  try {
+    if (isWeb) return window.localStorage.getItem("userToken");
+    return await AsyncStorage.getItem("userToken");
+  } catch {
+    return null;
+  }
+};
+
+api.interceptors.request.use(async (config) => {
+  try {
+    const token = await getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {}
+  return config;
 });
 
 export default api;

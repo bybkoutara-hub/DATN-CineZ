@@ -6,7 +6,7 @@ import {
     getMovieDetailWithShowtimes,
     getMovies,
     getShowtimeDetail
-} from "../controllers/movieController.js";
+} from "../controllers/movieController";
 
 const router = express.Router();
 

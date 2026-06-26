@@ -56,7 +56,9 @@ export default function WelcomeScreen() {
           style={styles.langButton}
           onPress={openLangModal}
         >
-          <Text style={styles.langText}>🌐 {selectedLanguage}</Text>
+          <Text style={styles.langText}>
+            🌐 {selectedLanguage === "English" ? "Tiếng Anh" : "Tiếng Việt"}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -74,8 +76,8 @@ export default function WelcomeScreen() {
       {/* 3. KHU VỰC ĐÁY (SỬA CHỮ MBOOKING -> CINEZ HELLO!) */}
       <View style={styles.bottomSection}>
         <View style={styles.textContainer}>
-          <Text style={styles.titleText}>CineZ hello!</Text>
-          <Text style={styles.subtitleText}>Enjoy your favorite movies</Text>
+          <Text style={styles.titleText}>Xin chào CineZ!</Text>
+          <Text style={styles.subtitleText}>Tận hưởng những bộ phim yêu thích</Text>
         </View>
 
         {/* CHẤM TRÒN CHUYỂN TRANG */}
@@ -92,7 +94,7 @@ export default function WelcomeScreen() {
             style={styles.signInButton}
             onPress={() => router.push("/sign-in")}
           >
-            <Text style={styles.signInText}>Sign in</Text>
+            <Text style={styles.signInText}>Đăng nhập</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -100,14 +102,14 @@ export default function WelcomeScreen() {
             style={styles.signUpButton}
             onPress={() => router.push("/signup")}
           >
-            <Text style={styles.signUpText}>Sign up</Text>
+            <Text style={styles.signUpText}>Đăng ký</Text>
           </TouchableOpacity>
         </View>
 
         {/* ĐIỀU KHOẢN SỬ DỤNG (SỬA CHÍNH TẢ PRIVAC Y -> PRIVACY) */}
         <Text style={styles.footerText}>
-          By sign in or sign up, you agree to our Terms of Service{"\n"}and
-          Privacy Policy
+          Bằng việc đăng nhập hoặc đăng ký, bạn đồng ý với Điều khoản dịch vụ{"\n"}và
+          Chính sách bảo mật của chúng tôi
         </Text>
       </View>
 
@@ -127,9 +129,9 @@ export default function WelcomeScreen() {
           >
             <View style={styles.sheetHandle} />
 
-            <Text style={styles.sheetTitle}>Choose language</Text>
+            <Text style={styles.sheetTitle}>Chọn ngôn ngữ</Text>
             <Text style={styles.sheetSubtitle}>
-              Which language do you want to use?
+              Bạn muốn sử dụng ngôn ngữ nào?
             </Text>
 
             {/* Lựa chọn 1: English */}
@@ -144,7 +146,7 @@ export default function WelcomeScreen() {
                   selectedLanguage === "English" && styles.activeLangText,
                 ]}
               >
-                English
+                Tiếng Anh
               </Text>
               <View
                 style={[
@@ -172,7 +174,7 @@ export default function WelcomeScreen() {
                   selectedLanguage === "Vietnamese" && styles.activeLangText,
                 ]}
               >
-                Vietnamese
+                Tiếng Việt
               </Text>
               <View
                 style={[
@@ -192,7 +194,7 @@ export default function WelcomeScreen() {
               onPress={closeLangModal}
             >
               <Text style={styles.confirmLangButtonText}>
-                Use {selectedLanguage}
+                Sử dụng {selectedLanguage === "English" ? "Tiếng Anh" : "Tiếng Việt"}
               </Text>
             </TouchableOpacity>
           </Animated.View>

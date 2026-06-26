@@ -1,8 +1,9 @@
 import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+    ActivityIndicator,
     Dimensions,
     Image,
     ScrollView,
@@ -13,6 +14,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import {
+  getComingSoonMovies,
+  getNowPlayingMovies,
+} from "../../services/movieService";
+
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 60) / 2;
 
@@ -20,82 +26,37 @@ const PRIMARY_YELLOW = "#FCC444";
 const BACKGROUND_BLACK = "#000000";
 const SURFACE_DARK = "#151517";
 
-// Mock data for Now Playing movies
-const nowPlayingMovies = [
-  {
-    id: 1,
-    title: "Shang-Chi: Legend of the Ten Rings",
-    image: require("../../assets/images/shangchi.png"),
-    rating: 4.0,
-    ratingCount: 983,
-    duration: "2 hour 8 minutes",
-    genre: "Action, sci-fi",
-  },
-  {
-    id: 2,
-    title: "Batman v Superman: Dawn of Justice",
-    image: require("../../assets/images/batman.png"),
-    rating: 4.6,
-    ratingCount: 893,
-    duration: "2 hour 10 minutes",
-    genre: "Action, crime",
-  },
-  {
-    id: 3,
-    title: "Avengers: Infinity War",
-    image: require("../../assets/images/AvengersInfinity War.png"),
-    rating: 4.7,
-    ratingCount: 1112,
-    duration: "2 hour 29 minutes",
-    genre: "Action, adventure, sci-fi",
-  },
-  {
-    id: 4,
-    title: "Guardians of the Galaxy",
-    image: require("../../assets/images/guardians.png"),
-    rating: 4.5,
-    ratingCount: 956,
-    duration: "2 hour 1 minute",
-    genre: "Action, adventure, comedy",
-  },
-];
-
-// Mock data for Coming Soon movies
-const comingSoonMovies = [
-  {
-    id: 5,
-    title: "Avatar: The Way of Water",
-    image: require("../../assets/images/AvengersInfinity War.png"),
-    releaseDate: "20.12.2022",
-    genre: "Adventure, Sci-fi",
-  },
-  {
-    id: 6,
-    title: "Ant-Man and the Wasp: Quantumania",
-    image: require("../../assets/images/quantumania.png"),
-    releaseDate: "26.12.2022",
-    genre: "Adventure, Sci-fi",
-  },
-  {
-    id: 7,
-    title: "Shazam!",
-    image: require("../../assets/images/shazam.png"),
-    releaseDate: "05.01.2023",
-    genre: "Action, Comedy",
-  },
-  {
-    id: 8,
-    title: "Killers of the Flower Moon",
-    image: require("../../assets/images/kotcanotax2.png"),
-    releaseDate: "15.01.2023",
-    genre: "Crime, Drama",
-  },
-];
-
 export default function MovieScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("now");
-  const nowPlayingList = activeTab === "now" ? nowPlayingMovies : comingSoonMovies;
+
+  // Dữ liệu phim lấy từ Backend
+  const [nowPlayingMovies, setNowPlayingMovies] = useState<any[]>([]);
+  const [comingSoonMovies, setComingSoonMovies] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        setLoading(true);
+        const [nowData, comingData] = await Promise.all([
+          getNowPlayingMovies(),
+          getComingSoonMovies(),
+        ]);
+        setNowPlayingMovies(nowData || []);
+        setComingSoonMovies(comingData || []);
+      } catch (error) {
+        console.log("Lỗi tải danh sách phim:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMovies();
+  }, []);
+
+  const currentList =
+    activeTab === "now" ? nowPlayingMovies : comingSoonMovies;
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar style="light" />
@@ -105,7 +66,7 @@ export default function MovieScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Movie</Text>
+          <Text style={styles.headerTitle}>Phim</Text>
         </View>
 
         {/* Tabs */}
@@ -120,7 +81,7 @@ export default function MovieScreen() {
                 activeTab === "now" && styles.activeTabText,
               ]}
             >
-              Now playing
+              Đang chiếu
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -133,7 +94,7 @@ export default function MovieScreen() {
                 activeTab === "coming" && styles.activeTabText,
               ]}
             >
-              Coming soon
+              Sắp chiếu
             </Text>
           </TouchableOpacity>
         </View>
@@ -153,26 +114,55 @@ export default function MovieScreen() {
         </View>
 
         {/* Movies Grid */}
-        <View style={styles.moviesGrid}>
-          {nowPlayingList.map((movie, idx) => (
-            <TouchableOpacity
-              key={movie.id}
-              style={styles.posterCard}
-              activeOpacity={0.85}
-              onPress={() => router.push("/movie-detail")}
-            >
-              <Image source={movie.image} style={styles.posterImage} resizeMode="cover" />
-              <Text style={styles.posterTitle} numberOfLines={2}>{movie.title}</Text>
-              <View style={styles.posterMeta}>
-                <FontAwesome name="star" size={12} color={PRIMARY_YELLOW} />
-                {"rating" in movie ? (
-                  <Text style={styles.posterRating}> {movie.rating}</Text>
-                ) : null}
-                <Text style={styles.posterGenre}> {"releaseDate" in movie ? `• ${movie.releaseDate}` : `• ${movie.genre}`}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {loading ? (
+          <View style={{ paddingTop: 60, alignItems: "center" }}>
+            <ActivityIndicator size="large" color={PRIMARY_YELLOW} />
+            <Text style={{ color: "#888", marginTop: 12 }}>Đang tải phim...</Text>
+          </View>
+        ) : currentList.length === 0 ? (
+          <Text style={styles.emptyText}>
+            {activeTab === "now"
+              ? "Chưa có phim đang chiếu"
+              : "Chưa có phim sắp chiếu"}
+          </Text>
+        ) : (
+          <View style={styles.moviesGrid}>
+            {currentList.map((movie, idx) => (
+              <TouchableOpacity
+                key={movie._id || idx.toString()}
+                style={styles.posterCard}
+                activeOpacity={0.85}
+                onPress={() =>
+                  router.push({
+                    pathname: "/movie-detail",
+                    params: { id: movie._id },
+                  })
+                }
+              >
+                <Image
+                  source={{
+                    uri:
+                      movie.poster_url ||
+                      "https://via.placeholder.com/300x450",
+                  }}
+                  style={styles.posterImage}
+                  resizeMode="cover"
+                />
+                <Text style={styles.posterTitle} numberOfLines={2}>
+                  {movie.title}
+                </Text>
+                <View style={styles.posterMeta}>
+                  <FontAwesome name="star" size={12} color={PRIMARY_YELLOW} />
+                  <Text style={styles.posterRating}> {movie.rating || "0"}</Text>
+                  <Text style={styles.posterGenre} numberOfLines={1}>
+                    {" "}
+                    • {movie.genres?.join(", ") || "Đang cập nhật"}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         <View style={{ height: 100 }} />
       </ScrollView>
@@ -352,5 +342,13 @@ const styles = StyleSheet.create({
     color: '#888888',
     fontSize: 11,
     marginLeft: 6,
+    flexShrink: 1,
+  },
+  emptyText: {
+    color: "#666666",
+    fontSize: 14,
+    textAlign: "center",
+    marginTop: 50,
+    fontStyle: "italic",
   },
 });

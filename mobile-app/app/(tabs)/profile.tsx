@@ -1,7 +1,7 @@
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   Image,
   ScrollView,
@@ -12,6 +12,11 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  getProfileApi,
+  getStoredUser,
+  logoutApi,
+} from "../../services/authService";
 
 const BACKGROUND_BLACK = "#000000";
 const SURFACE_DARK = "#151515";
@@ -22,6 +27,34 @@ const PRIMARY_YELLOW = "#FCC444";
 export default function ProfileScreen() {
   const router = useRouter();
   const [isFaceIdEnabled, setIsFaceIdEnabled] = useState(true);
+  const [user, setUser] = useState<any>(null);
+
+  // Lấy thông tin user: hiển thị nhanh từ bộ nhớ máy, rồi cập nhật từ server
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      const loadUser = async () => {
+        const cached = await getStoredUser();
+        if (active && cached) setUser(cached);
+        try {
+          const fresh = await getProfileApi();
+          if (active && fresh) setUser(fresh);
+        } catch {
+          // Chưa đăng nhập hoặc token hết hạn -> giữ dữ liệu cache (nếu có)
+        }
+      };
+      loadUser();
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
+
+  const handleLogout = async () => {
+    await logoutApi();
+    setUser(null);
+    router.replace("/sign-in");
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -37,7 +70,7 @@ export default function ProfileScreen() {
           <Ionicons name="arrow-back" size={24} color={TEXT_LIGHT} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Profile User</Text>
+        <Text style={styles.headerTitle}>Thông tin cá nhân</Text>
 
         <TouchableOpacity
           style={[styles.headerButton, styles.alignRight]}
@@ -53,14 +86,20 @@ export default function ProfileScreen() {
       >
         {/* KHỐI USER THÔNG TIN NGANG THEO FIGMA */}
         <View style={styles.profileSection}>
-          <Image
-            source={{
-              uri: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
-            }}
-            style={styles.avatar}
-          />
+          {user?.avatar ? (
+            <Image
+              source={{ uri: user.avatar }}
+              style={styles.avatar}
+            />
+          ) : (
+            <View style={[styles.avatar, styles.avatarFallback]}>
+              <Text style={styles.avatarInitial}>
+                {(user?.name || "K")[0].toUpperCase()}
+              </Text>
+            </View>
+          )}
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>Angelina</Text>
+            <Text style={styles.userName}>{user?.name || "Khách"}</Text>
 
             <View style={styles.contactRow}>
               <Ionicons
@@ -69,7 +108,9 @@ export default function ProfileScreen() {
                 color={TEXT_MUTED}
                 style={styles.contactIcon}
               />
-              <Text style={styles.contactText}>(704) 555-0127</Text>
+              <Text style={styles.contactText}>
+                {user?.phone || "Chưa cập nhật"}
+              </Text>
             </View>
 
             <View style={styles.contactRow}>
@@ -79,7 +120,9 @@ export default function ProfileScreen() {
                 color={TEXT_MUTED}
                 style={styles.contactIcon}
               />
-              <Text style={styles.contactText}>angelina@example.com</Text>
+              <Text style={styles.contactText}>
+                {user?.email || "Chưa đăng nhập"}
+              </Text>
             </View>
           </View>
         </View>
@@ -90,7 +133,7 @@ export default function ProfileScreen() {
           <TouchableOpacity
             style={styles.menuItem}
             activeOpacity={0.8}
-            onPress={() => router.push("/my-ticket")}
+            onPress={() => router.push("/(tabs)/ticket")}
           >
             <View style={styles.menuIcon}>
               <MaterialCommunityIcons
@@ -100,7 +143,7 @@ export default function ProfileScreen() {
               />
             </View>
             <View style={styles.menuTextContainer}>
-              <Text style={styles.menuTitle}>My ticket</Text>
+              <Text style={styles.menuTitle}>Vé của tôi</Text>
             </View>
             <Ionicons
               name="chevron-forward"
@@ -110,7 +153,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
 
           {/* Mục 2: Payment History */}
-          <TouchableOpacity style={styles.menuItem} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.menuItem} activeOpacity={0.8} onPress={() => router.push("/(tabs)/ticket")}>
             <View style={styles.menuIcon}>
               <MaterialCommunityIcons
                 name="history"
@@ -119,7 +162,7 @@ export default function ProfileScreen() {
               />
             </View>
             <View style={styles.menuTextContainer}>
-              <Text style={styles.menuTitle}>Payment history</Text>
+              <Text style={styles.menuTitle}>Lịch sử thanh toán</Text>
             </View>
             <Ionicons
               name="chevron-forward"
@@ -138,7 +181,7 @@ export default function ProfileScreen() {
               />
             </View>
             <View style={styles.menuTextContainer}>
-              <Text style={styles.menuTitle}>Change language</Text>
+              <Text style={styles.menuTitle}>Đổi ngôn ngữ</Text>
             </View>
             <Ionicons
               name="chevron-forward"
@@ -148,12 +191,12 @@ export default function ProfileScreen() {
           </TouchableOpacity>
 
           {/* Mục 4: Change Password */}
-          <TouchableOpacity style={styles.menuItem} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.menuItem} activeOpacity={0.8} onPress={() => router.push({ pathname: "/change-password" as any })}>
             <View style={styles.menuIcon}>
               <Ionicons name="lock-closed" size={20} color={TEXT_LIGHT} />
             </View>
             <View style={styles.menuTextContainer}>
-              <Text style={styles.menuTitle}>Change password</Text>
+              <Text style={styles.menuTitle}>Đổi mật khẩu</Text>
             </View>
             <Ionicons
               name="chevron-forward"
@@ -184,6 +227,16 @@ export default function ProfileScreen() {
             />
           </View>
         </View>
+
+        {/* NÚT ĐĂNG XUẤT */}
+        <TouchableOpacity
+          style={styles.logoutButton}
+          activeOpacity={0.8}
+          onPress={handleLogout}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#FF453A" />
+          <Text style={styles.logoutText}>Đăng xuất</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -232,6 +285,16 @@ const styles = StyleSheet.create({
     height: 76,
     borderRadius: 38,
     marginRight: 16,
+  },
+  avatarFallback: {
+    backgroundColor: "#2C2C2E",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarInitial: {
+    color: "#FCC444",
+    fontSize: 32,
+    fontWeight: "700",
   },
   userInfo: {
     flex: 1,
@@ -290,5 +353,22 @@ const styles = StyleSheet.create({
     color: TEXT_LIGHT,
     fontSize: 15,
     fontWeight: "600",
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    marginTop: 24,
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,69,58,0.4)",
+    backgroundColor: "rgba(255,69,58,0.08)",
+  },
+  logoutText: {
+    color: "#FF453A",
+    fontSize: 15,
+    fontWeight: "700",
   },
 });

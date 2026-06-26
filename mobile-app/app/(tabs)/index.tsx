@@ -32,11 +32,11 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 // ==========================================
 // CÁC THÀNH PHẦN DÙNG CHUNG (Reusable Components)
 // ==========================================
-const SectionHeader = ({ title }: { title: string }) => (
+const SectionHeader = ({ title, onPress }: { title: string; onPress?: () => void }) => (
   <View style={styles.sectionHeader}>
     <Text style={styles.sectionTitle}>{title}</Text>
-    <TouchableOpacity activeOpacity={0.7} style={styles.seeAllBtn}>
-      <Text style={styles.seeAllText}>See all</Text>
+    <TouchableOpacity activeOpacity={0.7} style={styles.seeAllBtn} onPress={onPress}>
+      <Text style={styles.seeAllText}>Xem tất cả</Text>
       <Feather
         name="chevron-right"
         size={14}
@@ -75,6 +75,18 @@ export default function HomeScreen() {
   
   // Quản lý trang hiện tại của Slider Now Playing
   const [activePageIndex, setActivePageIndex] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = () => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return;
+    const found = [...nowPlaying, ...comingSoon].find(
+      (m) => m.title?.toLowerCase().includes(q)
+    );
+    if (found) {
+      router.push({ pathname: "/movie-detail", params: { id: found._id } });
+    }
+  };
 
   // Hàm lấy dữ liệu bất đồng bộ từ Backend
   const fetchMoviesData = async () => {
@@ -127,8 +139,8 @@ export default function HomeScreen() {
         {/* HEADER */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greetingText}>Hi, Angelina 👋</Text>
-            <Text style={styles.welcomeText}>Welcome back</Text>
+            <Text style={styles.greetingText}>Xin chào 👋</Text>
+            <Text style={styles.welcomeText}>Chào mừng trở lại</Text>
           </View>
           <TouchableOpacity style={styles.notificationBtn} activeOpacity={0.7}>
             <Ionicons name="notifications" size={24} color="#ffffff" />
@@ -146,9 +158,13 @@ export default function HomeScreen() {
           />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search"
+            placeholder="Tìm kiếm"
             placeholderTextColor="#666666"
             autoCorrect={false}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onSubmitEditing={handleSearch}
+            returnKeyType="search"
           />
           <TouchableOpacity activeOpacity={0.7} style={styles.filterIconBtn}>
             <Feather name="sliders" size={18} color={PRIMARY_YELLOW} />
@@ -156,7 +172,11 @@ export default function HomeScreen() {
         </View>
 
         {/* NOW PLAYING SECTION */}
-        <SectionHeader title="Now playing" />
+        <SectionHeader title="Đang chiếu" onPress={() => {
+          if (nowPlaying.length > 0) {
+            router.push({ pathname: "/movie-detail", params: { id: nowPlaying[0]._id } });
+          }
+        }} />
         {nowPlaying.length === 0 ? (
           <Text style={styles.emptyText}>Không có phim đang chiếu</Text>
         ) : (
@@ -193,7 +213,7 @@ export default function HomeScreen() {
                     />
                     <Text style={styles.movieTitle} numberOfLines={1}>{movie.title}</Text>
                     <Text style={styles.movieSubText}>
-                      {movie.duration}m • {movie.genres?.join(", ") || "Action"}
+                      {movie.duration} phút • {movie.genres?.join(", ") || "Hành động"}
                     </Text>
                     <View style={styles.ratingRow}>
                       <FontAwesome name="star" size={14} color={PRIMARY_YELLOW} />
@@ -220,7 +240,11 @@ export default function HomeScreen() {
         )}
 
         {/* COMING SOON SECTION */}
-        <SectionHeader title="Coming soon" />
+        <SectionHeader title="Sắp chiếu" onPress={() => {
+          if (comingSoon.length > 0) {
+            router.push({ pathname: "/movie-detail", params: { id: comingSoon[0]._id } });
+          }
+        }} />
         {comingSoon.length === 0 ? (
           <Text style={styles.emptyText}>Không có phim sắp chiếu</Text>
         ) : (
@@ -253,14 +277,14 @@ export default function HomeScreen() {
                 <View style={styles.infoRow}>
                   <Ionicons name="film-outline" size={12} color="#999999" />
                   <Text style={styles.infoText} numberOfLines={1}>
-                    {movie.genres?.join(", ") || "Sci-Fi"}
+                    {movie.genres?.join(", ") || "Khoa học viễn tưởng"}
                   </Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Ionicons name="calendar-outline" size={12} color="#999999" />
                   <Text style={styles.infoText}>
                     {/* Hỗ trợ định dạng lại hiển thị ngày nếu cần thiết */}
-                    {movie.release_date ? new Date(movie.release_date).toLocaleDateString("vi-VN") : "Coming soon"}
+                    {movie.release_date ? new Date(movie.release_date).toLocaleDateString("vi-VN") : "Sắp chiếu"}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -269,7 +293,7 @@ export default function HomeScreen() {
         )}
 
         {/* PROMO & DISCOUNT */}
-        <SectionHeader title="Promo & Discount" />
+        <SectionHeader title="Khuyến mãi & Giảm giá" />
         <TouchableOpacity activeOpacity={0.9} style={styles.promoCard}>
           <Image
             source={require("../../assets/images/PromoDiscount.png")}
@@ -278,10 +302,10 @@ export default function HomeScreen() {
         </TouchableOpacity>
 
         {/* SERVICE */}
-        <SectionHeader title="Service" />
+        <SectionHeader title="Dịch vụ" />
         <View style={styles.serviceRow}>
           <ServiceItem
-            title="Rental"
+            title="Thuê phim"
             iconImage={require("../../assets/images/rental.png")}
           />
           <ServiceItem
@@ -299,7 +323,7 @@ export default function HomeScreen() {
         </View>
 
         {/* MOVIE NEWS */}
-        <SectionHeader title="Movie news" />
+        <SectionHeader title="Tin tức phim" />
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -314,7 +338,7 @@ export default function HomeScreen() {
               style={styles.newsImage}
             />
             <Text style={styles.newsTitle} numberOfLines={2}>
-              When The Batman 2 Starts Filming Reportedly Revealed
+              Lộ thời điểm The Batman 2 bắt đầu bấm máy
             </Text>
           </View>
           <View style={styles.newsCard}>
@@ -325,7 +349,7 @@ export default function HomeScreen() {
               style={styles.newsImage}
             />
             <Text style={styles.newsTitle} numberOfLines={2}>
-              6 Epic Hulk Fights That Happen In The MCU
+              6 trận chiến hoành tráng nhất của Hulk trong MCU
             </Text>
           </View>
         </ScrollView>

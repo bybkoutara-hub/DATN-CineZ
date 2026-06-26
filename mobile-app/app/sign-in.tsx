@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Link, useRouter } from "expo-router";
+import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
@@ -27,7 +27,8 @@ const BORDER_COLOR = "#1C1C1F";
 
 export default function SignInScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const params = useLocalSearchParams();
+  const [email, setEmail] = useState((params.email as string) || "");
   const [password, setPassword] = useState("");
   const [secureText, setSecureText] = useState(true);
   const [loading, setLoading] = useState(false); // Thêm state loading
@@ -40,12 +41,11 @@ export default function SignInScreen() {
 
     setLoading(true);
     try {
-      const response = await loginApi(email, password);
-      // Giả sử API trả về token, bạn có thể lưu vào AsyncStorage tại đây
-      Alert.alert("Thành công", "Đăng nhập thành công!");
+      await loginApi(email, password);
+      // Token đã được lưu trong loginApi -> vào thẳng trang chủ
       router.replace("/(tabs)");
-    } catch (error) {
-      Alert.alert("Đăng nhập thất bại", "Email hoặc mật khẩu không chính xác");
+    } catch (error: any) {
+      Alert.alert("Đăng nhập thất bại", error?.response?.data?.message || "Email hoặc mật khẩu không chính xác");
     } finally {
       setLoading(false);
     }
@@ -70,15 +70,15 @@ export default function SignInScreen() {
           </TouchableOpacity>
 
           <View style={styles.welcomeContainer}>
-            <Text style={styles.titleText}>Welcome back</Text>
+            <Text style={styles.titleText}>Chào mừng trở lại</Text>
             <Text style={styles.subtitleText}>
-              Sign in to write your own booking story
+              Đăng nhập để viết tiếp câu chuyện đặt vé của bạn
             </Text>
           </View>
 
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Email Address</Text>
+              <Text style={styles.inputLabel}>Địa chỉ email</Text>
               <View style={styles.inputWrapper}>
                 <Ionicons
                   name="mail-outline"
@@ -88,7 +88,7 @@ export default function SignInScreen() {
                 />
                 <TextInput
                   style={styles.textInput}
-                  placeholder="Enter your email"
+                  placeholder="Nhập email của bạn"
                   placeholderTextColor="#444446"
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -99,7 +99,7 @@ export default function SignInScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Password</Text>
+              <Text style={styles.inputLabel}>Mật khẩu</Text>
               <View style={styles.inputWrapper}>
                 <Ionicons
                   name="lock-closed-outline"
@@ -109,7 +109,7 @@ export default function SignInScreen() {
                 />
                 <TextInput
                   style={styles.textInput}
-                  placeholder="Enter your password"
+                  placeholder="Nhập mật khẩu"
                   placeholderTextColor="#444446"
                   secureTextEntry={secureText}
                   value={password}
@@ -139,17 +139,17 @@ export default function SignInScreen() {
               {loading ? (
                 <ActivityIndicator color={BACKGROUND_BLACK} />
               ) : (
-                <Text style={styles.signInButtonText}>Sign In</Text>
+                <Text style={styles.signInButtonText}>Đăng nhập</Text>
               )}
             </TouchableOpacity>
 
             <View style={styles.signUpRow}>
               <Text style={styles.signUpText}>
-                Don&apos;t have an account?{" "}
+                Chưa có tài khoản?{" "}
               </Text>
               <Link href={"/signup"} asChild>
                 <TouchableOpacity>
-                  <Text style={styles.signUpLink}>Sign Up</Text>
+                  <Text style={styles.signUpLink}>Đăng ký</Text>
                 </TouchableOpacity>
               </Link>
             </View>

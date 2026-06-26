@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import Movie from "../models/movieModel.js";
 import Showtime from "../models/showtimeModel.js";
+import Room from "../models/roomModel.js";
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ async function seedDatabase() {
     await Showtime.deleteMany({});
     await Cinema.deleteMany({});
     await Combo.deleteMany({});
+    await Room.deleteMany({});
     console.log("🧹 [Seed]: Đã làm sạch toàn bộ dữ liệu cũ.");
 
     // 2. Thêm Rạp phim & Combo bắp nước mẫu
@@ -31,9 +33,20 @@ async function seedDatabase() {
       { name: "MBooking Hùng Vương Plaza", address: "126 Hùng Vương, Quận 5, TP.HCM" },
       { name: "MBooking Vạn Hạnh Mall", address: "11 Sư Vạn Hạnh, Quận 10, TP.HCM" }
     ]);
+
+    // 2b. Tạo phòng chiếu
+    await Room.insertMany([
+      { name: "Phòng Chiếu 01 (IMAX)", type: "IMAX", rows_count: 10, seats_per_row: 15, totalSeats: 150, status: "active", description: "Phòng IMAX chuẩn quốc tế" },
+      { name: "Phòng Chiếu 02 (3D VIP)", type: "VIP", rows_count: 8, seats_per_row: 12, totalSeats: 96, status: "active", description: "Phòng VIP với ghế ngồi rộng rãi" },
+      { name: "Phòng Chiếu 03 (2D Standard)", type: "2D", rows_count: 10, seats_per_row: 12, totalSeats: 120, status: "active", description: "Phòng chiếu tiêu chuẩn" },
+    ]);
+
+    // 2c. Thêm Combo bắp nước
     await Combo.insertMany([
-      { name: "Combo Solo", price: 65000, description: "1 Bắp ngọt lớn + 1 Nước ngọt ly lớn" },
-      { name: "Combo Couple", price: 95000, description: "1 Bắp lớn + 2 Nước ngọt ly lớn" }
+      { name: "Combo Cặp Đôi", price: 250000, description: "2 bắp lớn + 2 nước lớn" },
+      { name: "Combo Đơn", price: 150000, description: "1 bắp vừa + 1 nước lớn" },
+      { name: "Nước Suối", price: 50000, description: "Nước suối đóng chai 500ml" },
+      { name: "Bắp Phô Mai", price: 80000, description: "Bắp rang bơ phô mai" },
     ]);
 
     // 3. Nạp dữ liệu PHIM SIÊU CHI TIẾT (Đầy đủ các trường để lên giao diện Mobile đẹp mắt)
@@ -72,12 +85,13 @@ async function seedDatabase() {
     ]);
     console.log("🎬 [Seed]: Đã nạp xong 2 phim siêu chi tiết.");
 
-    // 4. Hàm tạo 20 ghế mặc định tự động từ A1 -> B10
-    const generateDefaultSeats = (): string[] => {
+    // 4. Hàm tạo ghế mặc định theo rows_count / seats_per_row
+    const generateSeats = (rows: number, cols: number): string[] => {
       const seats: string[] = [];
-      for (const row of ["A", "B"]) {
-        for (let i = 1; i <= 10; i++) {
-          seats.push(`${row}${i}`);
+      for (let r = 0; r < rows; r++) {
+        const rowLetter = String.fromCharCode(65 + r);
+        for (let c = 1; c <= cols; c++) {
+          seats.push(`${rowLetter}${c}`);
         }
       }
       return seats;
@@ -100,21 +114,21 @@ async function seedDatabase() {
         roomName: "Phòng Chiếu 01 (IMAX)",
         startTime: new Date("2026-08-20T18:30:00.000Z"), 
         price: 90000,
-        availableSeats: generateDefaultSeats()
+        availableSeats: generateSeats(10, 15)
       },
       {
         movieId: latMatPhim._id,
         roomName: "Phòng Chiếu 03 (2D Standard)",
         startTime: new Date("2026-08-20T21:00:00.000Z"),
         price: 75000,
-        availableSeats: generateDefaultSeats()
+        availableSeats: generateSeats(10, 12)
       },
       {
         movieId: avatarPhim._id,
         roomName: "Phòng Chiếu 02 (3D VIP)",
         startTime: new Date("2026-08-21T19:45:00.000Z"),
         price: 120000,
-        availableSeats: generateDefaultSeats()
+        availableSeats: generateSeats(8, 12)
       }
     ];
 

@@ -4,7 +4,7 @@ import {
   Ionicons,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import {
@@ -15,49 +15,64 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Barcode from "react-native-barcode-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const BG_BLACK = "#000000";
 const TEXT_LIGHT = "#FFFFFF";
 const TICKET_BG = "#FFFFFF";
 
+// Nhãn tiếng Việt cho trạng thái vé
+const statusLabel = (status?: string) => {
+  switch (status) {
+    case "completed":
+      return "Đã thanh toán";
+    case "pending":
+      return "Chờ thanh toán";
+    case "cancelled":
+      return "Đã hủy";
+    default:
+      return "Đã đặt";
+  }
+};
+
 export default function MyTicketScreen() {
   const router = useRouter();
 
-  const RenderPerfectBarcode = () => {
-    // Chuỗi răng cưa mật độ cao (High-density) đan xen dày mỏng chuẩn cấu trúc Frame.png
-    const barWeights = [
-      2, 1, 1, 3, 1, 2, 4, 1, 1, 2, 2, 4, 1, 1, 3, 1, 2, 4, 1, 2, 1, 1, 3, 2, 4,
-      1, 1, 2, 3, 1, 4, 1, 2, 1, 1, 3, 2, 4, 1, 1, 2, 3, 1, 4, 1, 2, 1, 1, 3, 2,
-      4, 1, 1, 2, 3, 1, 4, 1, 2, 1, 1, 3, 2, 4, 1, 1, 2, 1, 4, 3, 1, 1, 2, 1, 2,
-    ];
+  // Nhận dữ liệu vé thật được truyền từ màn danh sách vé
+  const params = useLocalSearchParams();
+  const totalPrice = Number(params.totalPrice || 0);
+  let combos: { name: string; quantity: number; price: number }[] = [];
+  try {
+    combos = params.combos ? JSON.parse(params.combos as string) : [];
+  } catch {
+    combos = [];
+  }
 
-    return (
-      <View style={styles.barcodeWrapper}>
-        {barWeights.map((weight, idx) => (
-          <View
-            key={idx}
-            style={[
-              styles.singleBar,
-              {
-                // Độ rộng của từng vạch đơn mảnh sắc nét, phủ đều bề ngang vé
-                width: weight * 2,
-                backgroundColor: idx % 2 === 0 ? "#000000" : "transparent",
-              },
-            ]}
-          />
-        ))}
-      </View>
-    );
+  const ticket = {
+    bookingId: (params.bookingId as string) || "",
+    title: (params.title as string) || "Vé xem phim",
+    poster:
+      (params.poster as string) ||
+      "https://image.tmdb.org/t/p/w500/7WsyChQLEftFiDOVTGkv3hFpyyt.jpg",
+    duration: params.duration ? `${params.duration} phút` : "Đang cập nhật",
+    room: (params.room as string) || "Phòng chiếu CineZ",
+    time: (params.time as string) || "--:--",
+    date: (params.date as string) || "--",
+    seats: (params.seats as string) || "--",
+    status: (params.status as string) || "",
   };
+
+  // Giá trị mã vạch = mã đặt vé thật (booking _id). Dùng để quét nhận vé tại quầy.
+  const barcodeValue = ticket.bookingId || "CINEZ-TICKET";
 
   return (
     <SafeAreaView style={styles.safeContainer} edges={["top", "bottom"]}>
       <StatusBar style="light" />
 
-      {/* NAVIGATION HEADER */}
+      {/* THANH ĐIỀU HƯỚNG */}
       <View style={styles.topHeader}>
         <TouchableOpacity
           style={styles.backTouch}
@@ -65,7 +80,7 @@ export default function MyTicketScreen() {
         >
           <Ionicons name="arrow-back" size={26} color={TEXT_LIGHT} />
         </TouchableOpacity>
-        <Text style={styles.mainHeaderTitle}>My ticket</Text>
+        <Text style={styles.mainHeaderTitle}>Vé của tôi</Text>
         <View style={styles.emptyRightBlock} />
       </View>
 
@@ -77,30 +92,36 @@ export default function MyTicketScreen() {
             {/* THÔNG TIN PHIM */}
             <View style={styles.movieMainRow}>
               <Image
-                source={{
-                  uri: "https://image.tmdb.org/t/p/w500/7WsyChQLEftFiDOVTGkv3hFpyyt.jpg",
-                }}
+                source={{ uri: ticket.poster }}
                 style={styles.largeMoviePoster}
                 resizeMode="cover"
               />
               <View style={styles.movieMainDetails}>
-                <Text style={styles.moviePrimaryTitle}>
-                  Avengers: Infinity War
+                <Text style={styles.moviePrimaryTitle} numberOfLines={2}>
+                  {ticket.title}
                 </Text>
 
                 <View style={styles.movieMetaInlineRow}>
                   <Feather name="clock" size={16} color="#222222" />
                   <Text style={styles.movieMetaInlineText}>
-                    2 hours 29 minutes
+                    {ticket.duration}
                   </Text>
                 </View>
 
                 <View style={styles.movieMetaInlineRow}>
                   <Feather name="video" size={16} color="#222222" />
                   <Text style={styles.movieMetaInlineText} numberOfLines={1}>
-                    Action, adventure, sci-fi
+                    {ticket.room}
                   </Text>
                 </View>
+
+                {!!ticket.status && (
+                  <View style={styles.statusInlineBadge}>
+                    <Text style={styles.statusInlineText}>
+                      {statusLabel(ticket.status)}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
 
@@ -115,8 +136,8 @@ export default function MyTicketScreen() {
                   color="#000000"
                 />
                 <View style={styles.textDataGroup}>
-                  <Text style={styles.boldDataText}>{"14h15'"}</Text>
-                  <Text style={styles.subDataText}>10.12.2022</Text>
+                  <Text style={styles.boldDataText}>{ticket.time}</Text>
+                  <Text style={styles.subDataText}>{ticket.date}</Text>
                 </View>
               </View>
 
@@ -130,22 +151,40 @@ export default function MyTicketScreen() {
                   style={styles.customSeatIconStyle}
                 />
                 <View style={styles.textDataGroupLayout}>
-                  <Text style={styles.mutedDataLabel}>Section 4</Text>
-                  <Text style={styles.boldDataText}>Seat H7, H8</Text>
+                  <Text style={styles.mutedDataLabel}>Ghế</Text>
+                  <Text style={styles.boldDataText}>{ticket.seats}</Text>
                 </View>
               </View>
             </View>
 
             <View style={styles.thinHorizontalLine} />
 
-            {/* DANH SÁCH CHI TIẾT NƠI CHỐN VÀ GIÁ TIỀN */}
+            {/* CHI TIẾT GIÁ TIỀN, COMBO, RẠP */}
             <View style={styles.metaDetailsList}>
               <View style={styles.metaDetailItemRow}>
                 <View style={styles.customCoinIconOuter}>
                   <FontAwesome5 name="dollar-sign" size={9} color="#000000" />
                 </View>
-                <Text style={styles.boldPriceValueText}>210.000 VND</Text>
+                <Text style={styles.boldPriceValueText}>
+                  {totalPrice.toLocaleString("vi-VN")} đ
+                </Text>
               </View>
+
+              {combos.length > 0 && (
+                <View style={styles.metaDetailItemRowAlignTop}>
+                  <MaterialCommunityIcons
+                    name="popcorn"
+                    size={20}
+                    color="#000000"
+                    style={styles.leftMetaIconWidth}
+                  />
+                  <Text style={styles.mutedNoticeBodyText}>
+                    {combos
+                      .map((c) => `${c.name} x${c.quantity}`)
+                      .join(", ")}
+                  </Text>
+                </View>
+              )}
 
               <View style={styles.metaDetailItemRowAlignTop}>
                 <Ionicons
@@ -155,20 +194,9 @@ export default function MyTicketScreen() {
                   style={styles.leftMetaIconWidth}
                 />
                 <View style={styles.cinemaTextArea}>
-                  <View style={styles.cinemaHeaderInline}>
-                    <Text style={styles.boldCinemaName}>
-                      Vincom Ocean Park{" "}
-                    </Text>
-                    <Image
-                      source={{
-                        uri: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/CGV_Cinemas_logo.svg/512px-CGV_Cinemas_logo.svg.png",
-                      }}
-                      style={styles.inlineCgvLogoImg}
-                      resizeMode="contain"
-                    />
-                  </View>
+                  <Text style={styles.boldCinemaName}>{ticket.room || "Rạp CineZ"}</Text>
                   <Text style={styles.mutedCinemaAddress}>
-                    4th floor, Vincom Ocean Park, Da Ton, Gia Lam, Ha Noi
+                    Vui lòng đến quầy trước giờ chiếu 15 phút để nhận vé.
                   </Text>
                 </View>
               </View>
@@ -181,7 +209,7 @@ export default function MyTicketScreen() {
                   style={styles.leftMetaIconWidth}
                 />
                 <Text style={styles.mutedNoticeBodyText}>
-                  Show this QR code to the ticket counter to receive your ticket
+                  Đưa mã vạch này tại quầy vé để nhận vé của bạn.
                 </Text>
               </View>
             </View>
@@ -194,11 +222,19 @@ export default function MyTicketScreen() {
             <View style={styles.rightDeepCircleHole} />
           </View>
 
-          {/* PHẦN CHỨA MÃ VẠCH KÉO DÀI CHUẨN FIGMA */}
+          {/* PHẦN CHỨA MÃ VẠCH THẬT */}
           <View style={styles.bottomBarcodeArea}>
-            <RenderPerfectBarcode />
+            <Barcode
+              value={barcodeValue}
+              format="CODE128"
+              maxWidth={SCREEN_WIDTH - 120}
+              height={70}
+              singleBarWidth={2}
+              backgroundColor="#FFFFFF"
+              lineColor="#000000"
+            />
             <Text style={styles.finalOrderStringText}>
-              Oder ID: 78889377726
+              Mã đặt vé: {ticket.bookingId || "--"}
             </Text>
           </View>
         </View>
@@ -235,10 +271,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: SCREEN_HEIGHT * 0.04,
-    justifyContent: "center", // Giúp chiếc vé sau khi co ngắn lại sẽ nằm căn giữa màn hình cực đẹp
+    justifyContent: "center",
   },
   fullTicketCard: {
-    // Đã loại bỏ flex: 1 để chiếc vé tự động co ngắn lại theo nội dung bên trong
     backgroundColor: TICKET_BG,
     borderRadius: 24,
   },
@@ -276,6 +311,19 @@ const styles = StyleSheet.create({
     color: "#555555",
     fontSize: 14,
     fontWeight: "400",
+  },
+  statusInlineBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#F0F0F0",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    marginTop: 2,
+  },
+  statusInlineText: {
+    color: "#222222",
+    fontSize: 12,
+    fontWeight: "600",
   },
   thinHorizontalLine: {
     height: 1,
@@ -359,19 +407,10 @@ const styles = StyleSheet.create({
   cinemaTextArea: {
     flex: 1,
   },
-  cinemaHeaderInline: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
   boldCinemaName: {
     color: "#000000",
     fontSize: 16,
     fontWeight: "600",
-  },
-  inlineCgvLogoImg: {
-    width: 28,
-    height: 15,
-    marginLeft: 4,
   },
   mutedCinemaAddress: {
     color: "#777777",
@@ -418,20 +457,9 @@ const styles = StyleSheet.create({
   bottomBarcodeArea: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 24, // Hạ hoàn toàn xuống 24 để bo sát chân vé lý tưởng
+    paddingBottom: 24,
     alignItems: "center",
     justifyContent: "center",
-  },
-  barcodeWrapper: {
-    flexDirection: "row",
-    height: 100, // Giảm từ 105 xuống 70 giúp thanh mã vạch có tỷ lệ thanh thoát, tinh tế hơn
-    alignItems: "stretch",
-    width: "100%",
-    justifyContent: "center",
-    marginBottom: 12,
-  },
-  singleBar: {
-    height: "100%",
   },
   finalOrderStringText: {
     color: "#000000",
@@ -439,5 +467,6 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     opacity: 0.8,
     letterSpacing: 0.5,
+    marginTop: 12,
   },
 });

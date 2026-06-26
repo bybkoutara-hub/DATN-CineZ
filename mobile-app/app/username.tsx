@@ -1,8 +1,9 @@
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
+    ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
@@ -13,10 +14,14 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { updateProfileApi } from "../services/authService";
 
 export default function EnterUsernameScreen() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
+  const params = useLocalSearchParams();
+  const initialName = (params.name as string) || "";
+  const [username, setUsername] = useState(initialName);
+  const [saving, setSaving] = useState(false);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -45,18 +50,18 @@ export default function EnterUsernameScreen() {
           {/* CỤM NỘI DUNG CHÍNH */}
           <View style={styles.mainContent}>
             {/* 2. TIÊU ĐỀ LỚN MÀU VÀNG LỆCH TRÁI */}
-            <Text style={styles.mainTitle}>Enter Username</Text>
+            <Text style={styles.mainTitle}>Nhập tên người dùng</Text>
 
             {/* 3. DÒNG PHỤ ĐỀ / GHI CHÚ */}
             <Text style={styles.subTitle}>
-              Latin characters, no emoji/symbols
+              Ký tự Latin, không dùng emoji/ký hiệu đặc biệt
             </Text>
 
             {/* 4. Ô NHẬP USERNAME */}
             <View style={styles.inputSection}>
               <TextInput
                 style={styles.textInput}
-                placeholder="Angelina"
+                placeholder="Nhập tên của bạn"
                 placeholderTextColor="rgba(255, 255, 255, 0.2)"
                 keyboardType="default" // FIX: Đảm bảo mở bàn phím chữ thay vì bị kẹt bàn phím số của trang OTP
                 autoCapitalize="words"
@@ -81,10 +86,20 @@ export default function EnterUsernameScreen() {
                 styles.doneButton,
                 username.trim() === "" && styles.doneButtonDisabled,
               ]}
-              onPress={() => router.push("/(tabs)")} // FIX: Sửa từ "./(tabs)" thành "/(tabs)" để không bị lỗi định tuyến Router
+              onPress={async () => {
+                if (saving) return;
+                setSaving(true);
+                try {
+                  if (username.trim() !== initialName) {
+                    await updateProfileApi({ name: username.trim() });
+                  }
+                } catch {}
+                setSaving(false);
+                router.replace("/(tabs)");
+              }}
               disabled={username.trim() === ""}
             >
-              <Text style={styles.doneText}>Done</Text>
+              <Text style={styles.doneText}>Hoàn tất</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

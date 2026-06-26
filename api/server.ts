@@ -12,6 +12,8 @@ import paymentRoutes from "./routes/paymentRoutes";
 import comboRoutes from "./routes/comboRoutes";
 import promotionRoutes from "./routes/promotionRoutes";
 import reviewRoutes from "./routes/reviewRoutes";
+import roomRoutes from "./routes/roomRoutes";
+import adminRoutes from "./routes/admin/adminRoutes";
 
 dotenv.config();
 
@@ -39,6 +41,8 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/combos", comboRoutes);
 app.use("/api/promotions", promotionRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/rooms", roomRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.get("/", (_req, res) => {
   res.send("Hệ thống CineZ Movie Booking API đang chạy! 🎬");

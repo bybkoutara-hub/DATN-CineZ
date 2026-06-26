@@ -3,37 +3,9 @@ import {
   FiPlus, FiEdit2, FiTrash2, FiSearch, FiX, FiClock,
   FiCalendar, FiChevronLeft, FiChevronRight, FiFilm, FiMonitor
 } from 'react-icons/fi';
+import { showtimeAPI, movieAPI, roomAPI } from '../api/apiService';
 import './Showtimes.css';
 
-/* ── Mock Data ── */
-const mockMovies = [
-  { id: 1, title: 'Lật Mặt 8', duration: 132 },
-  { id: 2, title: 'Mai', duration: 120 },
-  { id: 3, title: 'Đào Phở và Piano', duration: 98 },
-  { id: 4, title: 'Godzilla x Kong', duration: 115 },
-  { id: 5, title: 'Inside Out 2', duration: 96 },
-];
-
-const mockRooms = [
-  { id: 1, name: 'Phòng 1', type: '2D' },
-  { id: 2, name: 'Phòng 2', type: '3D' },
-  { id: 3, name: 'Phòng 3', type: 'IMAX' },
-];
-
-const initialShowtimes = [
-  { id: 1, movieId: 1, movieTitle: 'Lật Mặt 8', roomId: 1, roomName: 'Phòng 1', date: '2026-05-21', startTime: '09:00', endTime: '11:12', basePrice: 75000, status: 'active' },
-  { id: 2, movieId: 2, movieTitle: 'Mai', roomId: 2, roomName: 'Phòng 2', date: '2026-05-21', startTime: '10:00', endTime: '12:00', basePrice: 85000, status: 'active' },
-  { id: 3, movieId: 3, movieTitle: 'Đào Phở và Piano', roomId: 3, roomName: 'Phòng 3', date: '2026-05-21', startTime: '14:00', endTime: '15:38', basePrice: 120000, status: 'active' },
-  { id: 4, movieId: 4, movieTitle: 'Godzilla x Kong', roomId: 1, roomName: 'Phòng 1', date: '2026-05-22', startTime: '13:00', endTime: '14:55', basePrice: 90000, status: 'active' },
-  { id: 5, movieId: 5, movieTitle: 'Inside Out 2', roomId: 2, roomName: 'Phòng 2', date: '2026-05-22', startTime: '15:00', endTime: '16:36', basePrice: 80000, status: 'active' },
-  { id: 6, movieId: 1, movieTitle: 'Lật Mặt 8', roomId: 3, roomName: 'Phòng 3', date: '2026-05-22', startTime: '18:00', endTime: '20:12', basePrice: 130000, status: 'active' },
-  { id: 7, movieId: 2, movieTitle: 'Mai', roomId: 1, roomName: 'Phòng 1', date: '2026-05-23', startTime: '09:30', endTime: '11:30', basePrice: 75000, status: 'cancelled' },
-  { id: 8, movieId: 3, movieTitle: 'Đào Phở và Piano', roomId: 2, roomName: 'Phòng 2', date: '2026-05-23', startTime: '11:00', endTime: '12:38', basePrice: 85000, status: 'active' },
-  { id: 9, movieId: 4, movieTitle: 'Godzilla x Kong', roomId: 3, roomName: 'Phòng 3', date: '2026-05-24', startTime: '20:00', endTime: '21:55', basePrice: 140000, status: 'active' },
-  { id: 10, movieId: 5, movieTitle: 'Inside Out 2', roomId: 1, roomName: 'Phòng 1', date: '2026-05-24', startTime: '16:00', endTime: '17:36', basePrice: 80000, status: 'cancelled' },
-];
-
-/* ── Helpers ── */
 const formatCurrency = (val) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
 
@@ -48,46 +20,75 @@ const calcEndTime = (startTime, durationMin) => {
 
 const ITEMS_PER_PAGE = 6;
 
-/* ══════════════════════════════════════════════ */
 const Showtimes = () => {
-  const [showtimes, setShowtimes] = useState(initialShowtimes);
+  const [showtimes, setShowtimes] = useState([]);
+  const [movies, setMovies] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notification, setNotification] = useState(null);
   const [search, setSearch] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [filterMovie, setFilterMovie] = useState('');
   const [filterRoom, setFilterRoom] = useState('');
   const [page, setPage] = useState(1);
 
-  /* Modal */
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
     movieId: '', roomId: '', date: '', startTime: '', endTime: '', basePrice: '', status: 'active',
   });
 
-  /* Auto-calculate endTime */
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [showtimesRes, moviesRes, roomsRes] = await Promise.all([
+        showtimeAPI.getAll(),
+        movieAPI.getAll(),
+        roomAPI.getAll(),
+      ]);
+      setShowtimes(showtimesRes.data || []);
+      setMovies(moviesRes.data || []);
+      setRooms(roomsRes.data || []);
+    } catch (err) {
+      setError(err.message || 'Không thể tải dữ liệu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   useEffect(() => {
     if (form.movieId && form.startTime) {
-      const movie = mockMovies.find((m) => m.id === Number(form.movieId));
+      const movie = movies.find((m) => m._id === form.movieId);
       if (movie) {
         setForm((prev) => ({ ...prev, endTime: calcEndTime(prev.startTime, movie.duration) }));
       }
     }
-  }, [form.movieId, form.startTime]);
+  }, [form.movieId, form.startTime, movies]);
 
-  /* Filtering + search */
   const filtered = useMemo(() => {
     let data = [...showtimes];
     if (search) {
       const q = search.toLowerCase();
       data = data.filter(
         (s) =>
-          s.movieTitle.toLowerCase().includes(q) ||
-          s.roomName.toLowerCase().includes(q),
+          (s.movieId?.title || '').toLowerCase().includes(q) ||
+          (s.roomId?.name || '').toLowerCase().includes(q),
       );
     }
     if (filterDate) data = data.filter((s) => s.date === filterDate);
-    if (filterMovie) data = data.filter((s) => s.movieId === Number(filterMovie));
-    if (filterRoom) data = data.filter((s) => s.roomId === Number(filterRoom));
+    if (filterMovie) data = data.filter((s) => s.movieId?._id === filterMovie);
+    if (filterRoom) data = data.filter((s) => s.roomId?._id === filterRoom);
     return data;
   }, [showtimes, search, filterDate, filterMovie, filterRoom]);
 
@@ -96,7 +97,6 @@ const Showtimes = () => {
 
   useEffect(() => { setPage(1); }, [search, filterDate, filterMovie, filterRoom]);
 
-  /* ── CRUD ── */
   const openCreate = () => {
     setEditingId(null);
     setForm({ movieId: '', roomId: '', date: '', startTime: '', endTime: '', basePrice: '', status: 'active' });
@@ -104,10 +104,10 @@ const Showtimes = () => {
   };
 
   const openEdit = (item) => {
-    setEditingId(item.id);
+    setEditingId(item._id);
     setForm({
-      movieId: String(item.movieId),
-      roomId: String(item.roomId),
+      movieId: item.movieId?._id || '',
+      roomId: item.roomId?._id || '',
       date: item.date,
       startTime: item.startTime,
       endTime: item.endTime,
@@ -117,17 +117,17 @@ const Showtimes = () => {
     setModalOpen(true);
   };
 
-  const handleSave = () => {
-    const movie = mockMovies.find((m) => m.id === Number(form.movieId));
-    const room = mockRooms.find((r) => r.id === Number(form.roomId));
-    if (!movie || !room || !form.date || !form.startTime || !form.basePrice) return;
+  const handleSave = async () => {
+    const movie = movies.find((m) => m._id === form.movieId);
+    const room = rooms.find((r) => r._id === form.roomId);
+    if (!movie || !room || !form.date || !form.startTime || !form.basePrice) {
+      showNotification('Vui lòng điền đầy đủ thông tin bắt buộc', 'error');
+      return;
+    }
 
-    const entry = {
-      id: editingId || Date.now(),
-      movieId: movie.id,
-      movieTitle: movie.title,
-      roomId: room.id,
-      roomName: room.name,
+    const payload = {
+      movieId: form.movieId,
+      roomId: form.roomId,
       date: form.date,
       startTime: form.startTime,
       endTime: form.endTime,
@@ -135,17 +135,30 @@ const Showtimes = () => {
       status: form.status,
     };
 
-    if (editingId) {
-      setShowtimes((prev) => prev.map((s) => (s.id === editingId ? entry : s)));
-    } else {
-      setShowtimes((prev) => [entry, ...prev]);
+    try {
+      if (editingId) {
+        await showtimeAPI.update(editingId, payload);
+        showNotification('Cập nhật suất chiếu thành công');
+      } else {
+        await showtimeAPI.create(payload);
+        showNotification('Thêm suất chiếu thành công');
+      }
+      setModalOpen(false);
+      fetchData();
+    } catch (err) {
+      showNotification(err.message || 'Thao tác thất bại', 'error');
     }
-    setModalOpen(false);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Bạn có chắc muốn xoá suất chiếu này?')) {
-      setShowtimes((prev) => prev.filter((s) => s.id !== id));
+      try {
+        await showtimeAPI.delete(id);
+        showNotification('Xoá suất chiếu thành công');
+        fetchData();
+      } catch (err) {
+        showNotification(err.message || 'Xoá thất bại', 'error');
+      }
     }
   };
 
@@ -154,10 +167,33 @@ const Showtimes = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  /* ══════════════ RENDER ══════════════ */
+  if (loading) {
+    return (
+      <div className="st-page">
+        <div className="st-loading">Đang tải dữ liệu...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="st-page">
+        <div className="st-error">
+          <p>{error}</p>
+          <button className="st-btn st-btn-primary" onClick={fetchData}>Thử lại</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="st-page">
-      {/* Header */}
+      {notification && (
+        <div className={`st-notification st-notification-${notification.type}`}>
+          {notification.message}
+        </div>
+      )}
+
       <div className="st-header">
         <h1 className="st-title"><FiClock /> Quản lý Suất Chiếu</h1>
         <button className="st-btn st-btn-primary" onClick={openCreate}>
@@ -165,7 +201,6 @@ const Showtimes = () => {
         </button>
       </div>
 
-      {/* Filters */}
       <div className="st-filters">
         <div className="st-search-wrap">
           <FiSearch className="st-search-icon" />
@@ -196,8 +231,8 @@ const Showtimes = () => {
             <FiFilm />
             <select className="st-filter-select" value={filterMovie} onChange={(e) => setFilterMovie(e.target.value)}>
               <option value="">Tất cả phim</option>
-              {mockMovies.map((m) => (
-                <option key={m.id} value={m.id}>{m.title}</option>
+              {movies.map((m) => (
+                <option key={m._id} value={m._id}>{m.title}</option>
               ))}
             </select>
           </div>
@@ -205,15 +240,14 @@ const Showtimes = () => {
             <FiMonitor />
             <select className="st-filter-select" value={filterRoom} onChange={(e) => setFilterRoom(e.target.value)}>
               <option value="">Tất cả phòng</option>
-              {mockRooms.map((r) => (
-                <option key={r.id} value={r.id}>{r.name} ({r.type})</option>
+              {rooms.map((r) => (
+                <option key={r._id} value={r._id}>{r.name} ({r.type})</option>
               ))}
             </select>
           </div>
         </div>
       </div>
 
-      {/* Table */}
       <div className="st-table-wrap">
         <table className="st-table">
           <thead>
@@ -236,10 +270,10 @@ const Showtimes = () => {
               </tr>
             ) : (
               paginated.map((s, idx) => (
-                <tr key={s.id}>
+                <tr key={s._id}>
                   <td>{(page - 1) * ITEMS_PER_PAGE + idx + 1}</td>
-                  <td className="st-movie-cell">{s.movieTitle}</td>
-                  <td>{s.roomName}</td>
+                  <td className="st-movie-cell">{s.movieId?.title || ''}</td>
+                  <td>{s.roomId?.name || ''}</td>
                   <td>{new Date(s.date).toLocaleDateString('vi-VN')}</td>
                   <td>{s.startTime}</td>
                   <td>{s.endTime}</td>
@@ -254,7 +288,7 @@ const Showtimes = () => {
                       <button className="st-action-btn st-edit" onClick={() => openEdit(s)} title="Chỉnh sửa">
                         <FiEdit2 />
                       </button>
-                      <button className="st-action-btn st-delete" onClick={() => handleDelete(s.id)} title="Xoá">
+                      <button className="st-action-btn st-delete" onClick={() => handleDelete(s._id)} title="Xoá">
                         <FiTrash2 />
                       </button>
                     </div>
@@ -266,7 +300,6 @@ const Showtimes = () => {
         </table>
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="st-pagination">
           <span className="st-page-info">
@@ -292,7 +325,6 @@ const Showtimes = () => {
         </div>
       )}
 
-      {/* Modal */}
       {modalOpen && (
         <div className="st-overlay" onClick={() => setModalOpen(false)}>
           <div className="st-modal" onClick={(e) => e.stopPropagation()}>
@@ -307,8 +339,8 @@ const Showtimes = () => {
                   <label className="st-label">Phim <span className="st-required">*</span></label>
                   <select className="st-input" name="movieId" value={form.movieId} onChange={handleChange}>
                     <option value="">-- Chọn phim --</option>
-                    {mockMovies.map((m) => (
-                      <option key={m.id} value={m.id}>{m.title} ({m.duration} phút)</option>
+                    {movies.map((m) => (
+                      <option key={m._id} value={m._id}>{m.title} ({m.duration} phút)</option>
                     ))}
                   </select>
                 </div>
@@ -316,8 +348,8 @@ const Showtimes = () => {
                   <label className="st-label">Phòng chiếu <span className="st-required">*</span></label>
                   <select className="st-input" name="roomId" value={form.roomId} onChange={handleChange}>
                     <option value="">-- Chọn phòng --</option>
-                    {mockRooms.map((r) => (
-                      <option key={r.id} value={r.id}>{r.name} ({r.type})</option>
+                    {rooms.map((r) => (
+                      <option key={r._id} value={r._id}>{r.name} ({r.type})</option>
                     ))}
                   </select>
                 </div>

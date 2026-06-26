@@ -1,16 +1,56 @@
 import { type Request, type Response } from "express";
-import Movie from "../models/movieModel.js";
-import Showtime from "../models/showtimeModel.js";
+import Movie from "../models/movieModel";
+import AdminMovie from "../models/admin/adminMovieModel";
+import Showtime from "../models/showtimeModel";
+
+const statusMap: Record<string, string> = {
+  showing: "now_playing",
+  coming: "coming_soon",
+  ended: "ended",
+};
+
+const reverseStatusMap: Record<string, string> = {
+  now_playing: "showing",
+  coming_soon: "coming",
+};
+
+const mapMovie = (m: any) => {
+  if (!m) return m;
+  const obj = m._doc || m;
+  return {
+    ...obj,
+    poster_url: obj.poster_url || obj.poster || "",
+    poster: undefined,
+    release_date: obj.release_date || obj.releaseDate || "",
+    releaseDate: undefined,
+    status: statusMap[obj.status] || obj.status,
+  };
+};
 
 export const getMovies = async (req: Request, res: Response): Promise<void> => {
   try {
     const { status } = req.query;
-    let filter = {};
+    const filter: any = {};
+
+    const movies1 = await Movie.find(filter).lean();
+    const adminStatus = status ? reverseStatusMap[status as string] || status : undefined;
+    const filter2: any = {};
+    if (adminStatus) filter2.status = adminStatus;
+    const movies2 = await AdminMovie.find(filter2).lean();
+
+    const seen = new Set();
+    const all = [...movies1, ...movies2].filter((m: any) => {
+      if (seen.has(m._id.toString())) return false;
+      seen.add(m._id.toString());
+      return true;
+    });
+
+    let result = all.map(mapMovie);
     if (status) {
-      filter = { status };
+      result = result.filter((m: any) => m.status === status);
     }
-    const movies = await Movie.find(filter);
-    res.status(200).json({ success: true, data: movies });
+
+    res.status(200).json({ success: true, data: result });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -26,52 +66,47 @@ export const addMovie = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-// Hàm lấy chi tiết phim và lịch chiếu tương ứng (ĐÃ FIX LỒNG CẤU TRÚC THEO FRONTEND)
 export const getMovieDetailWithShowtimes = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { id } = req.params; // Nhận Movie ID từ đường dẫn URL
+    const { id } = req.params;
 
     if (!id) {
       res.status(400).json({ success: false, message: "Mã định danh phim không hợp lệ" });
       return;
     }
 
-    // 1. Tìm thông tin bộ phim
-    const movie = await Movie.findById(id);
+    let movie: any = await Movie.findById(id).lean();
+    if (!movie) movie = await AdminMovie.findById(id).lean();
+
     if (!movie) {
       res.status(404).json({ success: false, message: "Không tìm thấy phim này" });
       return;
     }
 
-    // 2. Tìm tất cả các suất chiếu của bộ phim đó lớn hơn hoặc bằng thời gian hiện tại
     const showtimes = await Showtime.find({
-      movieId: id as string, 
-      startTime: { $gte: new Date() } 
-    }).sort({ startTime: 1 }); 
+      movieId: id,
+    }).sort({ startTime: 1 });
 
-    // 3. ĐÓNG GÓI ĐÚNG DẠNG LỒNG NHAU THEO KỲ VỌNG CỦA FRONTEND MOVIE_SERVICE
     res.status(200).json({
       success: true,
       data: {
-        movie: movie,
-        showtimes: showtimes || []
-      }
+        movie: mapMovie(movie),
+        showtimes: showtimes || [],
+      },
     });
   } catch (error: any) {
     res.status(500).json({
       success: false,
       message: "Lỗi hệ thống khi lấy chi tiết phim",
-      error: error.message
+      error: error.message,
     });
   }
 };
 
-// Hàm hỗ trợ Manager thêm suất chiếu (ĐÃ FIX ĐỒNG BỘ TÊN TRƯỜNG SCHEMA movie_id)
 export const addShowtime = async (req: Request, res: Response): Promise<void> => {
   try {
     const { movieId, roomName, startTime, price } = req.body;
-    
-    // Tạo sẵn cụm 20 ghế mặc định tự động từ A1 -> B10
+
     const availableSeats = [];
     for (let row of ["A", "B"]) {
       for (let i = 1; i <= 10; i++) {
@@ -79,15 +114,14 @@ export const addShowtime = async (req: Request, res: Response): Promise<void> =>
       }
     }
 
-    // Đổi trường gán từ movieId sang movie_id cho đúng Schema Database
-    const newShowtime = new Showtime({ 
-      movie_id: movieId, 
-      roomName, 
-      startTime, 
-      price, 
-      availableSeats 
+    const newShowtime = new Showtime({
+      movie_id: movieId,
+      roomName,
+      startTime,
+      price,
+      availableSeats,
     });
-    
+
     await newShowtime.save();
     res.status(201).json({ success: true, data: newShowtime });
   } catch (error: any) {
@@ -106,6 +140,18 @@ export const getShowtimeDetail = async (req: Request, res: Response): Promise<vo
     }
 
     res.status(200).json({ success: true, data: showtime });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getShowtimesByMovie = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { movieId } = req.query;
+    const filter: Record<string, unknown> = {};
+    if (movieId) filter.movieId = movieId;
+    const showtimes = await Showtime.find(filter).sort({ startTime: 1 });
+    res.status(200).json({ success: true, data: showtimes });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

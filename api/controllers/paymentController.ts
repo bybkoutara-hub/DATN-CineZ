@@ -26,6 +26,26 @@ export const createPayment = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+export const createVnpayUrl = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { bookingId } = req.body;
+    if (!bookingId) {
+      res.status(400).json({ success: false, message: "Thiếu bookingId" });
+      return;
+    }
+    const bk = await Booking.findById(bookingId);
+    if (!bk) {
+      res.status(404).json({ success: false, message: "Không tìm thấy đơn vé" });
+      return;
+    }
+    // Mock VNPay URL - thay bằng tích hợp thật khi có thông tin merchant
+    const mockPaymentUrl = `http://localhost:5000/api/payments/vnpay-return?bookingId=${bookingId}&amount=${bk.totalPrice}`;
+    res.status(200).json({ success: true, paymentUrl: mockPaymentUrl });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const getPaymentByBooking = async (req: Request, res: Response): Promise<void> => {
   try {
     const payment = await Payment.findOne({ booking: req.params.bookingId });

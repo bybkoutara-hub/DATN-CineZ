@@ -121,11 +121,11 @@ export default function MovieDetailScreen() {
         <View style={styles.floatingCard}>
           <Text style={styles.movieTitle}>{movie.title}</Text>
           <Text style={styles.movieSubText}>
-            {movie.duration} phút • Khởi chiếu: {movie.release_date || "Đang cập nhật"}
+            {movie.duration} phút • Khởi chiếu: {movie.release_date ? new Date(movie.release_date).toLocaleDateString("vi-VN") : "Đang cập nhật"}
           </Text>
 
           <View style={styles.ratingRow}>
-            <Text style={styles.reviewLabel}>Review</Text>
+            <Text style={styles.reviewLabel}>Đánh giá</Text>
             <FontAwesome
               name="star"
               size={16}
@@ -133,14 +133,14 @@ export default function MovieDetailScreen() {
               style={{ marginLeft: 8 }}
             />
             <Text style={styles.ratingScore}> {movie.rating || "0.0"}</Text>
-            <Text style={styles.ratingCount}> ({movie.total_reviews || "0"} reviews)</Text>
+            <Text style={styles.ratingCount}> ({movie.total_reviews || "0"} lượt đánh giá)</Text>
           </View>
 
           {/* Ngôi sao đánh giá tĩnh tương ứng điểm số */}
           <View style={styles.actionRow}>
             <View style={styles.starsContainer}>
               {[1, 2, 3, 4, 5].map((star) => {
-                const currentRating = movie.rating ? Math.round(movie.rating / 2) : 4;
+                const currentRating = movie.rating ? Math.round(movie.rating) : 4;
                 return (
                   <FontAwesome
                     key={star}
@@ -158,7 +158,7 @@ export default function MovieDetailScreen() {
               activeOpacity={0.8}
             >
               <Ionicons name="play-forward" size={14} color="#ffffff" />
-              <Text style={styles.watchTrailerText}>Watch trailer</Text>
+              <Text style={styles.watchTrailerText}>Xem trailer</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -166,33 +166,33 @@ export default function MovieDetailScreen() {
         {/* 3. METADATA DETAILS */}
         <View style={styles.metaSection}>
           <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Movie genre:</Text>
+            <Text style={styles.metaLabel}>Thể loại:</Text>
             <Text style={styles.metaValue}>
               {Array.isArray(movie.genres) ? movie.genres.join(", ") : movie.genres || "Action, Drama"}
             </Text>
           </View>
           <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Censorship:</Text>
+            <Text style={styles.metaLabel}>Kiểm duyệt:</Text>
             <Text style={styles.metaValue}>{movie.status === "now_playing" ? "13+" : "P"}</Text>
           </View>
           <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Language:</Text>
-            <Text style={styles.metaValue}>English / Vietnamese Sub</Text>
+            <Text style={styles.metaLabel}>Ngôn ngữ:</Text>
+            <Text style={styles.metaValue}>Tiếng Anh / Phụ đề Việt</Text>
           </View>
         </View>
 
         {/* 4. STORYLINE */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Storyline</Text>
+          <Text style={styles.sectionTitle}>Nội dung phim</Text>
           <Text style={styles.storylineText}>
             {movie.storyline || "Hệ thống đang cập nhật phần mô tả nội dung câu chuyện cho bộ phim xuất sắc này..."}
-            <Text style={styles.seeMoreText}> See more</Text>
+            <Text style={styles.seeMoreText}> Xem thêm</Text>
           </Text>
         </View>
 
         {/* 5. CINEMA LIST SECTION (Lấy danh sách phòng/rạp từ các Suất chiếu) */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Cinema</Text>
+          <Text style={styles.sectionTitle}>Rạp chiếu</Text>
           {uniqueCinemas.length === 0 ? (
             <Text style={styles.noShowtimeText}>Hiện tại chưa có lịch rạp khả dụng cho phim này.</Text>
           ) : (
@@ -230,7 +230,7 @@ export default function MovieDetailScreen() {
         {/* 6. SUẤT CHIẾU TƯƠNG ỨNG RẠP ĐƯỢC CHỌN */}
         {selectedCinema && (
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Showtimes for {selectedCinema}</Text>
+            <Text style={styles.sectionTitle}>Suất chiếu tại {selectedCinema}</Text>
             {filteredShowtimes.length === 0 ? (
               <Text style={styles.noShowtimeText}>Không có suất chiếu nào hôm nay.</Text>
             ) : (
@@ -282,7 +282,11 @@ export default function MovieDetailScreen() {
             if (selectedShowtimeId) {
               router.push({
                 pathname: "/select-seat",
-                params: { showtimeId: selectedShowtimeId },
+                params: {
+                  showtimeId: selectedShowtimeId,
+                  movieTitle: movie.title,
+                  moviePoster: movie.poster_url,
+                },
               });
             }
           }}
@@ -291,7 +295,7 @@ export default function MovieDetailScreen() {
             styles.continueButtonText,
             !selectedShowtimeId && { color: "#666666" }
           ]}>
-            Continue
+            Tiếp tục
           </Text>
         </TouchableOpacity>
       </View>

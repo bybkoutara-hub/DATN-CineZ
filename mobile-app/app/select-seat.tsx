@@ -30,65 +30,72 @@ const TEXT_MUTED = "#8E8E93";
 const RESERVED_COLOR = "#262629"; 
 const AVAILABLE_BORDER = "#3A3A3C"; 
 
-// Cấu hình sơ đồ ghế phòng chiếu mặc định (A -> J, 1 -> 12)
-const seatRows = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
-const seatColumns = Array.from({ length: 12 }, (_, index) => index + 1);
-
 // Tính toán kích thước ô ghế vừa vặn chuẩn tỉ lệ màn hình thiết bị
 const PADDING_CONTAINER = 20 * 2;
 const AISLE_GAP = 14;
-const AVAILABLE_WIDTH = SCREEN_WIDTH - PADDING_CONTAINER - AISLE_GAP - 24;
-const SEAT_SIZE = Math.floor(AVAILABLE_WIDTH / 12);
+const DEFAULT_COLS = 12;
 
 export default function SelectSeatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { showtimeId } = useLocalSearchParams(); // Nhận showtimeId từ màn hình movie-detail truyền qua
+  const { showtimeId, movieTitle, moviePoster } = useLocalSearchParams(); // Nhận từ màn movie-detail
 
   // Các State quản lý dữ liệu API
   const [showtimeData, setShowtimeData] = useState<any>(null);
+  const [roomConfig, setRoomConfig] = useState<{ rows_count: number; seats_per_row: number } | null>(null);
   const [availableSeats, setAvailableSeats] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   // State tương tác của người dùng
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
-  const [ticketPrice, setTicketPrice] = useState(70000); // Giá vé mặc định nếu không lấy được từ API
+  const [ticketPrice, setTicketPrice] = useState(70000);
 
-  // Gọi API lấy thông tin suất chiếu từ Backend khi màn hình được khởi tạo
+  // Sinh động số hàng/cột từ room config (fallback 10 hàng, 12 cột)
+  const seatRows = useMemo(() => {
+    const count = roomConfig?.rows_count || 10;
+    return Array.from({ length: count }, (_, i) => String.fromCharCode(65 + i));
+  }, [roomConfig]);
+
+  const seatColumns = useMemo(() => {
+    const count = roomConfig?.seats_per_row || DEFAULT_COLS;
+    return Array.from({ length: count }, (_, i) => i + 1);
+  }, [roomConfig]);
+
+  // Kích thước ô ghế tính động theo số cột thực tế
+  const AVAILABLE_WIDTH = SCREEN_WIDTH - PADDING_CONTAINER - AISLE_GAP - 24;
+  const SEAT_SIZE = Math.floor(AVAILABLE_WIDTH / (roomConfig?.seats_per_row || DEFAULT_COLS));
+
+  // Gọi API lấy thông tin suất chiếu + phòng
   useEffect(() => {
     if (showtimeId) {
-      const fetchShowtimeDetail = async () => {
+      const fetchData = async () => {
         try {
           setLoading(true);
-          // Gọi tới endpoint chi tiết suất chiếu (GET /api/movies/showtimes/:id)
           const response = await api.get(`/movies/showtimes/${showtimeId}`);
           const data = response.data.data || response.data;
-          
           setShowtimeData(data);
-          
-          if (data.price) {
-            setTicketPrice(data.price);
-          }
-          
-          // Chuyển danh sách ghế còn trống (availableSeats) từ Server vào Set để kiểm tra O(1)
+          if (data.price) setTicketPrice(data.price);
+
           if (data.availableSeats && Array.isArray(data.availableSeats)) {
             setAvailableSeats(new Set(data.availableSeats));
-          } else if (data.bookedSeats && Array.isArray(data.bookedSeats)) {
-            // Backup phương phòng nếu hệ thống đổi sang logic bookedSeats
-            const bookedSet = new Set<string>(data.bookedSeats);
-            const allSeats: string[] = [];
-            seatRows.forEach(r => seatColumns.forEach(c => allSeats.push(`${r}${c}`)));
-            const avail = allSeats.filter(s => !bookedSet.has(s));
-            setAvailableSeats(new Set(avail));
+          }
+
+          if (data.roomName) {
+            try {
+              const roomRes = await api.get(`/rooms/${encodeURIComponent(data.roomName)}`);
+              if (roomRes.data?.success && roomRes.data?.data) {
+                setRoomConfig(roomRes.data.data);
+              }
+            } catch {
+            }
           }
         } catch (error) {
-          console.error("Lỗi lấy thông tin suất chiếu từ Server:", error);
+          console.error("Lỗi lấy thông tin suất chiếu:", error);
         } finally {
           setLoading(false);
         }
       };
-
-      fetchShowtimeDetail();
+      fetchData();
     }
   }, [showtimeId]);
 
@@ -117,6 +124,7 @@ export default function SelectSeatScreen() {
         activeOpacity={isReserved ? 1 : 0.7}
         style={[
           styles.seatItem,
+          { width: SEAT_SIZE, height: SEAT_SIZE },
           isReserved && styles.seatReserved,
           isSelected && styles.seatSelected,
         ]}
@@ -131,7 +139,7 @@ export default function SelectSeatScreen() {
     return (
       <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
         <ActivityIndicator size="large" color={PRIMARY_YELLOW} />
-        <Text style={{ color: TEXT_MUTED, marginTop: 12, fontSize: 14 }}>Loading cinema seats layout...</Text>
+        <Text style={{ color: TEXT_MUTED, marginTop: 12, fontSize: 14 }}>Đang tải sơ đồ ghế...</Text>
       </View>
     );
   }
@@ -151,7 +159,7 @@ export default function SelectSeatScreen() {
           >
             <Ionicons name="chevron-back" size={26} color={TEXT_LIGHT} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Select seat</Text>
+          <Text style={styles.headerTitle}>Chọn ghế</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -159,7 +167,7 @@ export default function SelectSeatScreen() {
         {showtimeData && (
           <View style={styles.infoSummary}>
             <Text style={styles.roomLabel}>
-              Phòng: {showtimeData.roomName || "Standard Room"}
+              Phòng: {showtimeData.roomName || "Phòng chiếu"}
             </Text>
             <Text style={styles.timeLabel}>
               Suất: {showtimeData.startTime ? new Date(showtimeData.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Đang cập nhật"}
@@ -171,7 +179,7 @@ export default function SelectSeatScreen() {
         <View style={styles.screenContainer}>
           <View style={styles.screenArc} />
           <View style={styles.screenGlow} />
-          <Text style={styles.screenLabel}>SCREEN</Text>
+          <Text style={styles.screenLabel}>MÀN HÌNH</Text>
         </View>
 
         {/* Lưới chọn ghế thoáng sạch */}
@@ -180,16 +188,16 @@ export default function SelectSeatScreen() {
             <View key={row} style={styles.rowContainer}>
               <Text style={styles.rowLabel}>{row}</Text>
               <View style={styles.rowSeats}>
-                {seatColumns.map((column, index) => {
-                  const seatId = `${row}${column}`;
-                  return (
-                    <React.Fragment key={seatId}>
-                      {/* Tạo lối đi trống chia đôi rạp sau cột số 6 */}
-                      {index === 6 && <View style={styles.aisleSpacer} />}
-                      {renderSeat(seatId)}
-                    </React.Fragment>
-                  );
-                })}
+                  {seatColumns.map((column, index) => {
+                    const seatId = `${row}${column}`;
+                    const aisleCol = Math.floor(seatColumns.length / 2);
+                    return (
+                      <React.Fragment key={seatId}>
+                        {index === aisleCol && <View style={styles.aisleSpacer} />}
+                        {renderSeat(seatId)}
+                      </React.Fragment>
+                    );
+                  })}
               </View>
             </View>
           ))}
@@ -199,15 +207,15 @@ export default function SelectSeatScreen() {
         <View style={styles.legendRow}>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, styles.legendAvailable]} />
-            <Text style={styles.legendText}>Available</Text>
+            <Text style={styles.legendText}>Còn trống</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, styles.legendReserved]} />
-            <Text style={styles.legendText}>Reserved</Text>
+            <Text style={styles.legendText}>Đã đặt</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, styles.legendSelected]} />
-            <Text style={styles.legendText}>Selected</Text>
+            <Text style={styles.legendText}>Đang chọn</Text>
           </View>
         </View>
 
@@ -224,10 +232,10 @@ export default function SelectSeatScreen() {
       >
         <View style={styles.priceContainer}>
           <Text style={styles.totalLabel}>
-            Total {selectedSeats.length > 0 ? `(${selectedSeats.length} ghế)` : ""}
+            Tổng {selectedSeats.length > 0 ? `(${selectedSeats.length} ghế)` : ""}
           </Text>
           <Text style={styles.totalValue}>
-            {total.toLocaleString("vi-VN")} VND
+            {total.toLocaleString("vi-VN")} đ
           </Text>
         </View>
 
@@ -246,6 +254,10 @@ export default function SelectSeatScreen() {
                 showtimeId: showtimeId,
                 seats: selectedSeats.join(","),
                 totalPrice: total,
+                movieTitle: movieTitle,
+                moviePoster: moviePoster,
+                roomName: showtimeData?.roomName || "",
+                startTime: showtimeData?.startTime || "",
               },
             });
           }}
@@ -254,7 +266,7 @@ export default function SelectSeatScreen() {
             styles.buyButtonText,
             selectedSeats.length === 0 && { color: "#8E8E93" }
           ]}>
-            Buy ticket
+            Mua vé
           </Text>
         </TouchableOpacity>
       </View>
@@ -357,8 +369,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   seatItem: {
-    width: SEAT_SIZE,
-    height: SEAT_SIZE,
     borderRadius: 4,
     borderWidth: 1.2,
     borderColor: AVAILABLE_BORDER,

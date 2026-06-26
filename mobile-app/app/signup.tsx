@@ -1,5 +1,5 @@
-import { Feather, FontAwesome } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { Link, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
@@ -7,7 +7,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,34 +14,60 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-// Nhớ import API (giả định bạn có hàm registerWithPhone)
-// import { registerWithPhone } from "../services/authService";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { registerApi } from "../services/authService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+const BACKGROUND_BLACK = "#000000";
+const SURFACE_DARK = "#121212";
+const PRIMARY_YELLOW = "#FCC434";
+const TEXT_LIGHT = "#FFFFFF";
+const TEXT_MUTED = "#8E8E93";
+const BORDER_COLOR = "#1C1C1F";
 
 export default function SignUpScreen() {
   const router = useRouter();
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [secureText, setSecureText] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  // Hàm xử lý đăng ký bằng số điện thoại
-  const handleContinue = async () => {
-    // Basic validation
-    if (!phoneNumber || phoneNumber.length < 8) {
-      Alert.alert("Lỗi", "Vui lòng nhập số điện thoại hợp lệ.");
+  const handleSignUp = async () => {
+    if (!name || !email || !password) {
+      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ Họ tên, Email và Mật khẩu");
+      return;
+    }
+    if (password.length < 6) {
+      Alert.alert("Lỗi", "Mật khẩu phải có ít nhất 6 ký tự");
       return;
     }
 
     setLoading(true);
     try {
-      // Bỏ comment dòng dưới để gọi API thực tế
-      // await registerWithPhone(phoneNumber);
-
-      // Giả lập delay mạng
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Chuyển sang trang xác thực OTP
-      router.push("/verification");
-    } catch (error) {
-      Alert.alert("Lỗi", "Không thể gửi mã xác nhận. Vui lòng thử lại.");
+      const res = await registerApi(email, password, name, phone);
+      if (res?.token) {
+        const isWeb = typeof window !== "undefined" && window.localStorage;
+        if (isWeb) {
+          window.localStorage.setItem("userToken", res.token);
+          window.localStorage.setItem("userInfo", JSON.stringify(res.data || {}));
+        } else {
+          await AsyncStorage.setItem("userToken", res.token);
+          await AsyncStorage.setItem("userInfo", JSON.stringify(res.data || {}));
+        }
+        router.replace({
+          pathname: "/verification",
+          params: { phone: phone || "", name: name || "" },
+        });
+      } else {
+        Alert.alert("Đăng ký thất bại", res?.message || "Vui lòng thử lại");
+      }
+    } catch (error: any) {
+      Alert.alert(
+        "Đăng ký thất bại",
+        error?.response?.data?.message || "Email có thể đã được sử dụng",
+      );
     } finally {
       setLoading(false);
     }
@@ -51,112 +76,112 @@ export default function SignUpScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
-
-      {/* Sử dụng KeyboardAvoidingView để đẩy giao diện lên mượt mà khi mở bàn phím */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          bounces={false}
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          {/* 1. THANH TIÊU ĐỀ (HEADER chuẩn tỉ lệ Figma, dùng absolute cho nút back để title chính giữa tuyệt đối) */}
-          <View style={styles.header}>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              style={styles.backButton}
-              onPress={() => router.back()}
-            >
-              <Feather name="arrow-left" size={26} color="#ffffff" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Sign up</Text>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={28} color={TEXT_LIGHT} />
+          </TouchableOpacity>
+
+          <View style={styles.welcomeContainer}>
+            <Text style={styles.titleText}>Tạo tài khoản</Text>
+            <Text style={styles.subtitleText}>
+              Đăng ký để bắt đầu đặt vé xem phim
+            </Text>
           </View>
 
-          {/* KHỐI NỘI DUNG NHẬP LIỆU PHÍA TRÊN */}
-          <View style={styles.topContent}>
-            {/* 2. KHU VỰC NHẬP SỐ ĐIỆN THOẠI */}
-            <View style={styles.inputSection}>
+          <View style={styles.formContainer}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Họ và tên</Text>
               <View style={styles.inputWrapper}>
-                <Feather
-                  name="phone"
-                  size={22}
-                  color="rgba(255, 255, 255, 0.6)"
-                  style={styles.inputIcon}
-                />
+                <Ionicons name="person-outline" size={20} color={TEXT_MUTED} style={styles.inputIcon} />
                 <TextInput
                   style={styles.textInput}
-                  placeholder="(704) 555-0127"
-                  placeholderTextColor="rgba(255, 255, 255, 0.3)"
-                  keyboardType="phone-pad"
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                  editable={!loading}
+                  placeholder="Nhập họ tên của bạn"
+                  placeholderTextColor="#444446"
+                  value={name}
+                  onChangeText={setName}
                 />
               </View>
-              {/* Đường gạch ngang mảnh chuẩn nét mảnh Figma */}
-              <View style={styles.inputUnderline} />
             </View>
 
-            {/* 3. NÚT TIẾP TỤC (CONTINUE - Bo tròn mềm mại, độ cao chuẩn UI hiện đại) */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Email</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="mail-outline" size={20} color={TEXT_MUTED} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Nhập email"
+                  placeholderTextColor="#444446"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={email}
+                  onChangeText={setEmail}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Số điện thoại</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="call-outline" size={20} color={TEXT_MUTED} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Nhập số điện thoại"
+                  placeholderTextColor="#444446"
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={setPhone}
+                />
+              </View>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Mật khẩu</Text>
+              <View style={styles.inputWrapper}>
+                <Ionicons name="lock-closed-outline" size={20} color={TEXT_MUTED} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Tối thiểu 6 ký tự"
+                  placeholderTextColor="#444446"
+                  secureTextEntry={secureText}
+                  value={password}
+                  onChangeText={setPassword}
+                />
+                <TouchableOpacity onPress={() => setSecureText(!secureText)} style={styles.eyeIcon}>
+                  <Ionicons name={secureText ? "eye-off-outline" : "eye-outline"} size={20} color={TEXT_MUTED} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.actionContainer}>
             <TouchableOpacity
+              style={styles.signInButton}
               activeOpacity={0.85}
-              style={styles.continueButton}
-              onPress={handleContinue}
+              onPress={handleSignUp}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color={BACKGROUND_BLACK} />
               ) : (
-                <Text style={styles.continueText}>Continue</Text>
+                <Text style={styles.signInButtonText}>Đăng ký</Text>
               )}
             </TouchableOpacity>
-          </View>
 
-          {/* Khoảng trống co giãn đẩy phần Social và Footer xuống sát đáy tự nhiên */}
-          <View style={{ flex: 1 }} />
-
-          {/* KHỐI MẠNG XÃ HỘI & ĐIỀU KHOẢN PHÍA DƯỚI */}
-          <View style={styles.bottomContent}>
-            {/* 4. ĐƯỜNG PHÂN CÁCH (OR CONTINUE WITH) */}
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>Or continue with</Text>
-              <View style={styles.dividerLine} />
+            <View style={styles.signUpRow}>
+              <Text style={styles.signUpText}>Đã có tài khoản? </Text>
+              <Link href={"/sign-in"} asChild>
+                <TouchableOpacity>
+                  <Text style={styles.signUpLink}>Đăng nhập</Text>
+                </TouchableOpacity>
+              </Link>
             </View>
-
-            {/* 5. HỆ THỐNG NÚT MẠNG XÃ HỘI (SOCIAL BUTTONS) */}
-            <View style={styles.socialContainer}>
-              {/* Nút Facebook */}
-              <TouchableOpacity activeOpacity={0.8} style={styles.socialButton}>
-                <FontAwesome
-                  name="facebook-official"
-                  size={24}
-                  color="#1877F2"
-                  style={styles.socialIcon}
-                />
-                <Text style={styles.socialText}>Facebook</Text>
-              </TouchableOpacity>
-
-              {/* Nút Google */}
-              <TouchableOpacity activeOpacity={0.8} style={styles.socialButton}>
-                <FontAwesome
-                  name="google"
-                  size={22}
-                  color="#EA4335"
-                  style={styles.socialIcon}
-                />
-                <Text style={styles.socialText}>Google</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* 6. VĂN BẢN ĐIỀU KHOẢN (FOOTER TEXT) */}
-            <Text style={styles.footerText}>
-              By sign in or sign up, you agree to our Terms of Service{"\n"}and{" "}
-              <Text style={styles.footerLinkText}>Privacy Policy</Text>
-            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -164,132 +189,29 @@ export default function SignUpScreen() {
   );
 }
 
-// BẢNG MÀU CHUẨN ĐÚNG PHONG CÁCH DARK MODE MBOOKING
-const PRIMARY_YELLOW = "#FCC444";
-const BACKGROUND_BLACK = "#000000";
-const INPUT_CONTAINER_BG = "#1C1C1E";
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BACKGROUND_BLACK,
-    paddingTop: Platform.OS === "android" ? 45 : 10,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    height: 56,
-    paddingHorizontal: 24,
-    position: "relative",
-    marginBottom: 32,
-  },
-  backButton: {
-    position: "absolute",
-    left: 24,
-    padding: 4,
-    zIndex: 10,
-  },
-  headerTitle: {
-    color: "#ffffff",
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  topContent: {
-    paddingHorizontal: 24,
-  },
-  inputSection: {
-    width: "100%",
-    marginBottom: 32,
-  },
+  container: { flex: 1, backgroundColor: BACKGROUND_BLACK },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 40 },
+  backButton: { width: 40, height: 40, justifyContent: "center", alignItems: "flex-start", marginTop: 12 },
+  welcomeContainer: { marginTop: 24, marginBottom: 32 },
+  titleText: { fontSize: 28, fontWeight: "800", color: TEXT_LIGHT, letterSpacing: 0.3 },
+  subtitleText: { fontSize: 14, color: TEXT_MUTED, marginTop: 8, lineHeight: 20 },
+  formContainer: { gap: 18, marginBottom: 24 },
+  inputGroup: { flexDirection: "column", gap: 8 },
+  inputLabel: { fontSize: 13, fontWeight: "600", color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: 0.5 },
   inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 10,
+    flexDirection: "row", alignItems: "center", backgroundColor: SURFACE_DARK,
+    borderWidth: 1, borderColor: BORDER_COLOR, borderRadius: 16, paddingHorizontal: 16, height: 56,
   },
-  inputIcon: {
-    marginRight: 16,
+  inputIcon: { marginRight: 12 },
+  textInput: { flex: 1, color: TEXT_LIGHT, fontSize: 15, height: "100%" },
+  eyeIcon: { padding: 4 },
+  actionContainer: { marginTop: "auto", paddingTop: 24, gap: 20 },
+  signInButton: {
+    backgroundColor: PRIMARY_YELLOW, borderRadius: 30, height: 56, alignItems: "center", justifyContent: "center",
   },
-  textInput: {
-    flex: 1,
-    color: "#ffffff",
-    fontSize: 20,
-    fontWeight: "500",
-    padding: 0,
-  },
-  inputUnderline: {
-    height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    width: "100%",
-    marginTop: 6,
-  },
-  continueButton: {
-    backgroundColor: PRIMARY_YELLOW,
-    width: "100%",
-    height: 54,
-    borderRadius: 27,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  continueText: {
-    color: "#000000",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  bottomContent: {
-    paddingHorizontal: 24,
-    alignItems: "center",
-  },
-  dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
-    marginBottom: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-  },
-  dividerText: {
-    color: "rgba(255, 255, 255, 0.5)",
-    fontSize: 14,
-    fontWeight: "500",
-    paddingHorizontal: 16,
-  },
-  socialContainer: {
-    width: "100%",
-    gap: 14,
-    marginBottom: 32,
-  },
-  socialButton: {
-    backgroundColor: INPUT_CONTAINER_BG,
-    width: "100%",
-    height: 54,
-    borderRadius: 27,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    position: "relative",
-  },
-  socialIcon: {
-    position: "absolute",
-    left: 28,
-  },
-  socialText: {
-    color: "#ffffff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  footerText: {
-    color: "rgba(255, 255, 255, 0.4)",
-    fontSize: 12,
-    textAlign: "center",
-    lineHeight: 18,
-    marginBottom: Platform.OS === "ios" ? 10 : 20,
-  },
-  footerLinkText: {
-    color: PRIMARY_YELLOW,
-    fontWeight: "500",
-  },
+  signInButtonText: { fontSize: 16, fontWeight: "800", color: BACKGROUND_BLACK },
+  signUpRow: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
+  signUpText: { fontSize: 14, color: TEXT_MUTED },
+  signUpLink: { fontSize: 14, fontWeight: "700", color: PRIMARY_YELLOW },
 });

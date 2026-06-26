@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('cinez_user');
+    const savedUser = localStorage.getItem('user');
     if (savedUser) setUser(JSON.parse(savedUser));
     setLoading(false);
   }, []);
@@ -18,15 +18,15 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     const res = await authAPI.login(username, password);
     setUser(res.data.user);
-    localStorage.setItem('cinez_user', JSON.stringify(res.data.user));
-    localStorage.setItem('cinez_token', res.data.token);
+    localStorage.setItem('user', JSON.stringify(res.data.user));
+    localStorage.setItem('token', res.data.token);
     return res;
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('cinez_user');
-    localStorage.removeItem('cinez_token');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   };
 
   const isAdmin = user?.role === 'admin';

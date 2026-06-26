@@ -1,31 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   FiSearch, FiEdit2, FiX, FiEye, FiUsers, FiFilter,
   FiChevronLeft, FiChevronRight, FiMail, FiPhone,
   FiCalendar, FiStar, FiShoppingBag, FiDollarSign,
-  FiAward, FiUser, FiClock
+  FiAward, FiUser, FiClock, FiLoader
 } from 'react-icons/fi';
+import { memberAPI } from '../api/apiService';
 import './Members.css';
 
 const formatCurrency = (v) => new Intl.NumberFormat('vi-VN').format(v) + ' VNĐ';
-
-const initialMembers = [
-  { id: 1, fullName: 'Nguyễn Văn An', email: 'an.nguyen@gmail.com', phone: '0901234567', dateOfBirth: '1995-03-15', registerDate: '2025-01-10', points: 15200, tier: 'gold', totalSpent: 3500000, bookingCount: 28, status: 'active' },
-  { id: 2, fullName: 'Trần Thị Bình', email: 'binh.tran@gmail.com', phone: '0912345678', dateOfBirth: '1998-07-22', registerDate: '2025-03-05', points: 8500, tier: 'silver', totalSpent: 1800000, bookingCount: 15, status: 'active' },
-  { id: 3, fullName: 'Lê Hoàng Cường', email: 'cuong.le@gmail.com', phone: '0923456789', dateOfBirth: '1992-11-08', registerDate: '2024-12-20', points: 25000, tier: 'platinum', totalSpent: 8200000, bookingCount: 52, status: 'active' },
-  { id: 4, fullName: 'Phạm Minh Dung', email: 'dung.pham@gmail.com', phone: '0934567890', dateOfBirth: '2000-01-30', registerDate: '2025-06-15', points: 2100, tier: 'member', totalSpent: 450000, bookingCount: 4, status: 'active' },
-  { id: 5, fullName: 'Hoàng Thị Hà', email: 'ha.hoang@gmail.com', phone: '0945678901', dateOfBirth: '1997-09-12', registerDate: '2025-02-28', points: 0, tier: 'member', totalSpent: 150000, bookingCount: 1, status: 'blocked' },
-  { id: 6, fullName: 'Vũ Đức Hùng', email: 'hung.vu@gmail.com', phone: '0956789012', dateOfBirth: '1993-05-20', registerDate: '2025-04-10', points: 12800, tier: 'gold', totalSpent: 2900000, bookingCount: 22, status: 'active' },
-  { id: 7, fullName: 'Đỗ Thị Kim', email: 'kim.do@gmail.com', phone: '0967890123', dateOfBirth: '1999-12-01', registerDate: '2025-07-01', points: 5600, tier: 'silver', totalSpent: 1200000, bookingCount: 10, status: 'active' },
-  { id: 8, fullName: 'Bùi Văn Long', email: 'long.bui@gmail.com', phone: '0978901234', dateOfBirth: '1996-04-18', registerDate: '2025-05-20', points: 3200, tier: 'member', totalSpent: 680000, bookingCount: 6, status: 'active' },
-  { id: 9, fullName: 'Ngô Thị Mai', email: 'mai.ngo@gmail.com', phone: '0989012345', dateOfBirth: '2001-08-25', registerDate: '2025-08-15', points: 1800, tier: 'member', totalSpent: 320000, bookingCount: 3, status: 'active' },
-  { id: 10, fullName: 'Đinh Quốc Nam', email: 'nam.dinh@gmail.com', phone: '0990123456', dateOfBirth: '1994-02-10', registerDate: '2024-11-05', points: 18500, tier: 'platinum', totalSpent: 5600000, bookingCount: 38, status: 'active' },
-  { id: 11, fullName: 'Lý Thị Oanh', email: 'oanh.ly@gmail.com', phone: '0901234000', dateOfBirth: '1998-06-30', registerDate: '2025-09-01', points: 900, tier: 'member', totalSpent: 150000, bookingCount: 2, status: 'active' },
-  { id: 12, fullName: 'Trương Văn Phúc', email: 'phuc.truong@gmail.com', phone: '0912345000', dateOfBirth: '1991-10-15', registerDate: '2025-01-25', points: 9800, tier: 'silver', totalSpent: 2100000, bookingCount: 18, status: 'active' },
-  { id: 13, fullName: 'Huỳnh Thị Quỳnh', email: 'quynh.huynh@gmail.com', phone: '0923456000', dateOfBirth: '1997-03-08', registerDate: '2025-04-30', points: 7200, tier: 'silver', totalSpent: 1500000, bookingCount: 12, status: 'active' },
-  { id: 14, fullName: 'Phan Đình Sơn', email: 'son.phan@gmail.com', phone: '0934567000', dateOfBirth: '2002-07-14', registerDate: '2025-10-10', points: 400, tier: 'member', totalSpent: 75000, bookingCount: 1, status: 'active' },
-  { id: 15, fullName: 'Cao Thị Tuyết', email: 'tuyet.cao@gmail.com', phone: '0945678000', dateOfBirth: '1995-11-28', registerDate: '2025-02-14', points: 11000, tier: 'gold', totalSpent: 2600000, bookingCount: 20, status: 'active' },
-];
 
 const mockBookingHistory = [
   { id: 1, movie: 'Lật Mặt 8', date: '2026-05-20', time: '09:00', seats: 'D5, D6', total: 259000 },
@@ -49,15 +32,64 @@ const statusConfig = {
   blocked: { label: 'Bị khóa', color: '#ef4444' },
 };
 
+const mapMember = (m) => ({
+  _id: m._id,
+  fullName: m.fullName,
+  email: m.email,
+  phone: m.phone,
+  dateOfBirth: m.dateOfBirth ? new Date(m.dateOfBirth).toLocaleDateString('vi-VN') : '',
+  registerDate: m.createdAt ? new Date(m.createdAt).toLocaleDateString('vi-VN') : '',
+  points: m.points ?? 0,
+  tier: m.tier || 'member',
+  totalSpent: m.totalSpent ?? 0,
+  bookingCount: m.bookingCount ?? 0,
+  status: m.active ? 'active' : 'blocked',
+});
+
+const mapBooking = (b) => {
+  const showtime = b.showtime_id || {};
+  const movie = showtime.movieId || {};
+  const startTime = showtime.startTime ? new Date(showtime.startTime) : null;
+  return {
+    id: b._id,
+    movie: movie.title || 'Chưa có thông tin',
+    date: startTime ? startTime.toLocaleDateString('vi-VN') : (b.createdAt ? new Date(b.createdAt).toLocaleDateString('vi-VN') : ''),
+    time: startTime ? startTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
+    seats: Array.isArray(b.seats) ? b.seats.join(', ') : (b.seats || ''),
+    total: b.total ?? 0,
+  };
+};
+
 export default function Members() {
-  const [members, setMembers] = useState(initialMembers);
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTier, setFilterTier] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [showDetailModal, setShowDetailModal] = useState(null);
+  const [bookingHistory, setBookingHistory] = useState([]);
+  const [bookingLoading, setBookingLoading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(null);
   const [editForm, setEditForm] = useState({ status: '', tier: '' });
+
+  const fetchMembers = async () => {
+    try {
+      setLoading(true);
+      const res = await memberAPI.getAll();
+      if (res.success) {
+        setMembers((res.data || []).map(mapMember));
+      }
+    } catch (err) {
+      console.error('Failed to fetch members:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMembers();
+  }, []);
 
   const filtered = useMemo(() => {
     return members.filter((m) => {
@@ -77,8 +109,23 @@ export default function Members() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  const handleOpenDetail = (member) => {
+  const handleOpenDetail = async (member) => {
     setShowDetailModal(member);
+    setBookingLoading(true);
+    setBookingHistory([]);
+    try {
+      const res = await memberAPI.getBookings(member._id);
+      if (res.success && Array.isArray(res.data)) {
+        const mapped = res.data.map(mapBooking);
+        setBookingHistory(mapped.length > 0 ? mapped : mockBookingHistory);
+      } else {
+        setBookingHistory(mockBookingHistory);
+      }
+    } catch {
+      setBookingHistory(mockBookingHistory);
+    } finally {
+      setBookingLoading(false);
+    }
   };
 
   const handleOpenEdit = (member) => {
@@ -86,21 +133,41 @@ export default function Members() {
     setShowEditModal(member);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!showEditModal) return;
-    setMembers((prev) =>
-      prev.map((m) =>
-        m.id === showEditModal.id
-          ? { ...m, status: editForm.status, tier: editForm.tier }
-          : m
-      )
-    );
-    setShowEditModal(null);
+    try {
+      const res = await memberAPI.update(showEditModal._id, {
+        active: editForm.status === 'active',
+      });
+      if (res.success) {
+        setMembers((prev) =>
+          prev.map((m) =>
+            m._id === showEditModal._id
+              ? { ...m, status: editForm.status, tier: editForm.tier }
+              : m
+          )
+        );
+        setShowEditModal(null);
+      }
+    } catch (err) {
+      console.error('Failed to update member:', err);
+    }
   };
 
   const getInitials = (name) => {
     return name.split(' ').map(w => w[0]).join('').slice(-2).toUpperCase();
   };
+
+  if (loading) {
+    return (
+      <div className="members-page">
+        <div className="members-loading">
+          <FiLoader className="members-loading__spinner" />
+          <span>Đang tải dữ liệu...</span>
+        </div>
+      </div>
+    );
+  }
 
   const totalMembers = members.length;
   const activeMembers = members.filter(m => m.status === 'active').length;
@@ -219,7 +286,7 @@ export default function Members() {
               </tr>
             ) : (
               paginated.map((member, idx) => (
-                <tr key={member.id}>
+                <tr key={member._id}>
                   <td>{(currentPage - 1) * ITEMS_PER_PAGE + idx + 1}</td>
                   <td>
                     <div className="members-name-cell">
@@ -389,17 +456,24 @@ export default function Members() {
                   <FiShoppingBag /> Lịch sử đặt vé gần đây
                 </h4>
                 <div className="members-detail__history-list">
-                  {mockBookingHistory.map((booking) => (
-                    <div key={booking.id} className="members-detail__booking">
-                      <div className="members-detail__booking-info">
-                        <span className="members-detail__booking-movie">{booking.movie}</span>
-                        <span className="members-detail__booking-meta">
-                          {booking.date} • {booking.time} • Ghế: {booking.seats}
-                        </span>
-                      </div>
-                      <span className="members-detail__booking-total">{formatCurrency(booking.total)}</span>
+                  {bookingLoading ? (
+                    <div className="members-detail__loading">
+                      <FiLoader className="members-loading__spinner" />
+                      <span>Đang tải lịch sử...</span>
                     </div>
-                  ))}
+                  ) : (
+                    bookingHistory.map((booking) => (
+                      <div key={booking.id} className="members-detail__booking">
+                        <div className="members-detail__booking-info">
+                          <span className="members-detail__booking-movie">{booking.movie}</span>
+                          <span className="members-detail__booking-meta">
+                            {booking.date} • {booking.time} • Ghế: {booking.seats}
+                          </span>
+                        </div>
+                        <span className="members-detail__booking-total">{formatCurrency(booking.total)}</span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>

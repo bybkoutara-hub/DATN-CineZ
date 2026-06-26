@@ -1,5 +1,5 @@
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -16,10 +16,12 @@ import {
 
 export default function VerificationScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const phoneNumber = (params.phone as string) || "(704) 555-0127";
+  const userName = (params.name as string) || "";
   const [timer, setTimer] = useState(59);
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]); // 6 chữ số theo chuẩn thiết kế MBooking
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
 
-  // Refs quản lý tự động nhảy ô (Focus) cho 6 ô nhập
   const inputRefs = [
     useRef<TextInput>(null),
     useRef<TextInput>(null),
@@ -89,10 +91,10 @@ export default function VerificationScreen() {
           {/* CỤM NỘI DUNG CHÍNH */}
           <View style={styles.mainContent}>
             {/* 2. TIÊU ĐỀ LỚN MÀU VÀNG CHUẨN FIGMA */}
-            <Text style={styles.mainTitle}>Confirm OTP code</Text>
+            <Text style={styles.mainTitle}>Xác nhận mã OTP</Text>
             <Text style={styles.subTitle}>
-              You just need to enter the OTP sent to the registered{"\n"}phone
-              number <Text style={styles.phoneHighlight}>(704) 555-0127.</Text>
+              Bạn chỉ cần nhập mã OTP đã được gửi đến số{"\n"}điện thoại
+              đã đăng ký <Text style={styles.phoneHighlight}>{phoneNumber}.</Text>
             </Text>
 
             {/* 3. ĐIỀU KHIỂN KHỐI 6 Ô NHẬP OTP */}
@@ -137,10 +139,10 @@ export default function VerificationScreen() {
                 styles.continueButton,
                 otp.includes("") && styles.continueButtonDisabled,
               ]}
-              onPress={() => router.push("/username")} // Khi đã có thư mục (tabs) hãy đổi thành router.push("/(tabs)")
-              disabled={otp.includes("")} // Vô hiệu hóa nếu chưa điền đủ 6 số
+              onPress={() => router.push({ pathname: "/username", params: { name: userName } })}
+              disabled={otp.includes("")}
             >
-              <Text style={styles.continueText}>Continue</Text>
+              <Text style={styles.continueText}>Tiếp tục</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
