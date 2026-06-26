@@ -1,7 +1,9 @@
+import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import Movie from "../models/movieModel.js";
 import Showtime from "../models/showtimeModel.js";
+import User from "../models/userModel.js";
 
 dotenv.config();
 
@@ -24,9 +26,21 @@ async function seedDatabase() {
     await Showtime.deleteMany({});
     await Cinema.deleteMany({});
     await Combo.deleteMany({});
+    await User.deleteMany({ role: { $in: ["admin", "staff", "user"] } });
     console.log("🧹 [Seed]: Đã làm sạch toàn bộ dữ liệu cũ.");
 
-    // 2. Thêm Rạp phim & Combo bắp nước mẫu
+    // 2. Tạo tài khoản Admin mặc định
+    const adminPassword = await bcrypt.hash("admin123", 10);
+    await User.create({
+      username: "admin",
+      password: adminPassword,
+      fullName: "Quản trị viên",
+      email: "admin@cinez.com",
+      role: "admin",
+    });
+    console.log("👤 [Seed]: Đã tạo tài khoản Admin (admin / admin123).");
+
+    // 3. Thêm Rạp phim & Combo bắp nước mẫu
     await Cinema.insertMany([
       { name: "MBooking Hùng Vương Plaza", address: "126 Hùng Vương, Quận 5, TP.HCM" },
       { name: "MBooking Vạn Hạnh Mall", address: "11 Sư Vạn Hạnh, Quận 10, TP.HCM" }
@@ -36,7 +50,7 @@ async function seedDatabase() {
       { name: "Combo Couple", price: 95000, description: "1 Bắp lớn + 2 Nước ngọt ly lớn" }
     ]);
 
-    // 3. Nạp dữ liệu PHIM SIÊU CHI TIẾT (Đầy đủ các trường để lên giao diện Mobile đẹp mắt)
+    // 4. Nạp dữ liệu PHIM SIÊU CHI TIẾT (Đầy đủ các trường để lên giao diện Mobile đẹp mắt)
     const createdMovies = await Movie.insertMany([
       {
         title: "Lật Mặt 7: Một Điều Ước",
@@ -72,7 +86,7 @@ async function seedDatabase() {
     ]);
     console.log("🎬 [Seed]: Đã nạp xong 2 phim siêu chi tiết.");
 
-    // 4. Hàm tạo 20 ghế mặc định tự động từ A1 -> B10
+    // 5. Hàm tạo 20 ghế mặc định tự động từ A1 -> B10
     const generateDefaultSeats = (): string[] => {
       const seats: string[] = [];
       for (const row of ["A", "B"]) {
@@ -83,7 +97,7 @@ async function seedDatabase() {
       return seats;
     };
 
-    // 5. Lấy các bộ phim vừa tạo ra để map ID
+    // 6. Lấy các bộ phim vừa tạo ra để map ID
     const latMatPhim = createdMovies[0];
     const avatarPhim = createdMovies[1];
 
@@ -93,7 +107,7 @@ async function seedDatabase() {
       return;
     }
 
-    // 6. Tạo suất chiếu kết nối chuẩn xác bằng 'movieId' (Đoạn này giữ nguyên)
+    // 7. Tạo suất chiếu kết nối chuẩn xác bằng 'movieId' (Đoạn này giữ nguyên)
     const sampleShowtimes = [
       {
         movieId: latMatPhim._id,

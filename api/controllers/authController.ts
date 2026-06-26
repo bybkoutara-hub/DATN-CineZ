@@ -3,24 +3,28 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/userModel";
 
-// Đăng ký tài khoản
+const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
+
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, password, phone } = req.body;
+    if (!name || !email || !password) {
+      res.status(400).json({ success: false, message: "Vui lòng nhập đầy đủ Name, Email và Password" });
+      return;
+    }
     const exists = await User.findOne({ email });
     if (exists) {
       res.status(400).json({ success: false, message: "Email đã tồn tại" });
       return;
     }
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashed, phone });
-    res.status(201).json({ success: true, data: { id: user._id, name: user.name, email: user.email } });
+    const user = await User.create({ name, email, password: hashed, phone: phone || "", role: "user" });
+    res.status(201).json({ success: true, message: "Đăng ký tài khoản thành công!", data: { id: user._id, name: user.name, email: user.email, role: user.role } });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Đăng nhập -> trả JWT
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
@@ -36,19 +40,19 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
     const token = jwt.sign(
       { id: user._id, role: user.role },
-      process.env.JWT_SECRET || "dev-secret",
+      JWT_SECRET,
       { expiresIn: "7d" }
     );
     res.status(200).json({
       success: true,
-      data: { token, user: { id: user._id, name: user.name, email: user.email, role: user.role, loyaltyPoints: user.loyaltyPoints } },
+      token,
+      data: { id: user._id, name: user.name, email: user.email, role: user.role, loyaltyPoints: user.loyaltyPoints },
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Lọc hồ sơ người dùng đang đăng nhập (cần middleware protect)
 export const getMe = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = await User.findById(req.user?.id).select("-password");
@@ -59,5 +63,54 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json({ success: true, data: user });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const adminLogin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
+    if (!user) {
+      res.status(400).json({ success: false, message: "Tài khoản hoặc mật khẩu không chính xác!" });
+      return;
+    }
+    if (user.role !== "admin" && user.role !== "staff") {
+      res.status(403).json({ success: false, message: "Bạn không có quyền truy cập cổng Admin!" });
+      return;
+    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      res.status(400).json({ success: false, message: "Tài khoản hoặc mật khẩu không chính xác!" });
+      return;
+    }
+    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "7d" });
+    res.status(200).json({
+      success: true,
+      message: "Đăng nhập Web Admin thành công!",
+      data: { user: { username: user.username, fullName: user.fullName, name: user.name, email: user.email, role: user.role }, token }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi hệ thống đăng nhập", error: error.message });
+  }
+};
+
+export const changePassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { username, oldPassword, newPassword } = req.body;
+    const user = await User.findOne({ username });
+    if (!user) {
+      res.status(404).json({ success: false, message: "Không tìm thấy tài khoản!" });
+      return;
+    }
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      res.status(400).json({ success: false, message: "Mật khẩu cũ không chính xác!" });
+      return;
+    }
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.status(200).json({ success: true, message: "Đổi mật khẩu thành công!" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi đổi mật khẩu", error: error.message });
   }
 };

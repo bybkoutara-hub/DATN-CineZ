@@ -1,11 +1,12 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-// Bắp nước / Combo (CGV F&B)
 export interface ICombo extends Document {
-  name: string; // VD: Combo Caramel, Combo Couple
+  name: string;
   price: number;
   image: string;
-  items: string[]; // ["Bắp ngọt L", "2 Coca L", ...]
+  items: string[];
+  description: string;
+  status: "active" | "inactive";
 }
 
 const ComboSchema: Schema = new Schema(
@@ -14,6 +15,8 @@ const ComboSchema: Schema = new Schema(
     price: { type: Number, required: true },
     image: { type: String, default: "" },
     items: { type: [String], default: [] },
+    description: { type: String, default: "" },
+    status: { type: String, enum: ["active", "inactive"], default: "active" },
   },
   { timestamps: true }
 );

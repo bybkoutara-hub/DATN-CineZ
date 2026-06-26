@@ -1,23 +1,19 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-// Dùng trực tiếp hàm create
 const api = axios.create({
-  baseURL: "http://192.168.1.181:5001/api", // (Hoặc localhost tùy máy bạn)
+  baseURL: "http://localhost:5000/api",
   timeout: 10000,
 });
 
-// Tự động đính kèm JWT token (nếu đã đăng nhập) vào header Authorization
-// cho mọi request, nhờ vậy các API cần bảo vệ (profile, lịch sử vé...) hoạt động.
-api.interceptors.request.use(async (config) => {
+api.interceptors.request.use((config) => {
   try {
-    const token = await AsyncStorage.getItem("userToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (typeof window !== "undefined" && window.localStorage) {
+      const token = window.localStorage.getItem("userToken");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
-  } catch {
-    // Bỏ qua nếu không đọc được token, request vẫn gửi như khách
-  }
+  } catch {}
   return config;
 });
 
