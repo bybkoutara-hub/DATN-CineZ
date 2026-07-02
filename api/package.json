@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch server.ts",
     "seed": "tsx scripts/seed.ts",
+    "seed-full": "tsx scripts/seed-full.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -20,7 +21,8 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.6.3"
+    "mongoose": "^9.6.3",
+    "resend": "^6.16.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

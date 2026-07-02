@@ -681,6 +681,18 @@
   color: var(--inv-text-muted);
 }
 
+/* Loading Spinner */
+@keyframes invoicesSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.invoices-spinner {
+  animation: invoicesSpin 1s linear infinite;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .invoices-stats { grid-template-columns: repeat(2, 1fr); }

@@ -1,30 +1,21 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiFilter,
   FiChevronLeft, FiChevronRight, FiShield, FiUsers,
   FiUser, FiBriefcase, FiMail, FiPhone, FiCalendar,
-  FiDollarSign
+  FiDollarSign, FiLock
 } from 'react-icons/fi';
+import { staffAPI } from '../api/apiService';
 import './Staff.css';
 
 const formatCurrency = (v) => new Intl.NumberFormat('vi-VN').format(v) + ' VNĐ';
-
-const initialStaff = [
-  { id: 1, fullName: 'Nguyễn Văn Admin', email: 'admin@cinez.vn', phone: '0901234567', role: 'admin', department: 'Quản lý', startDate: '2024-01-15', salary: 25000000, status: 'active' },
-  { id: 2, fullName: 'Trần Thị Staff', email: 'staff@cinez.vn', phone: '0912345678', role: 'staff', department: 'Bán vé', startDate: '2024-06-01', salary: 12000000, status: 'active' },
-  { id: 3, fullName: 'Lê Văn Cashier', email: 'cashier@cinez.vn', phone: '0923456789', role: 'staff', department: 'Thu ngân', startDate: '2024-08-15', salary: 10000000, status: 'active' },
-  { id: 4, fullName: 'Phạm Thị Usher', email: 'usher@cinez.vn', phone: '0934567890', role: 'staff', department: 'Soát vé', startDate: '2025-01-10', salary: 8000000, status: 'active' },
-  { id: 5, fullName: 'Hoàng Văn Bảo', email: 'bao@cinez.vn', phone: '0945678901', role: 'staff', department: 'Bán vé', startDate: '2025-03-01', salary: 11000000, status: 'active' },
-  { id: 6, fullName: 'Vũ Thị Lan', email: 'lan@cinez.vn', phone: '0956789012', role: 'staff', department: 'Bán hàng', startDate: '2024-11-20', salary: 9500000, status: 'inactive' },
-  { id: 7, fullName: 'Đặng Minh Tuấn', email: 'tuan@cinez.vn', phone: '0967890123', role: 'manager', department: 'Quản lý', startDate: '2024-03-01', salary: 20000000, status: 'active' },
-  { id: 8, fullName: 'Bùi Thị Hương', email: 'huong@cinez.vn', phone: '0978901234', role: 'staff', department: 'Thu ngân', startDate: '2025-05-15', salary: 10000000, status: 'active' },
-];
 
 const ITEMS_PER_PAGE = 8;
 
 const emptyForm = {
   fullName: '', email: '', phone: '', role: 'staff',
   department: '', startDate: '', salary: '', status: 'active',
+  username: '', password: '',
 };
 
 const roleConfig = {
@@ -40,8 +31,23 @@ const statusConfig = {
 
 const departments = ['Quản lý', 'Bán vé', 'Thu ngân', 'Soát vé', 'Bán hàng'];
 
+const mapStaffFromAPI = (item) => ({
+  _id: item._id,
+  fullName: item.fullName || '',
+  username: item.username || '',
+  email: item.email || '',
+  phone: item.phone || '',
+  role: item.role || 'staff',
+  active: item.active,
+  status: item.active ? 'active' : 'inactive',
+  department: item.department || 'Chưa phân công',
+  startDate: item.startDate || (item.createdAt ? item.createdAt.slice(0, 10) : '-'),
+  salary: item.salary != null ? item.salary : 0,
+});
+
 export default function Staff() {
-  const [staff, setStaff] = useState(initialStaff);
+  const [staff, setStaff] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [filterDept, setFilterDept] = useState('all');
@@ -51,6 +57,23 @@ export default function Staff() {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+
+  const fetchStaff = async () => {
+    setLoading(true);
+    try {
+      const res = await staffAPI.getAll();
+      const list = Array.isArray(res.data) ? res.data.map(mapStaffFromAPI) : [];
+      setStaff(list);
+    } catch (err) {
+      console.error('Failed to fetch staff:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaff();
+  }, []);
 
   const filtered = useMemo(() => {
     return staff.filter((s) => {
@@ -72,12 +95,12 @@ export default function Staff() {
 
   const handleOpenAdd = () => {
     setEditingId(null);
-    setFormData(emptyForm);
+    setFormData({ ...emptyForm });
     setShowModal(true);
   };
 
   const handleOpenEdit = (s) => {
-    setEditingId(s.id);
+    setEditingId(s._id);
     setFormData({
       fullName: s.fullName,
       email: s.email,
@@ -87,33 +110,51 @@ export default function Staff() {
       startDate: s.startDate,
       salary: s.salary,
       status: s.status,
+      username: s.username || '',
+      password: '',
     });
     setShowModal(true);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editingId) {
-      setStaff((prev) =>
-        prev.map((s) =>
-          s.id === editingId ? { ...s, ...formData, salary: Number(formData.salary) } : s
-        )
-      );
-    } else {
-      const newStaff = {
-        ...formData,
-        id: Date.now(),
-        salary: Number(formData.salary),
-      };
-      setStaff((prev) => [...prev, newStaff]);
+    try {
+      if (editingId) {
+        await staffAPI.update(editingId, {
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          role: formData.role,
+          active: formData.status === 'active',
+        });
+      } else {
+        await staffAPI.create({
+          username: formData.username,
+          password: formData.password,
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          role: formData.role,
+        });
+      }
+      setShowModal(false);
+      setFormData({ ...emptyForm });
+      fetchStaff();
+    } catch (err) {
+      console.error('Failed to save staff:', err);
+      alert(err.message || 'Có lỗi xảy ra');
     }
-    setShowModal(false);
-    setFormData(emptyForm);
   };
 
-  const handleDelete = (id) => {
-    setStaff((prev) => prev.filter((s) => s.id !== id));
-    setShowDeleteConfirm(null);
+  const handleDelete = async (id) => {
+    try {
+      await staffAPI.delete(id);
+      setShowDeleteConfirm(null);
+      fetchStaff();
+    } catch (err) {
+      console.error('Failed to delete staff:', err);
+      alert(err.message || 'Có lỗi xảy ra');
+    }
   };
 
   const handleFormChange = (field, value) => {
@@ -228,86 +269,90 @@ export default function Staff() {
 
       {/* Table */}
       <div className="staff-table-wrapper">
-        <table className="staff-table">
-          <thead>
-            <tr>
-              <th>STT</th>
-              <th>Họ tên</th>
-              <th>Email</th>
-              <th>SĐT</th>
-              <th>Vai trò</th>
-              <th>Bộ phận</th>
-              <th>Ngày vào làm</th>
-              <th>Lương (VNĐ)</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginated.length === 0 ? (
+        {loading ? (
+          <div className="staff-table__loading">Đang tải dữ liệu...</div>
+        ) : (
+          <table className="staff-table">
+            <thead>
               <tr>
-                <td colSpan="10" className="staff-table__empty">
-                  Không tìm thấy nhân viên nào
-                </td>
+                <th>STT</th>
+                <th>Họ tên</th>
+                <th>Email</th>
+                <th>SĐT</th>
+                <th>Vai trò</th>
+                <th>Bộ phận</th>
+                <th>Ngày vào làm</th>
+                <th>Lương (VNĐ)</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
               </tr>
-            ) : (
-              paginated.map((s, idx) => {
-                const RoleIcon = roleConfig[s.role]?.icon || FiUser;
-                return (
-                  <tr key={s.id}>
-                    <td>{(currentPage - 1) * ITEMS_PER_PAGE + idx + 1}</td>
-                    <td>
-                      <div className="staff-name-cell">
-                        <div
-                          className="staff-avatar"
-                          style={{ backgroundColor: roleConfig[s.role]?.color + '25', color: roleConfig[s.role]?.color }}
-                        >
-                          {getInitials(s.fullName)}
+            </thead>
+            <tbody>
+              {paginated.length === 0 ? (
+                <tr>
+                  <td colSpan="10" className="staff-table__empty">
+                    Không tìm thấy nhân viên nào
+                  </td>
+                </tr>
+              ) : (
+                paginated.map((s, idx) => {
+                  const RoleIcon = roleConfig[s.role]?.icon || FiUser;
+                  return (
+                    <tr key={s._id}>
+                      <td>{(currentPage - 1) * ITEMS_PER_PAGE + idx + 1}</td>
+                      <td>
+                        <div className="staff-name-cell">
+                          <div
+                            className="staff-avatar"
+                            style={{ backgroundColor: roleConfig[s.role]?.color + '25', color: roleConfig[s.role]?.color }}
+                          >
+                            {getInitials(s.fullName)}
+                          </div>
+                          <span className="staff-name-cell__name">{s.fullName}</span>
                         </div>
-                        <span className="staff-name-cell__name">{s.fullName}</span>
-                      </div>
-                    </td>
-                    <td><span className="staff-email">{s.email}</span></td>
-                    <td>{s.phone}</td>
-                    <td>
-                      <span
-                        className="staff-role-badge"
-                        style={{ backgroundColor: roleConfig[s.role]?.color + '18', color: roleConfig[s.role]?.color, borderColor: roleConfig[s.role]?.color + '40' }}
-                      >
-                        <RoleIcon /> {roleConfig[s.role]?.label}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="staff-dept-badge">{s.department}</span>
-                    </td>
-                    <td>
-                      <span className="staff-date"><FiCalendar /> {s.startDate}</span>
-                    </td>
-                    <td className="staff-salary">{formatCurrency(s.salary)}</td>
-                    <td>
-                      <span
-                        className="staff-status-badge"
-                        style={{ color: statusConfig[s.status]?.color, borderColor: statusConfig[s.status]?.color }}
-                      >
-                        {statusConfig[s.status]?.label}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="staff-actions">
-                        <button className="staff-action-btn staff-action-btn--edit" title="Chỉnh sửa" onClick={() => handleOpenEdit(s)}>
-                          <FiEdit2 />
-                        </button>
-                        <button className="staff-action-btn staff-action-btn--delete" title="Xóa" onClick={() => setShowDeleteConfirm(s.id)}>
-                          <FiTrash2 />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                      </td>
+                      <td><span className="staff-email">{s.email}</span></td>
+                      <td>{s.phone}</td>
+                      <td>
+                        <span
+                          className="staff-role-badge"
+                          style={{ backgroundColor: roleConfig[s.role]?.color + '18', color: roleConfig[s.role]?.color, borderColor: roleConfig[s.role]?.color + '40' }}
+                        >
+                          <RoleIcon /> {roleConfig[s.role]?.label}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="staff-dept-badge">{s.department}</span>
+                      </td>
+                      <td>
+                        <span className="staff-date"><FiCalendar /> {s.startDate}</span>
+                      </td>
+                      <td className="staff-salary">{formatCurrency(s.salary)}</td>
+                      <td>
+                        <span
+                          className="staff-status-badge"
+                          style={{ color: statusConfig[s.status]?.color, borderColor: statusConfig[s.status]?.color }}
+                        >
+                          {statusConfig[s.status]?.label}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="staff-actions">
+                          <button className="staff-action-btn staff-action-btn--edit" title="Chỉnh sửa" onClick={() => handleOpenEdit(s)}>
+                            <FiEdit2 />
+                          </button>
+                          <button className="staff-action-btn staff-action-btn--delete" title="Xóa" onClick={() => setShowDeleteConfirm(s._id)}>
+                            <FiTrash2 />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Pagination */}
@@ -359,6 +404,29 @@ export default function Staff() {
             <form className="staff-form" onSubmit={handleSubmit}>
               <div className="staff-form__grid">
                 <div className="staff-form__group">
+                  <label className="staff-form__label"><FiUser className="staff-form__label-icon" /> Tên đăng nhập</label>
+                  <input
+                    type="text"
+                    className="staff-form__input"
+                    value={formData.username}
+                    onChange={(e) => handleFormChange('username', e.target.value)}
+                    placeholder="VD: nguyenvanadmin"
+                    required={!editingId}
+                    readOnly={!!editingId}
+                  />
+                </div>
+                <div className="staff-form__group">
+                  <label className="staff-form__label"><FiLock className="staff-form__label-icon" /> Mật khẩu</label>
+                  <input
+                    type="password"
+                    className="staff-form__input"
+                    value={formData.password}
+                    onChange={(e) => handleFormChange('password', e.target.value)}
+                    placeholder={editingId ? 'Để trống nếu không đổi' : 'Nhập mật khẩu'}
+                    required={!editingId}
+                  />
+                </div>
+                <div className="staff-form__group">
                   <label className="staff-form__label"><FiUser className="staff-form__label-icon" /> Họ tên</label>
                   <input
                     type="text"
@@ -409,7 +477,6 @@ export default function Staff() {
                     className="staff-form__select"
                     value={formData.department}
                     onChange={(e) => handleFormChange('department', e.target.value)}
-                    required
                   >
                     <option value="">-- Chọn bộ phận --</option>
                     {departments.map((d) => (
@@ -424,7 +491,6 @@ export default function Staff() {
                     className="staff-form__input"
                     value={formData.startDate}
                     onChange={(e) => handleFormChange('startDate', e.target.value)}
-                    required
                   />
                 </div>
                 <div className="staff-form__group">
@@ -436,7 +502,6 @@ export default function Staff() {
                     onChange={(e) => handleFormChange('salary', e.target.value)}
                     placeholder="VD: 12000000"
                     min="0"
-                    required
                   />
                 </div>
                 <div className="staff-form__group">

@@ -9,6 +9,7 @@ export interface IMovie extends Document {
   total_reviews: string;
   release_date: string;
   status: "now_playing" | "coming_soon";
+  description: string;
 }
 
 const MovieSchema: Schema = new Schema(
@@ -21,6 +22,7 @@ const MovieSchema: Schema = new Schema(
     total_reviews: { type: String, default: "0" },
     release_date: { type: String, required: true },
     status: { type: String, enum: ["now_playing", "coming_soon"], required: true },
+    description: { type: String, default: "" },
   },
   { timestamps: true }
 );

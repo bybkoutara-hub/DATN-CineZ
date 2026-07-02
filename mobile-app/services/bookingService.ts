@@ -47,3 +47,14 @@ export const getMyBookings = async () => {
     return [];
   }
 };
+
+// Lấy thông tin một đơn vé theo ID
+export const getBookingById = async (bookingId: string) => {
+  try {
+    const response = await api.get(`/bookings/${bookingId}`);
+    return response.data.success ? response.data.data : null;
+  } catch (error: any) {
+    console.error("Lỗi lấy đơn vé:", error.message);
+    return null;
+  }
+};

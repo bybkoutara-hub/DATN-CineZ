@@ -2,10 +2,11 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export interface IShowtime extends Document {
   movieId: mongoose.Types.ObjectId;
-  roomName: string;      // Ví dụ: Phòng 01, Phòng IMAX
-  startTime: Date;       // Thời gian bắt đầu chiếu
-  price: number;         // Giá vé cơ bản
-  availableSeats: string[]; // Danh sách ghế trống (Ví dụ: ["A1", "A2", "B1"...])
+  roomName: string;
+  startTime: Date;
+  price: number;
+  availableSeats: string[];
+  status: "active" | "cancelled";
 }
 
 const ShowtimeSchema: Schema = new Schema(
@@ -15,6 +16,7 @@ const ShowtimeSchema: Schema = new Schema(
     startTime: { type: Date, required: true },
     price: { type: Number, required: true },
     availableSeats: { type: [String], required: true },
+    status: { type: String, enum: ["active", "cancelled"], default: "active" },
   },
   { timestamps: true }
 );

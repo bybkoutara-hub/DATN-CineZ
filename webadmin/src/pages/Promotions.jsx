@@ -1,20 +1,21 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   FiSearch, FiPlus, FiEdit2, FiTrash2, FiX, FiTag,
   FiPercent, FiDollarSign, FiCalendar, FiCopy, FiGift,
   FiFilter, FiChevronLeft, FiChevronRight, FiCheckCircle,
   FiPauseCircle, FiXCircle
 } from 'react-icons/fi';
+import { promotionAPI } from '../api/apiService';
 import './Promotions.css';
 
 const formatCurrency = (v) => new Intl.NumberFormat('vi-VN').format(v) + ' VNĐ';
 
 const initialPromotions = [
-  { id: 1, code: 'SUMMER2026', name: 'Khuyến mãi mùa hè', description: 'Giảm 20% cho tất cả vé phim mùa hè', type: 'percent', value: 20, minOrderValue: 100000, maxDiscount: 50000, startDate: '2026-06-01', endDate: '2026-08-31', usageLimit: 500, usedCount: 123, status: 'active' },
-  { id: 2, code: 'NEWMEMBER', name: 'Chào thành viên mới', description: 'Giảm 30,000đ cho thành viên mới', type: 'fixed', value: 30000, minOrderValue: 80000, maxDiscount: 30000, startDate: '2026-01-01', endDate: '2026-12-31', usageLimit: 1000, usedCount: 456, status: 'active' },
-  { id: 3, code: 'COUPLE25', name: 'Ưu đãi cặp đôi', description: 'Giảm 25% khi mua 2 vé trở lên', type: 'percent', value: 25, minOrderValue: 150000, maxDiscount: 80000, startDate: '2026-02-14', endDate: '2026-02-28', usageLimit: 200, usedCount: 200, status: 'expired' },
-  { id: 4, code: 'FRIDAY50', name: 'Thứ 6 vui vẻ', description: 'Giảm 50,000đ vào thứ 6', type: 'fixed', value: 50000, minOrderValue: 120000, maxDiscount: 50000, startDate: '2026-05-01', endDate: '2026-05-31', usageLimit: 300, usedCount: 89, status: 'active' },
-  { id: 5, code: 'VIP2026', name: 'Ưu đãi VIP', description: 'Giảm 15% cho ghế VIP', type: 'percent', value: 15, minOrderValue: 0, maxDiscount: 100000, startDate: '2026-03-01', endDate: '2026-06-30', usageLimit: 0, usedCount: 234, status: 'active' },
+  { _id: 1, code: 'SUMMER2026', name: 'Khuyến mãi mùa hè', description: 'Giảm 20% cho tất cả vé phim mùa hè', type: 'percent', value: 20, minOrderValue: 100000, maxDiscount: 50000, startDate: '2026-06-01', endDate: '2026-08-31', usageLimit: 500, usedCount: 123, status: 'active' },
+  { _id: 2, code: 'NEWMEMBER', name: 'Chào thành viên mới', description: 'Giảm 30,000đ cho thành viên mới', type: 'fixed', value: 30000, minOrderValue: 80000, maxDiscount: 30000, startDate: '2026-01-01', endDate: '2026-12-31', usageLimit: 1000, usedCount: 456, status: 'active' },
+  { _id: 3, code: 'COUPLE25', name: 'Ưu đãi cặp đôi', description: 'Giảm 25% khi mua 2 vé trở lên', type: 'percent', value: 25, minOrderValue: 150000, maxDiscount: 80000, startDate: '2026-02-14', endDate: '2026-02-28', usageLimit: 200, usedCount: 200, status: 'expired' },
+  { _id: 4, code: 'FRIDAY50', name: 'Thứ 6 vui vẻ', description: 'Giảm 50,000đ vào thứ 6', type: 'fixed', value: 50000, minOrderValue: 120000, maxDiscount: 50000, startDate: '2026-05-01', endDate: '2026-05-31', usageLimit: 300, usedCount: 89, status: 'active' },
+  { _id: 5, code: 'VIP2026', name: 'Ưu đãi VIP', description: 'Giảm 15% cho ghế VIP', type: 'percent', value: 15, minOrderValue: 0, maxDiscount: 100000, startDate: '2026-03-01', endDate: '2026-06-30', usageLimit: 0, usedCount: 234, status: 'active' },
 ];
 
 const ITEMS_PER_PAGE = 5;
@@ -32,7 +33,8 @@ const statusConfig = {
 };
 
 export default function Promotions() {
-  const [promotions, setPromotions] = useState(initialPromotions);
+  const [promotions, setPromotions] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
@@ -41,6 +43,29 @@ export default function Promotions() {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+
+  const mapPromotion = (p) => ({
+    ...p,
+    name: p.name || p.code || '',
+    status: p.status || (p.active !== undefined ? (p.active ? 'active' : 'paused') : 'active'),
+  });
+
+  const fetchPromotions = async () => {
+    setLoading(true);
+    try {
+      const params = {};
+      if (filterStatus !== 'all') params.active = filterStatus === 'active';
+      if (searchTerm) params.search = searchTerm;
+      const result = await promotionAPI.getAll(params);
+      setPromotions((result.data || []).map(mapPromotion));
+    } catch {
+      setPromotions(initialPromotions);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchPromotions(); }, []);
 
   const filtered = useMemo(() => {
     return promotions.filter((p) => {
@@ -67,58 +92,73 @@ export default function Promotions() {
   };
 
   const handleOpenEdit = (promo) => {
-    setEditingId(promo.id);
+    setEditingId(promo._id);
     setFormData({
       code: promo.code,
-      name: promo.name,
+      name: promo.name || '',
       description: promo.description,
-      type: promo.type,
-      value: promo.value,
+      type: promo.discountType || promo.type,
+      value: promo.discountValue ?? promo.value,
       minOrderValue: promo.minOrderValue,
       maxDiscount: promo.maxDiscount,
-      startDate: promo.startDate,
-      endDate: promo.endDate,
+      startDate: typeof promo.startDate === 'string' ? promo.startDate.split('T')[0] : promo.startDate,
+      endDate: typeof promo.endDate === 'string' ? promo.endDate.split('T')[0] : promo.endDate,
       usageLimit: promo.usageLimit,
-      status: promo.status,
+      status: promo.active !== undefined ? (promo.active ? 'active' : 'paused') : promo.status,
     });
     setShowModal(true);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editingId) {
-      setPromotions((prev) =>
-        prev.map((p) =>
-          p.id === editingId
-            ? {
-                ...p,
-                ...formData,
-                value: Number(formData.value),
-                minOrderValue: Number(formData.minOrderValue),
-                maxDiscount: Number(formData.maxDiscount),
-                usageLimit: Number(formData.usageLimit),
-              }
-            : p
-        )
-      );
-    } else {
-      const newPromo = {
-        ...formData,
-        id: Date.now(),
-        value: Number(formData.value),
-        minOrderValue: Number(formData.minOrderValue),
-        maxDiscount: Number(formData.maxDiscount),
-        usageLimit: Number(formData.usageLimit),
-        usedCount: 0,
-      };
-      setPromotions((prev) => [...prev, newPromo]);
+    const payload = {
+      code: formData.code,
+      name: formData.name,
+      description: formData.description,
+      discountType: formData.type,
+      discountValue: Number(formData.value),
+      minOrderValue: Number(formData.minOrderValue),
+      maxDiscount: Number(formData.maxDiscount),
+      usageLimit: Number(formData.usageLimit),
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      active: formData.status === 'active',
+    };
+    try {
+      if (editingId) {
+        await promotionAPI.update(editingId, payload);
+      } else {
+        await promotionAPI.create(payload);
+      }
+      await fetchPromotions();
+    } catch {
+      // fallback to client-side update
+      if (editingId) {
+        setPromotions((prev) =>
+          prev.map((p) =>
+            p._id === editingId
+              ? { ...p, ...payload, discountValue: Number(formData.value), usedCount: p.usedCount ?? 0 }
+              : p
+          )
+        );
+      } else {
+        setPromotions((prev) => [
+          ...prev,
+          { ...payload, _id: Date.now(), discountValue: Number(formData.value), usedCount: 0 },
+        ]);
+      }
     }
     setShowModal(false);
     setFormData(emptyForm);
   };
 
-  const handleDelete = (id) => {
-    setPromotions((prev) => prev.filter((p) => p.id !== id));
+  const handleDelete = async (id) => {
+    try {
+      await promotionAPI.delete(id);
+      await fetchPromotions();
+    } catch {
+      setPromotions((prev) => prev.filter((p) => p._id !== id));
+    }
     setShowDeleteConfirm(null);
   };
 
@@ -241,7 +281,11 @@ export default function Promotions() {
             </tr>
           </thead>
           <tbody>
-            {paginated.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan="11" className="promo-table__empty">Đang tải...</td>
+              </tr>
+            ) : paginated.length === 0 ? (
               <tr>
                 <td colSpan="11" className="promo-table__empty">
                   Không tìm thấy khuyến mãi nào
@@ -252,7 +296,7 @@ export default function Promotions() {
                 const usagePercent = getUsagePercent(promo.usedCount, promo.usageLimit);
                 const StatusIcon = statusConfig[promo.status]?.icon || FiTag;
                 return (
-                  <tr key={promo.id}>
+                  <tr key={promo._id}>
                     <td>{(currentPage - 1) * ITEMS_PER_PAGE + idx + 1}</td>
                     <td>
                       <div className="promo-code-cell">
@@ -326,7 +370,7 @@ export default function Promotions() {
                         <button className="promo-action-btn promo-action-btn--edit" title="Chỉnh sửa" onClick={() => handleOpenEdit(promo)}>
                           <FiEdit2 />
                         </button>
-                        <button className="promo-action-btn promo-action-btn--delete" title="Xóa" onClick={() => setShowDeleteConfirm(promo.id)}>
+                        <button className="promo-action-btn promo-action-btn--delete" title="Xóa" onClick={() => setShowDeleteConfirm(promo._id)}>
                           <FiTrash2 />
                         </button>
                       </div>

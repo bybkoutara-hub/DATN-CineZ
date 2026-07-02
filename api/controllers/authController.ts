@@ -97,7 +97,8 @@ export const adminLogin = async (req: Request, res: Response): Promise<void> => 
 export const changePassword = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, oldPassword, newPassword } = req.body;
-    const user = await User.findOne({ username });
+    const userId = req.user?.id;
+    const user = userId ? await User.findById(userId) : await User.findOne({ username });
     if (!user) {
       res.status(404).json({ success: false, message: "Không tìm thấy tài khoản!" });
       return;

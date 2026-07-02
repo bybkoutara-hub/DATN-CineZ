@@ -1,143 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   FiSearch, FiX, FiEye, FiFilter, FiChevronLeft,
   FiChevronRight, FiFileText, FiDownload, FiCalendar,
-  FiCreditCard, FiClock, FiUser, FiFilm, FiXCircle, FiPhone
+  FiCreditCard, FiClock, FiUser, FiFilm, FiXCircle, FiPhone,
+  FiRefreshCw
 } from 'react-icons/fi';
+import { bookingAPI, invoiceAPI } from '../api/apiService';
 import './Invoices.css';
 
 const formatCurrency = (v) => new Intl.NumberFormat('vi-VN').format(v) + ' VNĐ';
-
-// Mock data với chi tiết đầy đủ
-const initialInvoices = [
-  { 
-    id: 1, 
-    invoiceNumber: 'HD001', 
-    customerId: 'KH001',
-    customerName: 'Nguyễn Văn An',
-    customerPhone: '0912345678',
-    movieTitle: 'Lật Mặt 8', 
-    roomName: 'Phòng 1', 
-    showDate: '2026-05-20', 
-    showTime: '09:00', 
-    tickets: [
-      { seatId: 'D5', basPrice: 75000, seatType: 'standard', surcharge: 0 },
-      { seatId: 'D6', basPrice: 75000, seatType: 'standard', surcharge: 0 }
-    ],
-    combos: [
-      { name: 'Combo Couple', quantity: 1, price: 119000 }
-    ],
-    seats: 'D5, D6',
-    subtotal: 269000, 
-    discount: 10000, 
-    total: 259000, 
-    paymentMethod: 'cash', 
-    paymentStatus: 'paid', 
-    createdAt: '2026-05-20 08:30:00', 
-    createdBy: 'Trần Thị Staff' 
-  },
-  { 
-    id: 2, 
-    invoiceNumber: 'HD002', 
-    customerId: 'KH002',
-    customerName: 'Trần Thị Bình',
-    customerPhone: '0987654321',
-    movieTitle: 'Mai', 
-    roomName: 'Phòng 2', 
-    showDate: '2026-05-20', 
-    showTime: '10:00', 
-    tickets: [
-      { seatId: 'E3', basPrice: 85000, seatType: 'standard', surcharge: 0 }
-    ],
-    combos: [
-      { name: 'Bắp Rang Lớn', quantity: 1, price: 49000 }
-    ],
-    seats: 'E3',
-    subtotal: 134000, 
-    discount: 26800, 
-    total: 107200, 
-    paymentMethod: 'momo', 
-    paymentStatus: 'paid', 
-    createdAt: '2026-05-20 09:15:00', 
-    createdBy: 'Trần Thị Staff' 
-  },
-  { 
-    id: 3, 
-    invoiceNumber: 'HD003', 
-    customerId: 'KH003',
-    customerName: 'Lê Hoàng Cường',
-    customerPhone: '0919191919',
-    movieTitle: 'Godzilla x Kong', 
-    roomName: 'Phòng 3 - IMAX', 
-    showDate: '2026-05-20', 
-    showTime: '14:00', 
-    tickets: [
-      { seatId: 'F7', basPrice: 95000, seatType: 'vip', surcharge: 20000 },
-      { seatId: 'F8', basPrice: 95000, seatType: 'vip', surcharge: 20000 },
-      { seatId: 'F9', basPrice: 95000, seatType: 'vip', surcharge: 20000 }
-    ],
-    combos: [
-      { name: 'Combo Family', quantity: 1, price: 199000 }
-    ],
-    seats: 'F7, F8, F9',
-    subtotal: 484000, 
-    discount: 50000, 
-    total: 434000, 
-    paymentMethod: 'card', 
-    paymentStatus: 'paid', 
-    createdAt: '2026-05-20 13:00:00', 
-    createdBy: 'Nguyễn Văn Admin' 
-  },
-  { 
-    id: 4, 
-    invoiceNumber: 'HD004', 
-    customerId: 'KH004',
-    customerName: 'Phạm Minh Dung',
-    customerPhone: '0938383838',
-    movieTitle: 'Inside Out 2', 
-    roomName: 'Phòng 1', 
-    showDate: '2026-05-21', 
-    showTime: '15:00', 
-    tickets: [
-      { seatId: 'C4', basPrice: 75000, seatType: 'standard', surcharge: 0 },
-      { seatId: 'C5', basPrice: 75000, seatType: 'standard', surcharge: 0 }
-    ],
-    combos: [],
-    seats: 'C4, C5',
-    subtotal: 150000, 
-    discount: 0, 
-    total: 150000, 
-    paymentMethod: 'zalopay', 
-    paymentStatus: 'pending', 
-    createdAt: '2026-05-21 10:00:00', 
-    createdBy: 'Trần Thị Staff' 
-  },
-  { 
-    id: 5, 
-    invoiceNumber: 'HD005', 
-    customerId: 'KH005',
-    customerName: 'Hoàng Thị Hà',
-    customerPhone: '0945454545',
-    movieTitle: 'Lật Mặt 8', 
-    roomName: 'Phòng 1', 
-    showDate: '2026-05-21', 
-    showTime: '09:00', 
-    tickets: [
-      { seatId: 'G10', basPrice: 75000, seatType: 'standard', surcharge: 0 }
-    ],
-    combos: [
-      { name: 'Coca Cola Lớn', quantity: 1, price: 55000 }
-    ],
-    seats: 'G10',
-    subtotal: 130000, 
-    discount: 0, 
-    total: 130000, 
-    paymentMethod: 'cash', 
-    paymentStatus: 'cancelled', 
-    createdAt: '2026-05-20 20:00:00', 
-    createdBy: 'Trần Thị Staff' 
-  },
-];
 
 const ITEMS_PER_PAGE = 10;
 
@@ -155,36 +26,100 @@ const paymentStatusConfig = {
   refunded: { label: 'Đã hoàn tiền', color: '#f97316' },
 };
 
+const mapBookingToInvoice = (b) => {
+  const seatsArr = Array.isArray(b.seats) ? b.seats : [];
+  const comboArr = Array.isArray(b.combo) ? b.combo : [];
+  const comboTotal = comboArr.reduce((s, c) => s + (c.price || 0), 0);
+  const seatTotal = (b.totalAmount || 0) - comboTotal;
+  const seatPrice = seatsArr.length > 0 ? Math.round(Math.max(0, seatTotal) / seatsArr.length) : 0;
+
+  const tickets = seatsArr.map((seatId) => ({
+    seatId,
+    basPrice: seatPrice,
+    seatType: 'standard',
+    surcharge: 0,
+  }));
+
+  return {
+    _id: b._id,
+    invoiceNumber: b.invoiceNumber || (b._id ? `HD${String(b._id).slice(-6).toUpperCase()}` : 'N/A'),
+    customerId: b.user_id?._id || '',
+    customerName: b.user_id?.fullName || 'N/A',
+    customerPhone: b.user_id?.phone || '',
+    movieTitle: b.showtime_id?.movieId?.title || 'N/A',
+    roomName: b.showtime_id?.roomId?.name || 'N/A',
+    showDate: b.showtime_id?.date || '',
+    showTime: b.showtime_id?.startTime || '',
+    tickets,
+    combos: comboArr.map((c) => ({
+      name: c.name || 'Combo',
+      quantity: c.items || 1,
+      price: c.price || 0,
+    })),
+    seats: seatsArr.join(', '),
+    subtotal: b.totalAmount || 0,
+    discount: 0,
+    total: b.totalAmount || 0,
+    paymentMethod: b.paymentMethod || 'cash',
+    paymentStatus: b.paymentStatus || 'pending',
+    createdAt: b.createdAt || '',
+  };
+};
+
 export default function Invoices() {
-  const [invoices, setInvoices] = useState(initialInvoices);
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchType, setSearchType] = useState('all'); // all, invoiceNumber, customerId, date
+  const [searchType, setSearchType] = useState('all');
   const [filterPaymentStatus, setFilterPaymentStatus] = useState('all');
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [showDetailModal, setShowDetailModal] = useState(null);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const res = await bookingAPI.getAll();
+        const data = Array.isArray(res.data) ? res.data : [];
+        setInvoices(data.map(mapBookingToInvoice));
+      } catch {
+        try {
+          const res = await invoiceAPI.getAll();
+          const data = Array.isArray(res.data) ? res.data : [];
+          setInvoices(data.map(mapBookingToInvoice));
+        } catch {
+          setInvoices([]);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const filtered = useMemo(() => {
     return invoices.filter((inv) => {
       let matchSearch = true;
       if (searchTerm) {
+        const term = searchTerm.toLowerCase();
         if (searchType === 'invoiceNumber') {
-          matchSearch = inv.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase());
+          matchSearch = (inv.invoiceNumber || '').toLowerCase().includes(term);
         } else if (searchType === 'customerId') {
-          matchSearch = inv.customerId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       inv.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+          matchSearch = (inv.customerId || '').toLowerCase().includes(term) ||
+                       (inv.customerName || '').toLowerCase().includes(term);
         } else if (searchType === 'date') {
-          matchSearch = inv.createdAt.includes(searchTerm);
+          matchSearch = (inv.createdAt || '').includes(searchTerm);
         } else {
-          matchSearch = inv.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       inv.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       inv.movieTitle.toLowerCase().includes(searchTerm.toLowerCase());
+          matchSearch = (inv.invoiceNumber || '').toLowerCase().includes(term) ||
+                       (inv.customerName || '').toLowerCase().includes(term) ||
+                       (inv.movieTitle || '').toLowerCase().includes(term);
         }
       }
       const matchStatus = filterPaymentStatus === 'all' || inv.paymentStatus === filterPaymentStatus;
-      const matchDateFrom = !filterDateFrom || inv.showDate >= filterDateFrom;
-      const matchDateTo = !filterDateTo || inv.showDate <= filterDateTo;
+      const matchDateFrom = !filterDateFrom || (inv.showDate && inv.showDate >= filterDateFrom);
+      const matchDateTo = !filterDateTo || (inv.showDate && inv.showDate <= filterDateTo);
       return matchSearch && matchStatus && matchDateFrom && matchDateTo;
     });
   }, [invoices, searchTerm, searchType, filterPaymentStatus, filterDateFrom, filterDateTo]);
@@ -200,8 +135,20 @@ export default function Invoices() {
   const paidCount = filtered.filter(i => i.paymentStatus === 'paid').length;
   const pendingCount = filtered.filter(i => i.paymentStatus === 'pending').length;
 
-  const handleExportPDF = () => {
-    alert('Tính năng xuất PDF sẽ được thêm vào');
+  const handleExportPDF = async () => {
+    try {
+      const params = {};
+      if (filterDateFrom) params.from = filterDateFrom;
+      if (filterDateTo) params.to = filterDateTo;
+      if (filterPaymentStatus !== 'all') params.paymentStatus = filterPaymentStatus;
+      const res = await bookingAPI.getAll(params);
+      const data = Array.isArray(res.data) ? res.data : [];
+      const total = data.length;
+      const revenue = data.filter(b => b.paymentStatus === 'paid').reduce((s, b) => s + (b.totalAmount || 0), 0);
+      alert(`Xuất báo cáo thành công!\nTổng số hóa đơn: ${total}\nTổng doanh thu: ${formatCurrency(revenue)}`);
+    } catch {
+      alert('Không thể xuất báo cáo. Vui lòng thử lại.');
+    }
   };
 
   return (
@@ -329,7 +276,13 @@ export default function Invoices() {
             </tr>
           </thead>
           <tbody>
-            {paginated.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan="10" className="invoices-table__empty">
+                  <FiRefreshCw className="invoices-spinner" /> Đang tải dữ liệu...
+                </td>
+              </tr>
+            ) : paginated.length === 0 ? (
               <tr>
                 <td colSpan="10" className="invoices-table__empty">
                   Không tìm thấy hóa đơn nào
@@ -337,7 +290,7 @@ export default function Invoices() {
               </tr>
             ) : (
               paginated.map((inv) => (
-                <tr key={inv.id}>
+                <tr key={inv._id}>
                   <td><span className="invoices-code">{inv.invoiceNumber}</span></td>
                   <td>
                     <div className="invoices-customer-cell">
@@ -370,7 +323,7 @@ export default function Invoices() {
                       {paymentStatusConfig[inv.paymentStatus]?.label}
                     </span>
                   </td>
-                  <td><span className="invoices-date">{inv.createdAt.split(' ')[0]}</span></td>
+                  <td><span className="invoices-date">{inv.createdAt?.split(' ')[0] || ''}</span></td>
                   <td>
                     <button
                       className="invoices-action-btn invoices-action-btn--view"

@@ -1,39 +1,25 @@
-// ============================================================
-// CineZ Admin Dashboard - API Service (REAL API CONNECTION)
-// Kết nối trực tiếp tới NodeJS Backend Server (Port 5001)
-// ============================================================
-
 import axios from 'axios';
 
+const BASE_URL = 'http://localhost:5000/api/admin';
+
 const apiClient = axios.create({
-  baseURL: 'http://localhost:5000/api/admin',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: BASE_URL,
+  headers: { 'Content-Type': 'application/json' },
 });
 
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('cinez_token') || localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  const token = localStorage.getItem('token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
 const formatResponse = (data, message = 'Thành công') => ({
-  success: true,
-  data,
-  message,
+  success: true, data, message,
 });
 
-// ============================================================
-// REAL CONTROLLERS CONNECTION
-// ============================================================
-
-// Quản lý Phim
 export const movieAPI = {
-  getAll: async () => {
-    const response = await apiClient.get('/movies');
+  getAll: async (params) => {
+    const response = await apiClient.get('/movies', { params });
     return formatResponse(response.data);
   },
   getById: async (id) => {
@@ -42,11 +28,11 @@ export const movieAPI = {
   },
   create: async (movieData) => {
     const response = await apiClient.post('/movies', movieData);
-    return formatResponse(response.data.data, response.data.message);
+    return formatResponse(response.data.data || response.data, response.data.message);
   },
   update: async (id, movieData) => {
     const response = await apiClient.put(`/movies/${id}`, movieData);
-    return formatResponse(response.data.data, response.data.message);
+    return formatResponse(response.data.data || response.data, response.data.message);
   },
   delete: async (id) => {
     const response = await apiClient.delete(`/movies/${id}`);
@@ -54,23 +40,33 @@ export const movieAPI = {
   },
 };
 
-// Quản lý Suất chiếu
 export const showtimeAPI = {
-  getAll: async () => {
-    const response = await apiClient.get('/showtimes');
+  getAll: async (params) => {
+    const response = await apiClient.get('/showtimes', { params });
     return formatResponse(response.data);
   },
-  create: async (showtimeData) => {
-    const response = await apiClient.post('/showtimes', showtimeData);
-    return formatResponse(response.data.data, response.data.message);
+  getById: async (id) => {
+    const response = await apiClient.get(`/showtimes/${id}`);
+    return formatResponse(response.data);
+  },
+  create: async (data) => {
+    const response = await apiClient.post('/showtimes', data);
+    return formatResponse(response.data.data || response.data, response.data.message);
+  },
+  update: async (id, data) => {
+    const response = await apiClient.put(`/showtimes/${id}`, data);
+    return formatResponse(response.data.data || response.data, response.data.message);
   },
   delete: async (id) => {
     const response = await apiClient.delete(`/showtimes/${id}`);
     return formatResponse(null, response.data.message);
   },
+  getBookedSeats: async (id) => {
+    const response = await apiClient.get(`/showtimes/${id}/booked-seats`);
+    return response.data;
+  },
 };
 
-// Hệ thống Xác thực Tài khoản Admin/Nhân viên
 export const authAPI = {
   login: async (username, password) => {
     try {
@@ -79,7 +75,7 @@ export const authAPI = {
         localStorage.setItem('token', response.data.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.data.user));
       }
-      return response.data; 
+      return response.data;
     } catch (error) {
       const message = error.response?.data?.message || 'Tên đăng nhập hoặc mật khẩu không đúng';
       const err = new Error(message);
@@ -93,171 +89,276 @@ export const authAPI = {
     return { success: true, message: 'Đăng xuất thành công' };
   },
   getProfile: async () => {
-    const userSession = JSON.parse(localStorage.getItem('user'));
-    if (!userSession) return { success: false, message: 'Chưa đăng nhập' };
-    return { success: true, data: userSession };
+    try {
+      const response = await apiClient.get('/auth/profile');
+      return response.data;
+    } catch {
+      const userSession = JSON.parse(localStorage.getItem('user'));
+      if (!userSession) return { success: false, message: 'Chưa đăng nhập' };
+      return { success: true, data: userSession };
+    }
   },
-  updateProfile: async (data) => formatResponse(data, 'Cập nhật thông tin thành công'),
-  changePassword: async (username, oldPassword, newPassword) => {
-    const response = await apiClient.put('/auth/change-password', { username, oldPassword, newPassword });
+  updateProfile: async (data) => {
+    const response = await apiClient.put('/auth/profile', data);
     return response.data;
-  }
+  },
+  changePassword: async (oldPassword, newPassword) => {
+    const response = await apiClient.put('/auth/change-password', { oldPassword, newPassword });
+    return response.data;
+  },
+  register: async (data) => {
+    const response = await apiClient.post('/auth/register', data);
+    return response.data;
+  },
 };
 
-// Quản lý Thể loại phim
-export const genreAPI = { 
+export const genreAPI = {
   getAll: async () => {
     const response = await apiClient.get('/genres');
     return formatResponse(response.data);
   },
-  create: async (genreData) => {
-    const response = await apiClient.post('/genres', genreData);
-    return formatResponse(response.data, 'Thêm thể loại thành công');
+  getById: async (id) => {
+    const response = await apiClient.get(`/genres/${id}`);
+    return formatResponse(response.data);
   },
-  update: async (id, genreData) => {
-    const response = await apiClient.put(`/genres/${id}`, genreData);
-    return formatResponse(response.data, 'Cập nhật thể loại thành công');
+  create: async (data) => {
+    const response = await apiClient.post('/genres', data);
+    return formatResponse(response.data.data || response.data, response.data.message || 'Thêm thể loại thành công');
+  },
+  update: async (id, data) => {
+    const response = await apiClient.put(`/genres/${id}`, data);
+    return formatResponse(response.data.data || response.data, response.data.message || 'Cập nhật thể loại thành công');
   },
   delete: async (id) => {
     const response = await apiClient.delete(`/genres/${id}`);
-    return formatResponse(null, 'Xóa thể loại thành công');
-  }
+    return formatResponse(null, response.data.message || 'Xóa thể loại thành công');
+  },
 };
 
-// Quản lý Phòng chiếu & Sơ đồ ghế ngồi
-export const roomAPI = { 
+export const roomAPI = {
   getAll: async () => {
     const response = await apiClient.get('/rooms');
     return formatResponse(response.data);
   },
-  getSeats: async (roomId) => {
-    const response = await apiClient.get(`/rooms/${roomId}/seats`);
+  getById: async (id) => {
+    const response = await apiClient.get(`/rooms/${id}`);
     return formatResponse(response.data);
-  } 
-};
-export const seatAPI = { 
-  getByRoom: async (roomId) => {
-    const response = await apiClient.get(`/rooms/${roomId}/seats`);
-    return formatResponse(response.data);
-  } 
+  },
+  create: async (data) => {
+    const response = await apiClient.post('/rooms', data);
+    return formatResponse(response.data.data || response.data, response.data.message);
+  },
+  update: async (id, data) => {
+    const response = await apiClient.put(`/rooms/${id}`, data);
+    return formatResponse(response.data.data || response.data, response.data.message);
+  },
+  delete: async (id) => {
+    const response = await apiClient.delete(`/rooms/${id}`);
+    return formatResponse(null, response.data.message);
+  },
 };
 
-// Quản lý Combo bắp nước
-export const comboAPI = { 
+export const seatAPI = {
+  getAll: async (params) => {
+    const response = await apiClient.get('/seats', { params });
+    return formatResponse(response.data);
+  },
+  getByRoom: async (roomId) => {
+    const response = await apiClient.get(`/seats/room/${roomId}`);
+    return formatResponse(response.data);
+  },
+  bulkCreate: async (roomId, seats) => {
+    const response = await apiClient.post('/seats/bulk', { room: roomId, seats });
+    return formatResponse(response.data.data || response.data, response.data.message);
+  },
+  update: async (id, data) => {
+    const response = await apiClient.put(`/seats/${id}`, data);
+    return formatResponse(response.data.data || response.data, response.data.message);
+  },
+  remove: async (id) => {
+    const response = await apiClient.delete(`/seats/${id}`);
+    return formatResponse(null, response.data.message);
+  },
+};
+
+export const comboAPI = {
   getAll: async () => {
     const response = await apiClient.get('/combos');
     return formatResponse(response.data);
   },
+  getById: async (id) => {
+    const response = await apiClient.get(`/combos/${id}`);
+    return formatResponse(response.data);
+  },
   create: async (data) => {
     const response = await apiClient.post('/combos', data);
-    return formatResponse(response.data, 'Thêm combo thành công');
+    return formatResponse(response.data.data || response.data, response.data.message || 'Thêm combo thành công');
   },
   update: async (id, data) => {
     const response = await apiClient.put(`/combos/${id}`, data);
-    return formatResponse(response.data, 'Cập nhật combo thành công');
+    return formatResponse(response.data.data || response.data, response.data.message || 'Cập nhật combo thành công');
   },
   delete: async (id) => {
     const response = await apiClient.delete(`/combos/${id}`);
-    return formatResponse(null, 'Xóa combo thành công');
-  }
+    return formatResponse(null, response.data.message || 'Xóa combo thành công');
+  },
 };
 
-// Quản lý Mã Khuyến mãi
-export const promotionAPI = { 
-  getAll: async () => {
-    const response = await apiClient.get('/promotions');
+export const promotionAPI = {
+  getAll: async (params) => {
+    const response = await apiClient.get('/promotions', { params });
+    return formatResponse(response.data);
+  },
+  getById: async (id) => {
+    const response = await apiClient.get(`/promotions/${id}`);
     return formatResponse(response.data);
   },
   create: async (data) => {
     const response = await apiClient.post('/promotions', data);
-    return formatResponse(response.data, 'Thêm mã khuyến mãi thành công');
+    return formatResponse(response.data.data || response.data, response.data.message);
   },
   update: async (id, data) => {
     const response = await apiClient.put(`/promotions/${id}`, data);
-    return formatResponse(response.data, 'Cập nhật mã thành công');
+    return formatResponse(response.data.data || response.data, response.data.message);
   },
   delete: async (id) => {
-    await apiClient.delete(`/promotions/${id}`);
-    return formatResponse(null, 'Xóa mã thành công');
-  }
+    const response = await apiClient.delete(`/promotions/${id}`);
+    return formatResponse(null, response.data.message);
+  },
+  validate: async (code, orderValue) => {
+    const response = await apiClient.post('/promotions/validate', { code, orderValue });
+    return response.data;
+  },
 };
 
-// Quản lý Thành viên (Khách hàng)
-export const memberAPI = { 
-  getAll: async () => {
-    const response = await apiClient.get('/members');
+export const memberAPI = {
+  getAll: async (params) => {
+    const response = await apiClient.get('/members', { params });
     return formatResponse(response.data);
-  } 
+  },
+  getById: async (id) => {
+    const response = await apiClient.get(`/members/${id}`);
+    return formatResponse(response.data);
+  },
+  update: async (id, data) => {
+    const response = await apiClient.put(`/members/${id}`, data);
+    return formatResponse(response.data.data || response.data, response.data.message);
+  },
+  getBookings: async (id) => {
+    const response = await apiClient.get(`/members/${id}/bookings`);
+    return formatResponse(response.data);
+  },
 };
 
-// Quản lý Nhân viên
-export const staffAPI = { 
-  getAll: async () => {
-    const response = await apiClient.get('/staffs');
+export const staffAPI = {
+  getAll: async (params) => {
+    const response = await apiClient.get('/staff', { params });
+    return formatResponse(response.data);
+  },
+  getById: async (id) => {
+    const response = await apiClient.get(`/staff/${id}`);
     return formatResponse(response.data);
   },
   create: async (data) => {
-    const response = await apiClient.post('/staffs', data);
-    return formatResponse(response.data, 'Thêm nhân viên thành công');
+    const response = await apiClient.post('/staff', data);
+    return formatResponse(response.data.data || response.data, response.data.message);
   },
   update: async (id, data) => {
-    const response = await apiClient.put(`/staffs/${id}`, data);
-    return formatResponse(response.data, 'Cập nhật thông tin nhân viên thành công');
+    const response = await apiClient.put(`/staff/${id}`, data);
+    return formatResponse(response.data.data || response.data, response.data.message);
   },
   delete: async (id) => {
-    const response = await apiClient.delete(`/staffs/${id}`);
-    return formatResponse(null, 'Xóa nhân viên thành công');
-  }
+    const response = await apiClient.delete(`/staff/${id}`);
+    return formatResponse(null, response.data.message);
+  },
 };
 
-// Quản lý Sliders/Banners
-export const sliderAPI = { 
-  getAll: async () => {
-    const response = await apiClient.get('/sliders');
+export const sliderAPI = {
+  getAll: async (params) => {
+    const response = await apiClient.get('/sliders', { params });
+    return formatResponse(response.data);
+  },
+  getById: async (id) => {
+    const response = await apiClient.get(`/sliders/${id}`);
     return formatResponse(response.data);
   },
   create: async (data) => {
     const response = await apiClient.post('/sliders', data);
-    return formatResponse(response.data, 'Thêm banner thành công');
+    return formatResponse(response.data.data || response.data, response.data.message);
   },
   update: async (id, data) => {
     const response = await apiClient.put(`/sliders/${id}`, data);
-    return formatResponse(response.data, 'Cập nhật banner thành công');
+    return formatResponse(response.data.data || response.data, response.data.message);
   },
   delete: async (id) => {
-    await apiClient.delete(`/sliders/${id}`);
-    return formatResponse(null, 'Xóa banner thành công');
-  }
+    const response = await apiClient.delete(`/sliders/${id}`);
+    return formatResponse(null, response.data.message);
+  },
+  reorder: async (items) => {
+    const response = await apiClient.put('/sliders/reorder', { items });
+    return formatResponse(null, response.data.message);
+  },
 };
 
-// Quản lý Đặt vé & Hóa đơn
-export const bookingAPI = { 
-  getAll: async () => {
-    const response = await apiClient.get('/bookings');
+export const bookingAPI = {
+  getAll: async (params) => {
+    const response = await apiClient.get('/bookings', { params });
     return formatResponse(response.data);
   },
-  updateStatus: async (id, paymentStatus) => {
-    const response = await apiClient.put(`/bookings/${id}/status`, { paymentStatus });
-    return formatResponse(response.data.data, response.data.message);
-  }
-};
-export const invoiceAPI = { 
-  getAll: async () => {
-    const response = await apiClient.get('/bookings'); 
+  getById: async (id) => {
+    const response = await apiClient.get(`/bookings/${id}`);
     return formatResponse(response.data);
   },
-  updateStatus: async (id, paymentStatus) => {
-    const response = await apiClient.put(`/bookings/${id}/status`, { paymentStatus });
-    return formatResponse(response.data.data, response.data.message);
-  }
+  update: async (id, data) => {
+    const response = await apiClient.put(`/bookings/${id}`, data);
+    return formatResponse(response.data.data || response.data, response.data.message);
+  },
+  cancel: async (id) => {
+    const response = await apiClient.put(`/bookings/${id}/cancel`);
+    return formatResponse(response.data.data || response.data, response.data.message);
+  },
 };
 
-// Thống kê biểu đồ Dashboard chính thức
-export const dashboardAPI = { 
+export const invoiceAPI = {
+  getAll: async (params) => {
+    const response = await apiClient.get('/invoices', { params });
+    return formatResponse(response.data);
+  },
+  getById: async (id) => {
+    const response = await apiClient.get(`/invoices/${id}`);
+    return formatResponse(response.data);
+  },
+  create: async (data) => {
+    const response = await apiClient.post('/invoices', data);
+    return formatResponse(response.data.data || response.data, response.data.message);
+  },
+  update: async (id, data) => {
+    const response = await apiClient.put(`/invoices/${id}`, data);
+    return formatResponse(response.data.data || response.data, response.data.message);
+  },
+  getByBooking: async (bookingId) => {
+    const response = await apiClient.get(`/invoices/booking/${bookingId}`);
+    return formatResponse(response.data);
+  },
+};
+
+export const dashboardAPI = {
   getStats: async () => {
     const response = await apiClient.get('/dashboard/stats');
-    return formatResponse(response.data.data); 
-  } 
+    return response.data;
+  },
+  getRevenue: async (params) => {
+    const response = await apiClient.get('/dashboard/revenue', { params });
+    return formatResponse(response.data);
+  },
+  getRevenueByMovie: async () => {
+    const response = await apiClient.get('/dashboard/revenue-by-movie');
+    return formatResponse(response.data);
+  },
+  getTopMovies: async (limit) => {
+    const response = await apiClient.get('/dashboard/top-movies', { params: { limit } });
+    return formatResponse(response.data);
+  },
 };
 
 export const resetStore = () => {};

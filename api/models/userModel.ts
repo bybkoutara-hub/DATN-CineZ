@@ -5,10 +5,11 @@ export interface IUser extends Document {
   email: string;
   password: string;
   phone: string;
-  role: "user" | "admin" | "staff";
+  role: "user" | "admin" | "staff" | "customer";
   loyaltyPoints: number;
   username: string;
   fullName: string;
+  active: boolean;
 }
 
 const UserSchema: Schema = new Schema(
@@ -17,10 +18,11 @@ const UserSchema: Schema = new Schema(
     email: { type: String, default: "", lowercase: true },
     password: { type: String, required: true },
     phone: { type: String, default: "" },
-    role: { type: String, enum: ["user", "admin", "staff"], default: "user" },
+    role: { type: String, enum: ["user", "admin", "staff", "customer"], default: "user" },
     loyaltyPoints: { type: Number, default: 0 },
     username: { type: String, default: null },
     fullName: { type: String, default: "" },
+    active: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

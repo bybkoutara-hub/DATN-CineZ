@@ -1,25 +1,38 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-// Vé / đơn đặt vé
 export interface IBooking extends Document {
   user: mongoose.Types.ObjectId;
   showtime: mongoose.Types.ObjectId;
-  seats: string[]; // Ghế đã chọn: ["A1", "A2", "B5"]
-  combo?: mongoose.Types.ObjectId; // Combo bắp nước (tuỳ chọn)
+  seats: string[];
+  combo?: mongoose.Types.ObjectId;
+  comboQuantity: number;
   totalPrice: number;
-  status: "pending" | "paid" | "cancelled";
-  qrCode?: string; // Mã QR check-in tại rạp
+  totalAmount: number;
+  status: "pending" | "paid" | "cancelled" | "completed";
+  paymentStatus: "pending" | "completed" | "cancelled";
+  paymentMethod?: string;
+  combos?: { name: string; quantity: number; price: number }[];
+  qrCode?: string;
+  userId?: mongoose.Types.ObjectId;
+  showtimeId?: mongoose.Types.ObjectId;
 }
 
 const BookingSchema: Schema = new Schema(
   {
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    showtime: { type: Schema.Types.ObjectId, ref: "Showtime", required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User" },
+    showtime: { type: Schema.Types.ObjectId, ref: "Showtime" },
     seats: { type: [String], default: [] },
     combo: { type: Schema.Types.ObjectId, ref: "Combo" },
+    comboQuantity: { type: Number, default: 0 },
     totalPrice: { type: Number, default: 0 },
-    status: { type: String, enum: ["pending", "paid", "cancelled"], default: "pending" },
+    totalAmount: { type: Number, default: 0 },
+    status: { type: String, enum: ["pending", "paid", "cancelled", "completed"], default: "pending" },
+    paymentStatus: { type: String, enum: ["pending", "completed", "cancelled"], default: "pending" },
+    paymentMethod: { type: String, default: "" },
+    combos: { type: [{ name: String, quantity: Number, price: Number }], default: [] },
     qrCode: { type: String, default: "" },
+    userId: { type: Schema.Types.ObjectId, ref: "User" },
+    showtimeId: { type: Schema.Types.ObjectId, ref: "Showtime" },
   },
   { timestamps: true }
 );
