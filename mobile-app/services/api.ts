@@ -17,7 +17,7 @@ function getApiHost(): string {
 }
 
 const api = axios.create({
-  baseURL: `http://${getApiHost()}:5000/api`,
+  baseURL: 'http://10.0.2.2:5001/api',
   timeout: 10000,
 });
 

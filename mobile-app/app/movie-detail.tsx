@@ -2,17 +2,22 @@ import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ActivityIndicator,
   ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput, // Đã thêm thư viện TextInput để nhập bình luận
   TouchableOpacity,
   View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getMovieDetail } from "../services/movieService"; // Đảm bảo đường dẫn này đúng với dự án của bạn
+
+// Nhập các hàm gọi API
+import { getMovieDetail } from "../services/movieService"; 
+import { fetchMovieComments, sendComment } from "../services/commentService"; // API bình luận
 
 // ==========================================
 // HỆ MÀU SẮC CHUẨN FIGMA
@@ -26,6 +31,39 @@ export default function MovieDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams(); // Nhận Movie ID truyền từ HomeScreen sang
 
+  // Các State quản lý Bình luận
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  // State giả lập kiểm tra đăng nhập (Sau này bạn sẽ nối với luồng Login thực tế để lấy Token)
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userToken, setUserToken] = useState("");
+
+  useEffect(() => {
+  // Thêm hàm kiểm tra đăng nhập này
+  const checkLoginStatus = async () => {
+    try {
+      // Đổi 'userToken' thành đúng cái tên key mà hàm loginApi của bạn đã lưu
+      const token = await AsyncStorage.getItem('userToken'); 
+      if (token) {
+        setIsLoggedIn(true);
+        setUserToken(token);
+      }
+    } catch (error) {
+      console.log("Chưa đăng nhập");
+    }
+  };
+
+  if (id) {
+    const loadMovieData = async () => {
+      // ... (code fetch phim và comment giữ nguyên)
+    };
+    
+    checkLoginStatus(); // Gọi hàm check token
+    loadMovieData();
+  }
+}, [id]);
+  
+
   // State lưu trữ dữ liệu động từ API Backend
   const [movie, setMovie] = useState<any>(null);
   const [showtimes, setShowtimes] = useState<any[]>([]);
@@ -37,7 +75,7 @@ export default function MovieDetailScreen() {
   // State quản lý suất chiếu cụ thể được chọn trực tiếp bởi người dùng
   const [selectedShowtimeId, setSelectedShowtimeId] = useState<string | null>(null);
 
-  // Gọi API Backend lấy thông tin chi tiết phim khi màn hình được load
+  // Gọi API Backend lấy thông tin chi tiết phim & Bình luận khi màn hình được load
   useEffect(() => {
     if (id) {
       const loadMovieData = async () => {
@@ -51,8 +89,14 @@ export default function MovieDetailScreen() {
           if (data.showtimes && data.showtimes.length > 0) {
             setSelectedCinema(data.showtimes[0].roomName); 
           }
+
+          // Gọi thêm API kéo danh sách bình luận về
+          const commentData = await fetchMovieComments(id as string);
+          if (commentData && commentData.success) {
+            setComments(commentData.comments);
+          }
         } catch (error) {
-          console.error("Lỗi tải chi tiết phim từ Server:", error);
+          console.error("Lỗi tải dữ liệu từ Server:", error);
         } finally {
           setLoading(false);
         }
@@ -93,7 +137,7 @@ export default function MovieDetailScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      {/* 1. HERO POSTER BACKGROUND (Lấy dữ liệu động từ poster_url backend) */}
+      {/* 1. HERO POSTER BACKGROUND */}
       <ImageBackground
         source={{
           uri: movie.poster_url || "https://image.tmdb.org/t/p/w500/7WsyChQLEftFiDOVTGkv3hFpyyt.jpg",
@@ -136,7 +180,6 @@ export default function MovieDetailScreen() {
             <Text style={styles.ratingCount}> ({movie.total_reviews || "0"} lượt đánh giá)</Text>
           </View>
 
-          {/* Ngôi sao đánh giá tĩnh tương ứng điểm số */}
           <View style={styles.actionRow}>
             <View style={styles.starsContainer}>
               {[1, 2, 3, 4, 5].map((star) => {
@@ -166,6 +209,16 @@ export default function MovieDetailScreen() {
         {/* 3. METADATA DETAILS */}
         <View style={styles.metaSection}>
           <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Đạo diễn:</Text>
+            <Text style={styles.metaValue}>{movie.director || "Đang cập nhật"}</Text>
+          </View>
+          
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Diễn viên:</Text>
+            <Text style={styles.metaValue}>{movie.cast || "Đang cập nhật"}</Text>
+          </View>
+
+          <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Thể loại:</Text>
             <Text style={styles.metaValue}>
               {Array.isArray(movie.genres) ? movie.genres.join(", ") : movie.genres || "Action, Drama"}
@@ -180,7 +233,7 @@ export default function MovieDetailScreen() {
             <Text style={styles.metaValue}>Tiếng Anh / Phụ đề Việt</Text>
           </View>
         </View>
-
+        
         {/* 4. STORYLINE */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Nội dung phim</Text>
@@ -190,7 +243,30 @@ export default function MovieDetailScreen() {
           </Text>
         </View>
 
-        {/* 5. CINEMA LIST SECTION (Lấy danh sách phòng/rạp từ các Suất chiếu) */}
+       {/* 5. NÚT ĐIỀU HƯỚNG BÌNH LUẬN (Giao diện sạch sẽ) */}
+        <View style={styles.sectionContainer}>
+          <TouchableOpacity
+            style={styles.commentSummaryBtn}
+            activeOpacity={0.8}
+            onPress={() => router.push({
+              pathname: "/movie-comments",
+              params: { movieId: id, movieTitle: movie.title }
+            })}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <Ionicons name="chatbubbles" size={28} color={PRIMARY_YELLOW} />
+              <View>
+                <Text style={{ color: "#ffffff", fontSize: 16, fontWeight: "700" }}>Bình luận & Đánh giá</Text>
+                <Text style={{ color: TEXT_MUTED, fontSize: 13, marginTop: 2 }}>
+                  {comments.length > 0 ? `Xem tất cả ${comments.length} bình luận` : "Chưa có đánh giá nào."}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#666666" />
+          </TouchableOpacity>
+        </View>
+
+        {/* 6. CINEMA LIST SECTION */}
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Rạp chiếu</Text>
           {uniqueCinemas.length === 0 ? (
@@ -204,7 +280,7 @@ export default function MovieDetailScreen() {
                   activeOpacity={0.85}
                   onPress={() => {
                     setSelectedCinema(cinemaName);
-                    setSelectedShowtimeId(null); // Reset lại suất chiếu đã chọn khi đổi rạp
+                    setSelectedShowtimeId(null); 
                   }}
                   style={[
                     styles.cinemaCard,
@@ -227,7 +303,7 @@ export default function MovieDetailScreen() {
           )}
         </View>
 
-        {/* 6. SUẤT CHIẾU TƯƠNG ỨNG RẠP ĐƯỢC CHỌN */}
+        {/* 7. SUẤT CHIẾU TƯƠNG ỨNG RẠP ĐƯỢC CHỌN */}
         {selectedCinema && (
           <View style={styles.sectionContainer}>
             <Text style={styles.sectionTitle}>Suất chiếu tại {selectedCinema}</Text>
@@ -269,7 +345,7 @@ export default function MovieDetailScreen() {
         <View style={{ height: 120 }} />
       </ScrollView>
 
-      {/* 7. FIXED BOTTOM CONTINUE BUTTON */}
+      {/* 8. FIXED BOTTOM CONTINUE BUTTON */}
       <View style={styles.bottomActionContainer}>
         <TouchableOpacity
           activeOpacity={0.9}
@@ -544,5 +620,16 @@ const styles = StyleSheet.create({
     color: BACKGROUND_BLACK,
     fontSize: 16,
     fontWeight: "700",
+  },
+  commentSummaryBtn: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#111111",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "#262626",
   },
 });

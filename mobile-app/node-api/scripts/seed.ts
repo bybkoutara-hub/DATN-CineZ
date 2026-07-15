@@ -74,6 +74,7 @@ async function seedDatabase() {
         rating: 4.8, total_reviews: 3120,
         description: "Danh tính Người Nhện bị lộ, Peter nhờ Doctor Strange giúp đỡ, vô tình mở ra đa vũ trụ đầy hiểm nguy.",
         director: "Jon Watts", language: "Tiếng Anh (phụ đề Việt)",
+        cast: 'Tom Holland, Zendaya, Benedict Cumberbatch',
       },
       {
         title: "Avatar: The Way of Water",
@@ -83,6 +84,7 @@ async function seedDatabase() {
         rating: 4.7, total_reviews: 1820,
         description: "Jake Sully và Neytiri cùng các con rời rừng già, tìm đến bộ tộc người Na'vi vùng biển để lánh nạn và bảo vệ gia đình.",
         director: "James Cameron", language: "Tiếng Anh (phụ đề Việt)",
+        cast: 'Sam Worthington, Zoe Saldaña, Sigourney Weaver'
       },
       {
         title: "Avengers: Endgame",
@@ -92,6 +94,7 @@ async function seedDatabase() {
         rating: 4.9, total_reviews: 5400,
         description: "Sau cú búng tay của Thanos, các Avengers còn sót lại tập hợp lần cuối để đảo ngược tất cả.",
         director: "Anthony & Joe Russo", language: "Tiếng Anh (phụ đề Việt)",
+        cast: 'Robert Downey Jr., Chris Evans, Mark Ruffalo'
       },
       {
         title: "John Wick: Chapter 4",
@@ -101,6 +104,7 @@ async function seedDatabase() {
         rating: 4.6, total_reviews: 2410,
         description: "John Wick tìm cách thoát khỏi Hội Đồng Tối Cao, đối đầu những sát thủ nguy hiểm nhất khắp thế giới.",
         director: "Chad Stahelski", language: "Tiếng Anh (phụ đề Việt)",
+        cast: 'Keanu Reeves, Donnie Yen, Bill Skarsgård',
       },
       {
         title: "Inception",
@@ -110,6 +114,7 @@ async function seedDatabase() {
         rating: 4.8, total_reviews: 4200,
         description: "Một tên trộm chuyên đánh cắp bí mật từ giấc mơ nhận nhiệm vụ gieo một ý tưởng vào tiềm thức mục tiêu.",
         director: "Christopher Nolan", language: "Tiếng Anh (phụ đề Việt)",
+        cast: 'Leonardo DiCaprio, Joseph Gordon-Levitt, Ellen Page'
       },
       {
         title: "Dune: Part Two",
@@ -119,6 +124,7 @@ async function seedDatabase() {
         rating: 4.7, total_reviews: 1980,
         description: "Paul Atreides liên minh cùng người Fremen, dấn thân vào hành trình báo thù và định mệnh của cả vũ trụ.",
         director: "Denis Villeneuve", language: "Tiếng Anh (phụ đề Việt)",
+        cast: 'Timothée Chalamet, Rebecca Ferguson, Zendaya'
       },
       {
         title: "Wonder Woman 1984",
@@ -128,6 +134,7 @@ async function seedDatabase() {
         rating: 4.1, total_reviews: 1340,
         description: "Diana Prince đối đầu hai kẻ thù mới là Cheetah và Maxwell Lord giữa thập niên 1980 rực rỡ.",
         director: "Patty Jenkins", language: "Tiếng Anh (phụ đề Việt)",
+        cast: 'Gal Gadot, Chris Pine, Kristen Wiig'
       },
       {
         title: "The Dark Knight",
@@ -137,6 +144,7 @@ async function seedDatabase() {
         rating: 4.9, total_reviews: 6800,
         description: "Batman đối đầu với Joker, tên tội phạm hỗn loạn đẩy Gotham vào cuộc khủng hoảng sinh tử.",
         director: "Christopher Nolan", language: "Tiếng Anh (phụ đề Việt)",
+        cast: 'Christian Bale, Heath Ledger, Aaron Eckhart'
       },
       // ===== PHIM SẮP CHIẾU =====
       {
@@ -147,6 +155,7 @@ async function seedDatabase() {
         rating: 4.8, total_reviews: 1120,
         description: "Câu chuyện về J. Robert Oppenheimer, cha đẻ của bom nguyên tử và những day dứt đạo đức của ông.",
         director: "Christopher Nolan", language: "Tiếng Anh (phụ đề Việt)",
+        cast: 'Cillian Murphy, Emily Blunt, Matt Damon'
       },
       {
         title: "Barbie",
@@ -156,6 +165,7 @@ async function seedDatabase() {
         rating: 4.2, total_reviews: 760,
         description: "Barbie rời khỏi thế giới hoàn hảo Barbie Land để khám phá thế giới loài người đầy bất ngờ.",
         director: "Greta Gerwig", language: "Tiếng Anh (phụ đề Việt)",
+        cast: 'Margot Robbie, Ryan Gosling, America Ferrera'
       },
       {
         title: "Interstellar",
@@ -165,6 +175,7 @@ async function seedDatabase() {
         rating: 4.9, total_reviews: 3300,
         description: "Nhóm phi hành gia du hành qua hố sâu không-thời gian để tìm ngôi nhà mới cho nhân loại.",
         director: "Christopher Nolan", language: "Tiếng Anh (phụ đề Việt)",
+        cast: 'Matthew McConaughey, Anne Hathaway, Jessica Chastain'
       },
       {
         title: "Parasite",
@@ -174,6 +185,7 @@ async function seedDatabase() {
         rating: 4.6, total_reviews: 1450,
         description: "Gia đình nghèo họ Kim từng bước thâm nhập vào cuộc sống của một gia đình giàu có, dẫn đến bi kịch khó lường.",
         director: "Bong Joon-ho", language: "Tiếng Hàn (phụ đề Việt)",
+        cast: 'Song Kang-ho, Lee Sun-kyun, Cho Yeo-jeong'
       },
       {
         title: "Fight Club",
@@ -183,6 +195,7 @@ async function seedDatabase() {
         rating: 4.7, total_reviews: 2890,
         description: "Một nhân viên văn phòng mất ngủ cùng gã bán xà phòng lập nên câu lạc bộ đánh nhau bí mật, dẫn tới hệ quả khôn lường.",
         director: "David Fincher", language: "Tiếng Anh (phụ đề Việt)",
+        cast: 'Edward Norton, Brad Pitt, Helena Bonham Carter'
       },
     ];
     const createdMovies: any[] = await Movie.insertMany(movieList);
