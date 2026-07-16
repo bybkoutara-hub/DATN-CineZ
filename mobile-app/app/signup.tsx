@@ -47,9 +47,8 @@ export default function SignUpScreen() {
     try {
       const res = await registerApi(email, password, name, phone);
       if (res?.success) {
-        Alert.alert("Thành công", res?.message || "Đăng ký tài khoản thành công!", [
-          { text: "Đăng nhập", onPress: () => router.replace({ pathname: "/sign-in", params: { email } }) }
-        ]);
+        // Đăng ký xong -> sang màn đăng nhập, điền sẵn email cho tiện
+        router.replace({ pathname: "/sign-in", params: { email } });
       } else {
         Alert.alert("Đăng ký thất bại", res?.message || "Vui lòng thử lại");
       }

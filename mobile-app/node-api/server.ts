@@ -7,7 +7,6 @@ import authRoutes from "./routes/authRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js"; // Đã gắn tuyến đường đặt vé mới vào hệ thống
 import movieRoutes from './routes/movieRoutes.js';
 import paymentRoutes from "./routes/paymentRoutes.js"; // Tuyến đường thanh toán VNPay
-import commentRoutes from './routes/commentRoutes.js'; 
 
 dotenv.config();
 
@@ -36,7 +35,6 @@ app.use('/api/movies', movieRoutes);     // Quản lý danh sách phim & lịch 
 app.use("/api/auth", authRoutes);       // Quản lý đăng ký, đăng nhập & profile
 app.use("/api/bookings", bookingRoutes); // Quản lý đặt vé & xem lịch sử mua vé
 app.use("/api/payment", paymentRoutes);  // Thanh toán online qua VNPay
-app.use('/api/comments', commentRoutes); // Quản lý bình luận phim
 
 // Endpoint kiểm tra trạng thái nhanh khi gõ trực tiếp IP/Ngrok lên trình duyệt
 app.get('/', (req: Request, res: Response) => {

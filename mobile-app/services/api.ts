@@ -1,33 +1,23 @@
-import axios from "axios";
-import { Platform } from "react-native";
-import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 
-function getApiHost(): string {
-  if (__DEV__) {
-    const debuggerHost = Constants.expoGoConfig?.debuggerHost;
-    if (debuggerHost) {
-      return debuggerHost.split(":")[0];
-    }
-  }
-  if (Platform.OS === "android") {
-    return "10.0.2.2";
-  }
-  return "localhost";
-}
-
+// Dùng trực tiếp hàm create
 const api = axios.create({
-  baseURL: 'http://10.0.2.2:5001/api',
+  baseURL: "http://192.168.1.30:5001/api", // (Hoặc localhost tùy máy bạn)
   timeout: 10000,
 });
 
+// Tự động đính kèm JWT token (nếu đã đăng nhập) vào header Authorization
+// cho mọi request, nhờ vậy các API cần bảo vệ (profile, lịch sử vé...) hoạt động.
 api.interceptors.request.use(async (config) => {
   try {
     const token = await AsyncStorage.getItem("userToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-  } catch {}
+  } catch {
+    // Bỏ qua nếu không đọc được token, request vẫn gửi như khách
+  }
   return config;
 });
 

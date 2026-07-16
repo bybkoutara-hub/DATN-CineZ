@@ -8,8 +8,6 @@ export interface IMovie extends Document {
   rating: number;
   total_reviews: string;
   release_date: string;
-  director?: string;
-  cast?: string;
   status: "now_playing" | "coming_soon";
 }
 
@@ -23,8 +21,6 @@ const MovieSchema: Schema = new Schema(
     total_reviews: { type: String, default: "0" },
     release_date: { type: String, required: true },
     status: { type: String, enum: ["now_playing", "coming_soon"], required: true },
-    director: { type: String, default: 'Đang cập nhật' },
-    cast: { type: String, default: 'Đang cập nhật' },
   },
   { timestamps: true }
 );

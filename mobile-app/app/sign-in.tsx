@@ -44,8 +44,8 @@ export default function SignInScreen() {
       await loginApi(email, password);
       // Token đã được lưu trong loginApi -> vào thẳng trang chủ
       router.replace("/(tabs)");
-    } catch (error: any) {
-      Alert.alert("Đăng nhập thất bại", error?.response?.data?.message || "Email hoặc mật khẩu không chính xác");
+    } catch {
+      Alert.alert("Đăng nhập thất bại", "Email hoặc mật khẩu không chính xác");
     } finally {
       setLoading(false);
     }

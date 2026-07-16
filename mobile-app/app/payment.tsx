@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import * as WebBrowser from "expo-web-browser";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -14,7 +16,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { createBooking } from "../services/bookingService";
+import { cancelBooking, createBooking } from "../services/bookingService";
 import { createVnpayUrl } from "../services/paymentService";
 
 // ==========================================
@@ -26,6 +28,9 @@ const PRIMARY_YELLOW = "#E2A43B";
 const TEXT_LIGHT = "#FFFFFF";
 const TEXT_MUTED = "#888888";
 const BORDER_GRAY = "#242426";
+
+// Deep link app sẽ nhận lại sau khi thanh toán VNPay xong
+const VNPAY_RETURN_SCHEME = "mobileapp://vnpay-return";
 
 export default function PaymentScreen() {
   const router = useRouter();
@@ -108,11 +113,33 @@ export default function PaymentScreen() {
       throw new Error("Không tạo được đơn đặt vé.");
     }
 
-    await createVnpayUrl(bookingId);
-    // Mock VNPay: thanh toán đã hoàn tất ngay trên server
-    Alert.alert("Thanh toán thành công", "Cảm ơn bạn! Vé đã được xác nhận.", [
-      { text: "OK", onPress: () => router.replace("/(tabs)/movie") },
-    ]);
+    const paymentUrl = await createVnpayUrl(bookingId);
+    const result = await WebBrowser.openAuthSessionAsync(paymentUrl, VNPAY_RETURN_SCHEME);
+
+    if (result.type === "success" && result.url) {
+      const { queryParams } = Linking.parse(result.url);
+      // status có thể là string hoặc string[] -> chuẩn hóa về string đầu tiên
+      const rawStatus = queryParams?.status;
+      const status = Array.isArray(rawStatus) ? rawStatus[0] : rawStatus;
+      if (status === "success") {
+        Alert.alert("Thanh toán thành công", "Cảm ơn bạn! Vé đã được xác nhận.");
+        router.replace("/(tabs)/ticket");
+        return;
+      }
+      // Thất bại/sai số tiền: backend đã tự hủy & hoàn ghế qua return URL
+      Alert.alert(
+        "Thanh toán chưa hoàn tất",
+        "Giao dịch không thành công hoặc đã bị hủy. Vé sẽ không được giữ.",
+      );
+    } else {
+      // Người dùng đóng trình duyệt giữa chừng -> backend chưa nhận được kết quả.
+      // Chủ động hủy đơn pending để hoàn ghế lại cho người khác.
+      await cancelBooking(bookingId);
+      Alert.alert(
+        "Đã hủy thanh toán",
+        "Bạn đã đóng cửa sổ thanh toán. Ghế đã được hoàn lại, bạn có thể đặt lại bất cứ lúc nào.",
+      );
+    }
   };
 
   // Xử lý nút thanh toán theo phương thức đang chọn
