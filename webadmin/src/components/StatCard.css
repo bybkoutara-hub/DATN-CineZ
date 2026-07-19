@@ -1,0 +1,121 @@
+/* ═══════════════════════════════════════════
+   StatCard – Dark Glassmorphism Theme
+   ═══════════════════════════════════════════ */
+
+.sc-card {
+  --sc-color: #fbbf24;
+
+  position: relative;
+  background: #242424;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  transition: transform 0.25s, box-shadow 0.25s;
+  cursor: default;
+}
+
+.sc-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Left accent bar */
+.sc-accent-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--sc-color);
+  border-radius: 4px 0 0 4px;
+}
+
+/* Content */
+.sc-content {
+  padding: 22px 22px 18px 26px;
+}
+
+.sc-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sc-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #94a3b8;
+  letter-spacing: 0.2px;
+}
+
+.sc-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #e2e8f0;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+/* Icon */
+.sc-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--sc-color);
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+/* Trend */
+.sc-trend {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sc-trend svg {
+  font-size: 15px;
+}
+
+.sc-trend-value {
+  font-weight: 700;
+}
+
+.sc-trend-label {
+  color: #64748b;
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .sc-value {
+    font-size: 24px;
+  }
+  .sc-icon-wrapper {
+    width: 42px;
+    height: 42px;
+    font-size: 20px;
+    border-radius: 12px;
+  }
+  .sc-content {
+    padding: 18px 18px 14px 22px;
+  }
+}

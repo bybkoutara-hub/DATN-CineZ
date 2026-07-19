@@ -1,0 +1,89 @@
+.comments-page {
+  padding-bottom: var(--space-xl);
+}
+
+.stars-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.comment-text {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.pending-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--font-size-xs);
+  background: var(--warning-bg);
+  color: var(--warning);
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  margin-left: 12px;
+}
+
+.comments-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-icon {
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.review-row.status-banned {
+  opacity: 0.5;
+}
+
+.review-row.status-hidden td {
+  color: var(--text-muted);
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.blocked-tag {
+  font-size: 10px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.action-btns {
+  display: flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.action-btns .btn {
+  padding: 4px 6px;
+  font-size: 12px;
+  min-width: 28px;
+}
+
+.action-btns .btn svg {
+  font-size: 13px;
+}

@@ -1,0 +1,274 @@
+{
+  "info": {
+    "name": "CineZ Admin API",
+    "description": "API cho Web Admin CineZ",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Đăng nhập Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/auth/login",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Tạo tài khoản mới (Admin/Staff)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"staff1\",\n  \"password\": \"123456\",\n  \"fullName\": \"Nhân viên 1\",\n  \"email\": \"staff1@cinez.com\",\n  \"phone\": \"0901234567\",\n  \"role\": \"staff\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/auth/register",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "auth", "register"]
+            }
+          },
+          "description": "role có thể là: admin, staff, customer"
+        }
+      ]
+    },
+    {
+      "name": "Directors",
+      "item": [
+        {
+          "name": "Lấy tất cả đạo diễn",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:5000/api/admin/directors",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "directors"]
+            }
+          }
+        },
+        {
+          "name": "Thêm đạo diễn",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Lý Hải\",\n  \"bio\": \"Đạo diễn nổi tiếng Việt Nam\",\n  \"birthYear\": 1978,\n  \"nationality\": \"Việt Nam\",\n  \"image\": \"https://example.com/lyhai.jpg\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/directors",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "directors"]
+            }
+          }
+        },
+        {
+          "name": "Sửa đạo diễn",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Lý Hải\",\n  \"nationality\": \"Việt Nam\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/directors/:id",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "directors", ":id"]
+            }
+          }
+        },
+        {
+          "name": "Xóa đạo diễn",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "http://localhost:5000/api/admin/directors/:id",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "directors", ":id"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Actors",
+      "item": [
+        {
+          "name": "Lấy tất cả diễn viên",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:5000/api/admin/actors",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "actors"]
+            }
+          }
+        },
+        {
+          "name": "Thêm diễn viên",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Trấn Thành\",\n  \"bio\": \"Diễn viên hài nổi tiếng\",\n  \"birthYear\": 1987,\n  \"nationality\": \"Việt Nam\",\n  \"image\": \"https://example.com/tranthanh.jpg\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/actors",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "actors"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews (Comments)",
+      "item": [
+        {
+          "name": "Lấy tất cả bình luận",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:5000/api/admin/reviews",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "reviews"]
+            }
+          }
+        },
+        {
+          "name": "Duyệt bình luận",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/reviews/:id/status",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "reviews", ":id", "status"]
+            }
+          },
+          "description": "status: pending, approved, hidden, banned"
+        },
+        {
+          "name": "Ẩn bình luận",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"hidden\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/reviews/:id/status",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "reviews", ":id", "status"]
+            }
+          }
+        },
+        {
+          "name": "Chặn người dùng bình luận",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "http://localhost:5000/api/admin/users/:userId/block-comment",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "users", ":userId", "block-comment"]
+            }
+          }
+        },
+        {
+          "name": "Bỏ chặn người dùng",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "http://localhost:5000/api/admin/users/:userId/unblock-comment",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "users", ":userId", "unblock-comment"]
+            }
+          }
+        },
+        {
+          "name": "Xóa bình luận",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "http://localhost:5000/api/admin/reviews/:id",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "reviews", ":id"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Genres",
+      "item": [
+        {
+          "name": "Lấy tất cả thể loại",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:5000/api/admin/genres",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "genres"]
+            }
+          }
+        },
+        {
+          "name": "Thêm thể loại",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hành động\",\n  \"description\": \"Thể loại phim hành động kịch tính\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:5000/api/admin/genres",
+              "host": ["http://localhost:5000"],
+              "path": ["api", "admin", "genres"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "token",
+      "value": ""
+    }
+  ]
+}
