@@ -361,4 +361,65 @@ export const dashboardAPI = {
   },
 };
 
+export const actorAPI = {
+  getAll: async () => {
+    const response = await apiClient.get('/actors');
+    return formatResponse(response.data);
+  },
+  getById: async (id) => {
+    const response = await apiClient.get(`/actors/${id}`);
+    return formatResponse(response.data);
+  },
+  create: async (data) => {
+    const response = await apiClient.post('/actors', data);
+    return formatResponse(response.data.data || response.data, response.data.message || 'Thêm diễn viên thành công');
+  },
+  update: async (id, data) => {
+    const response = await apiClient.put(`/actors/${id}`, data);
+    return formatResponse(response.data.data || response.data, response.data.message || 'Cập nhật diễn viên thành công');
+  },
+  delete: async (id) => {
+    const response = await apiClient.delete(`/actors/${id}`);
+    return formatResponse(null, response.data.message || 'Xóa diễn viên thành công');
+  },
+};
+
+export const directorAPI = {
+  getAll: async () => {
+    const response = await apiClient.get('/directors');
+    return formatResponse(response.data);
+  },
+  getById: async (id) => {
+    const response = await apiClient.get(`/directors/${id}`);
+    return formatResponse(response.data);
+  },
+  create: async (data) => {
+    const response = await apiClient.post('/directors', data);
+    return formatResponse(response.data.data || response.data, response.data.message || 'Thêm đạo diễn thành công');
+  },
+  update: async (id, data) => {
+    const response = await apiClient.put(`/directors/${id}`, data);
+    return formatResponse(response.data.data || response.data, response.data.message || 'Cập nhật đạo diễn thành công');
+  },
+  delete: async (id) => {
+    const response = await apiClient.delete(`/directors/${id}`);
+    return formatResponse(null, response.data.message || 'Xóa đạo diễn thành công');
+  },
+};
+
+export const reviewAPI = {
+  getAll: async (params) => {
+    const response = await apiClient.get('/reviews', { params });
+    return response.data;
+  },
+  getById: async (id) => {
+    const response = await apiClient.get(`/reviews/${id}`);
+    return formatResponse(response.data);
+  },
+  delete: async (id) => {
+    const response = await apiClient.delete(`/reviews/${id}`);
+    return formatResponse(null, response.data.message || 'Xóa bình luận thành công');
+  },
+};
+
 export const resetStore = () => {};

@@ -16,6 +16,9 @@ import {
   getAdminBookings, getAdminBookingById, updateBookingStatus, cancelBooking,
   getInvoices, getInvoiceById, getInvoiceByBooking, createInvoice, updateInvoice,
   getDashboardStats, getDashboardRevenue, getDashboardRevenueByMovie, getDashboardTopMovies,
+  getAdminActors, getAdminActorById, createActor, updateActor, deleteActor,
+  getAdminDirectors, getAdminDirectorById, createDirector, updateDirector, deleteDirector,
+  getAdminReviews, getAdminReviewById, deleteAdminReview,
 } from "../controllers/adminController";
 
 const router = express.Router();
@@ -120,5 +123,24 @@ router.get("/dashboard/stats", protect, requireRole("admin", "staff"), getDashbo
 router.get("/dashboard/revenue", protect, requireRole("admin", "staff"), getDashboardRevenue);
 router.get("/dashboard/revenue-by-movie", protect, requireRole("admin", "staff"), getDashboardRevenueByMovie);
 router.get("/dashboard/top-movies", protect, requireRole("admin", "staff"), getDashboardTopMovies);
+
+// Actors
+router.get("/actors", protect, requireRole("admin", "staff"), getAdminActors);
+router.get("/actors/:id", protect, requireRole("admin", "staff"), getAdminActorById);
+router.post("/actors", protect, requireRole("admin"), createActor);
+router.put("/actors/:id", protect, requireRole("admin"), updateActor);
+router.delete("/actors/:id", protect, requireRole("admin"), deleteActor);
+
+// Directors
+router.get("/directors", protect, requireRole("admin", "staff"), getAdminDirectors);
+router.get("/directors/:id", protect, requireRole("admin", "staff"), getAdminDirectorById);
+router.post("/directors", protect, requireRole("admin"), createDirector);
+router.put("/directors/:id", protect, requireRole("admin"), updateDirector);
+router.delete("/directors/:id", protect, requireRole("admin"), deleteDirector);
+
+// Reviews
+router.get("/reviews", protect, requireRole("admin", "staff"), getAdminReviews);
+router.get("/reviews/:id", protect, requireRole("admin", "staff"), getAdminReviewById);
+router.delete("/reviews/:id", protect, requireRole("admin"), deleteAdminReview);
 
 export default router;

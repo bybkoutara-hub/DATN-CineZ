@@ -5,7 +5,7 @@ import {
   FiHome, FiFilm, FiGrid, FiMonitor, FiClock, FiTag,
   FiImage, FiShoppingBag, FiGift, FiUsers, FiUserCheck,
   FiFileText, FiDollarSign, FiChevronLeft, FiChevronDown,
-  FiLogOut, FiUser, FiSettings
+  FiLogOut, FiUser, FiSettings, FiCamera, FiMessageSquare
 } from 'react-icons/fi';
 import { MdLocalMovies } from 'react-icons/md';
 import './AdminLayout.css';
@@ -23,6 +23,9 @@ const menuItems = [
   { path: '/promotions', label: 'Khuyến Mãi', icon: <FiGift /> },
   { path: '/members', label: 'Thành Viên', icon: <FiUsers /> },
   { path: '/staff', label: 'Nhân Viên', icon: <FiUserCheck />, adminOnly: true },
+  { path: '/actors', label: 'Diễn Viên', icon: <FiUsers /> },
+  { path: '/directors', label: 'Đạo Diễn', icon: <FiCamera /> },
+  { path: '/reviews', label: 'Bình Luận', icon: <FiMessageSquare /> },
 ];
 
 const pageTitles = menuItems.reduce((acc, item) => {

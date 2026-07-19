@@ -53,7 +53,7 @@ DATN-CineZ/
 └── README.md
 ```
 
-> **Lưu ý:** `api/` trước đây nằm trong `mobile-app/node-api/`, đã tách ra top-level vì là server HTTP riêng.
+> **Lưu ý:** `mobile-app/node-api/` đã được gộp vào `api/` và xóa để tránh trùng lặp.
 
 ---
 

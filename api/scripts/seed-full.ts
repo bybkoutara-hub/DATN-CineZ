@@ -14,6 +14,8 @@ import Cinema from "../models/cinemaModel.js";
 import Booking from "../models/bookingModel.js";
 import Invoice from "../models/invoiceModel.js";
 import Review from "../models/reviewModel.js";
+import Actor from "../models/actorModel.js";
+import Director from "../models/directorModel.js";
 
 dotenv.config();
 
@@ -40,6 +42,8 @@ async function seedDatabase() {
       Booking.deleteMany({}),
       Invoice.deleteMany({}),
       Review.deleteMany({}),
+      Actor.deleteMany({}),
+      Director.deleteMany({}),
     ]);
     console.log("🧹 [Seed]: Đã làm sạch toàn bộ dữ liệu cũ.");
 
@@ -60,140 +64,245 @@ async function seedDatabase() {
     ]);
     console.log(`🎭 [Seed]: Đã tạo ${genres.length} thể loại.`);
 
+    // ===================== TẠO ACTORS =====================
+    const actors = await Actor.insertMany([
+      { name: "Ryan Reynolds", bio: "Diễn viên hài người Canada, nổi tiếng với vai Deadpool", avatar: "https://image.tmdb.org/t/p/w200/4SYd5b0YjO2B2h0RjX7Z2PwLq0.jpg", nationality: "Canada" },
+      { name: "Hugh Jackman", bio: "Nam diễn viên người Úc, nổi tiếng với vai Wolverine", avatar: "https://image.tmdb.org/t/p/w200/4iXiJ4R7yYqB0lQuvFczu5YbB.jpg", nationality: "Úc" },
+      { name: "Sam Worthington", bio: "Diễn viên người Anh-Úc, nổi tiếng với vai Jake Sully", avatar: "https://image.tmdb.org/t/p/w200/mFyRvyzYUB0G0b6T1Dg6n8PAhB.jpg", nationality: "Anh/Úc" },
+      { name: "Zoe Saldana", bio: "Nữ diễn viên người Mỹ, nổi tiếng với vai Neytiri", avatar: "https://image.tmdb.org/t/p/w200/vO0WqJ0kGUtHvY3s0F4dW0QfGc.jpg", nationality: "Mỹ" },
+      { name: "Thanh Hiền", bio: "Diễn viên kỳ cựu người Việt Nam", avatar: "", nationality: "Việt Nam" },
+      { name: "Trấn Thành", bio: "Danh hài, MC, đạo diễn người Việt Nam", avatar: "https://image.tmdb.org/t/p/w200/7Yq0gV0vY2z0V6vC2v0Y2z0V6vC.jpg", nationality: "Việt Nam" },
+      { name: "Phương Anh Đào", bio: "Nữ diễn viên trẻ tài năng của Việt Nam", avatar: "", nationality: "Việt Nam" },
+      { name: "Amy Poehler", bio: "Nữ diễn viên hài người Mỹ, lồng tiếng cho Joy", avatar: "https://image.tmdb.org/t/p/w200/5Yq0gV0vY2z0V6vC2v0Y2z0V6vC.jpg", nationality: "Mỹ" },
+      { name: "Maya Hawke", bio: "Nữ diễn viên người Mỹ, lồng tiếng cho Anxiety", avatar: "https://image.tmdb.org/t/p/w200/3Yq0gV0vY2z0V6vC2v0Y2z0V6vC.jpg", nationality: "Mỹ" },
+      { name: "Tom Hiddleston", bio: "Nam diễn viên người Anh, nổi tiếng với vai Loki", avatar: "https://image.tmdb.org/t/p/w200/mFyRvyzYUB0G0b6T1Dg6n8PAhB.jpg", nationality: "Anh" },
+      { name: "Brie Larson", bio: "Nữ diễn viên người Mỹ, từng đoạt giải Oscar", avatar: "https://image.tmdb.org/t/p/w200/vO0WqJ0kGUtHvY3s0F4dW0QfGc.jpg", nationality: "Mỹ" },
+      { name: "Timothée Chalamet", bio: "Nam diễn viên trẻ người Mỹ gốc Pháp", avatar: "https://image.tmdb.org/t/p/w200/4SYd5b0YjO2B2h0RjX7Z2PwLq0.jpg", nationality: "Mỹ" },
+      { name: "Zendaya", bio: "Nữ diễn viên, ca sĩ người Mỹ", avatar: "https://image.tmdb.org/t/p/w200/4iXiJ4R7yYqB0lQuvFczu5YbB.jpg", nationality: "Mỹ" },
+      { name: "Song Kang-ho", bio: "Nam diễn viên kỳ cựu người Hàn Quốc", avatar: "", nationality: "Hàn Quốc" },
+      { name: "Rebecca Hall", bio: "Nữ diễn viên người Anh", avatar: "", nationality: "Anh" },
+      { name: "Brian Tyree Henry", bio: "Nam diễn viên người Mỹ", avatar: "", nationality: "Mỹ" },
+      { name: "Paul Rudd", bio: "Nam diễn viên hài người Mỹ", avatar: "https://image.tmdb.org/t/p/w200/5Yq0gV0vY2z0V6vC2v0Y2z0V6vC.jpg", nationality: "Mỹ" },
+      { name: "Trương Minh Cường", bio: "Diễn viên người Việt Nam", avatar: "", nationality: "Việt Nam" },
+      { name: "Khả Như", bio: "Nữ diễn viên hài người Việt Nam", avatar: "", nationality: "Việt Nam" },
+      { name: "Tuấn Trần", bio: "Nam diễn viên trẻ người Việt Nam", avatar: "", nationality: "Việt Nam" },
+    ]);
+    console.log(`🎭 [Seed]: Đã tạo ${actors.length} diễn viên.`);
+
+    // ===================== TẠO DIRECTORS =====================
+    const directors = await Director.insertMany([
+      { name: "Lý Hải", bio: "Đạo diễn, ca sĩ, diễn viên người Việt Nam, nổi tiếng với series Lật Mặt", avatar: "", nationality: "Việt Nam" },
+      { name: "James Cameron", bio: "Đạo diễn huyền thoại người Canada, tác giả của Avatar và Titanic", avatar: "https://image.tmdb.org/t/p/w200/5Yq0gV0vY2z0V6vC2v0Y2z0V6vC.jpg", nationality: "Canada" },
+      { name: "Shawn Levy", bio: "Đạo diễn, nhà sản xuất người Canada", avatar: "", nationality: "Canada" },
+      { name: "Kelsey Mann", bio: "Đạo diễn hoạt hình người Mỹ của Pixar", avatar: "", nationality: "Mỹ" },
+      { name: "Adam Wingard", bio: "Đạo diễn người Mỹ, nổi tiếng với Godzilla vs Kong", avatar: "", nationality: "Mỹ" },
+      { name: "Trấn Thành", bio: "Đạo diễn, MC, danh hài người Việt Nam", avatar: "", nationality: "Việt Nam" },
+      { name: "Jordan Vogt-Roberts", bio: "Đạo diễn người Mỹ", avatar: "", nationality: "Mỹ" },
+      { name: "Hoàng Nam", bio: "Đạo diễn phim kinh dị người Việt Nam", avatar: "", nationality: "Việt Nam" },
+      { name: "Denis Villeneuve", bio: "Đạo diễn người Canada gốc Pháp, tác giả Dune", avatar: "https://image.tmdb.org/t/p/w200/4SYd5b0YjO2B2h0RjX7Z2PwLq0.jpg", nationality: "Canada" },
+      { name: "Lê Văn", bio: "Đạo diễn người Việt Nam", avatar: "", nationality: "Việt Nam" },
+      { name: "Gil Kenan", bio: "Đạo diễn người Mỹ gốc Israel", avatar: "", nationality: "Mỹ" },
+      { name: "Park Chan-wook", bio: "Đạo diễn nổi tiếng người Hàn Quốc", avatar: "", nationality: "Hàn Quốc" },
+      { name: "Christopher Nolan", bio: "Đạo diễn thiên tài người Anh", avatar: "https://image.tmdb.org/t/p/w200/5Yq0gV0vY2z0V6vC2v0Y2z0V6vC.jpg", nationality: "Anh" },
+      { name: "Nguyễn Quang Dũng", bio: "Đạo diễn nổi tiếng người Việt Nam", avatar: "", nationality: "Việt Nam" },
+      { name: "Bong Joon-ho", bio: "Đạo diễn người Hàn Quốc, từng đoạt giải Oscar", avatar: "", nationality: "Hàn Quốc" },
+    ]);
+    console.log(`🎬 [Seed]: Đã tạo ${directors.length} đạo diễn.`);
+
     // ===================== TẠO PHIM =====================
     const now = new Date();
     const movies = await Movie.insertMany([
       {
         title: "Lật Mặt 7: Một Điều Ước",
-        poster_url: "https://homepage.lyhaiproductions.com/wp-content/uploads/2024/04/LM7_POSTER_MAIN_ONLINE.jpg",
+        poster_url: "https://media.themoviedb.org/t/p/w500/2mg6ktvWxsOG9iMBP4P1pwOYltk.jpg",
         duration: 138,
         genres: ["Gia đình", "Tình cảm", "Kịch tính"],
         status: "now_playing",
         release_date: "2026-04-30",
         rating: 4.9,
-        total_reviews: "2450",
+        total_reviews: 2450,
         description: "Câu chuyện xoay quanh bà Hai, một người mẹ tảo tần nuôi dạy 5 người con khôn lớn. Khi bà gặp tai nạn, những góc khuất và xung đột trong gia đình bắt đầu lộ diện.",
+        director: "Lý Hải",
+        cast: ["Thanh Hiền", "Trương Minh Cường", "Quốc Cường", "Trần Kim Hải"],
+        storyline: "Bà Hai, một người mẹ tảo tần nuôi dạy 5 người con khôn lớn. Khi bà gặp tai nạn, những góc khuất và xung đột trong gia đình bắt đầu lộ diện, buộc các con phải đối diện với sự thật.",
+        language: "Tiếng Việt",
+        rated: "P",
       },
       {
         title: "Avatar: Fire and Ash",
-        poster_url: "https://image.api.playstation.com/vulcan/ap/rnd/202206/0720/e8vWyY2gJZQ8Uo171D7u0mG6.png",
+        poster_url: "https://media.themoviedb.org/t/p/w500/w6DBmG260sCHBQdGzkBIVn9gAQZ.jpg",
         duration: 160,
         genres: ["Hành động", "Khoa học viễn tưởng", "Phiêu lưu"],
         status: "now_playing",
         release_date: "2025-12-19",
         rating: 4.7,
-        total_reviews: "1820",
+        total_reviews: 1820,
         description: "Hành trình trở lại hành tinh Pandora. Jake Sully và Neytiri phải đối mặt với bộ tộc người Na'vi của nguyên tố Lửa.",
+        director: "James Cameron",
+        cast: ["Sam Worthington", "Zoe Saldana", "Sigourney Weaver"],
+        storyline: "Jake Sully và Neytiri phải đối mặt với bộ tộc người Na'vi của nguyên tố Lửa và Tro tàn, đe dọa sự sống còn của toàn bộ gia tộc.",
+        language: "Tiếng Anh (Phụ đề Việt)",
+        rated: "C13",
       },
       {
         title: "Deadpool & Wolverine",
-        poster_url: "https://image.tmdb.org/t/p/w600_and_h900_bestv2/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg",
+        poster_url: "https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg",
         duration: 127,
         genres: ["Hành động", "Hài hước", "Khoa học viễn tưởng"],
         status: "now_playing",
         release_date: "2026-07-25",
         rating: 4.8,
-        total_reviews: "3200",
+        total_reviews: 3200,
         description: "Deadpool hợp tác với Wolverine trong một cuộc phiêu lưu xuyên vũ trụ đầy hỗn loạn và hài hước.",
+        director: "Shawn Levy",
+        cast: ["Ryan Reynolds", "Hugh Jackman", "Emma Corrin"],
+        storyline: "Deadpool hợp tác với Wolverine trong một cuộc phiêu lưu xuyên vũ trụ đầy hỗn loạn và hài hước.",
+        language: "Tiếng Anh (Phụ đề Việt)",
+        rated: "C18",
       },
       {
         title: "Inside Out 2",
-        poster_url: "https://image.tmdb.org/t/p/w600_and_h900_bestv2/vpnVM9B6NMmQpWeZvVJ3d8CfzqI.jpg",
+        poster_url: "https://media.themoviedb.org/t/p/w500/wAIFnJ5OeFU7tTnCWHiROsszS29.jpg",
         duration: 96,
         genres: ["Hoạt hình", "Gia đình", "Hài hước"],
         status: "now_playing",
         release_date: "2026-06-14",
         rating: 4.6,
-        total_reviews: "1500",
+        total_reviews: 1500,
         description: "Riley bước vào tuổi dậy thì và các cảm xúc mới xuất hiện: Lo âu, Ghen tị, Buồn chán và Xấu hổ.",
+        director: "Kelsey Mann",
+        cast: ["Amy Poehler", "Maya Hawke", "Phyllis Smith"],
+        storyline: "Riley bước vào tuổi dậy thì và các cảm xúc mới xuất hiện: Lo âu, Ghen tị, Buồn chán và Xấu hổ.",
+        language: "Tiếng Anh (Phụ đề Việt)",
+        rated: "P",
       },
       {
         title: "Godzilla x Kong: The New Empire",
-        poster_url: "https://image.tmdb.org/t/p/w600_and_h900_bestv2/z1p34vh7dEOnLDmyCrlUVLuoDzd.jpg",
+        poster_url: "https://image.tmdb.org/t/p/w500/z1p34vh7dEOnLDmyCrlUVLuoDzd.jpg",
         duration: 115,
         genres: ["Hành động", "Khoa học viễn tưởng", "Phiêu lưu"],
         status: "now_playing",
         release_date: "2026-03-28",
         rating: 4.5,
-        total_reviews: "980",
+        total_reviews: 980,
         description: "Godzilla và Kong phải hợp tác để đối mặt với một mối đe dọa chưa từng có ẩn giấu trong lòng Trái Đất.",
+        director: "Adam Wingard",
+        cast: ["Rebecca Hall", "Brian Tyree Henry", "Dan Stevens"],
+        storyline: "Godzilla và Kong phải hợp tác để đối mặt với một mối đe dọa chưa từng có ẩn giấu trong lòng Trái Đất.",
+        language: "Tiếng Anh (Phụ đề Việt)",
+        rated: "C13",
       },
       {
         title: "Mai",
-        poster_url: "https://image.tmdb.org/t/p/w600_and_h900_bestv2/wu1uC3ixtgzBtodLmQkpUBpDrES.jpg",
+        poster_url: "https://media.themoviedb.org/t/p/w500/2nF8xD200rcDawuCg5ObxxqA2fC.jpg",
         duration: 131,
         genres: ["Tâm lý", "Tình cảm", "Kịch tính"],
         status: "now_playing",
         release_date: "2026-02-10",
         rating: 4.3,
-        total_reviews: "2100",
+        total_reviews: 2100,
         description: "Mai là câu chuyện về người phụ nữ tuổi trung niên với quá khứ đầy sóng gió và hành trình tìm kiếm hạnh phúc.",
+        director: "Trấn Thành",
+        cast: ["Phương Anh Đào", "Tuấn Trần", "Trấn Thành", "Uyển Ân"],
+        storyline: "Mai là câu chuyện về người phụ nữ tuổi trung niên với quá khứ đầy sóng gió và hành trình tìm kiếm hạnh phúc.",
+        language: "Tiếng Việt",
+        rated: "C16",
       },
       {
         title: "Kong: Đảo Đầu Lâu",
-        poster_url: "https://image.tmdb.org/t/p/w600_and_h900_bestv2/jeAQuxUNrLk3cH5uRPfNUFT34oG.jpg",
+        poster_url: "https://media.themoviedb.org/t/p/w500/ktotbBFrmO58kAKoPvpbChy53EB.jpg",
         duration: 118,
         genres: ["Hành động", "Phiêu lưu", "Khoa học viễn tưởng"],
         status: "now_playing",
         release_date: "2026-05-01",
         rating: 4.2,
-        total_reviews: "760",
+        total_reviews: 760,
         description: "Một nhóm thám hiểm đặt chân đến hòn đảo bí ẩn nơi Kong ngự trị và phải chiến đấu để sinh tồn.",
+        director: "Jordan Vogt-Roberts",
+        cast: ["Tom Hiddleston", "Brie Larson", "Samuel L. Jackson"],
+        storyline: "Một nhóm thám hiểm đặt chân đến hòn đảo bí ẩn nơi Kong ngự trị và phải chiến đấu để sinh tồn.",
+        language: "Tiếng Anh (Phụ đề Việt)",
+        rated: "C13",
       },
       {
         title: "Quỷ Nhập Tràng 2",
-        poster_url: "https://image.tmdb.org/t/p/w600_and_h900_bestv2/3qI1R9dQpEQcFkZQUjGj0MbF60t.jpg",
+        poster_url: "https://media.themoviedb.org/t/p/w500/mEH96rSqjuDLI5rAnu7sTIDTdc8.jpg",
         duration: 120,
         genres: ["Kinh dị", "Tâm lý", "Kịch tính"],
         status: "now_playing",
         release_date: "2026-05-15",
         rating: 4.1,
-        total_reviews: "530",
+        total_reviews: 530,
         description: "Những sự kiện siêu nhiên kỳ bí tiếp tục xảy ra tại ngôi làng nhỏ, đe dọa cuộc sống của người dân.",
+        director: "Hoàng Nam",
+        cast: ["Khả Như", "Nhất Trung", "Lê Nam"],
+        storyline: "Những sự kiện siêu nhiên kỳ bí tiếp tục xảy ra tại ngôi làng nhỏ, đe dọa cuộc sống của người dân.",
+        language: "Tiếng Việt",
+        rated: "C18",
       },
       {
         title: "Dune: Part Three",
-        poster_url: "https://image.tmdb.org/t/p/w600_and_h900_bestv2/d5NXSklXo0qyIYkgV94XAgMIckC.jpg",
+        poster_url: "https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg",
         duration: 155,
         genres: ["Khoa học viễn tưởng", "Phiêu lưu", "Kịch tính"],
         status: "coming_soon",
         release_date: "2026-10-17",
         rating: 0,
-        total_reviews: "0",
+        total_reviews: 0,
         description: "Phần cuối cùng trong hành trình của Paul Atreides trên hành tinh sa mạc Arrakis.",
+        director: "Denis Villeneuve",
+        cast: ["Timothée Chalamet", "Zendaya", "Rebecca Ferguson"],
+        storyline: "Phần cuối cùng trong hành trình của Paul Atreides trên hành tinh sa mạc Arrakis.",
+        language: "Tiếng Anh (Phụ đề Việt)",
+        rated: "C13",
       },
       {
         title: "Siêu Trộm 2",
-        poster_url: "https://image.tmdb.org/t/p/w600_and_h900_bestv2/6mkFg2K2hiDq0J6H8bB7gFLDSbL.jpg",
+        poster_url: "https://media.themoviedb.org/t/p/w500/usoYdcapXSsqAM1bDOtD7H42Wxe.jpg",
         duration: 122,
         genres: ["Hành động", "Hài hước", "Tội phạm"],
         status: "coming_soon",
         release_date: "2026-09-05",
         rating: 0,
-        total_reviews: "0",
+        total_reviews: 0,
         description: "Nhóm siêu trộm trở lại với phi vụ táo bạo nhất từ trước đến nay.",
+        director: "Lê Văn",
+        cast: ["Trấn Thành", "Kiều Minh Tuấn", "Hari Won"],
+        storyline: "Nhóm siêu trộm trở lại với phi vụ táo bạo nhất từ trước đến nay.",
+        language: "Tiếng Việt",
+        rated: "C16",
       },
       {
         title: "Biệt Đội Săn Ma",
-        poster_url: "https://image.tmdb.org/t/p/w600_and_h900_bestv2/wdjd2AuScjB9mB6pF2SjMtKtMCW.jpg",
+        poster_url: "https://media.themoviedb.org/t/p/w500/3nBk7laQ3TAu2b5KKAUOIzvJZvB.jpg",
         duration: 105,
         genres: ["Hài hước", "Kinh dị", "Gia đình"],
         status: "coming_soon",
         release_date: "2026-12-25",
         rating: 0,
-        total_reviews: "0",
+        total_reviews: 0,
         description: "Biệt đội săn ma quốc tế được triệu tập để đối phó với một thế lực siêu nhiên khổng lồ.",
+        director: "Gil Kenan",
+        cast: ["Paul Rudd", "Carrie Coon", "Finn Wolfhard"],
+        storyline: "Biệt đội săn ma quốc tế được triệu tập để đối phó với một thế lực siêu nhiên khổng lồ.",
+        language: "Tiếng Anh (Phụ đề Việt)",
+        rated: "P",
       },
       {
         title: "Vòng Xoay Tội Lỗi",
-        poster_url: "https://image.tmdb.org/t/p/w600_and_h900_bestv2/7iMBZzWZ9G7m7WxjH5VzXq7Uy0D.jpg",
+        poster_url: "https://media.themoviedb.org/t/p/w500/vc2S0dvgpsM0XfSiXZDMVkRCSSU.jpg",
         duration: 135,
         genres: ["Tội phạm", "Tâm lý", "Kịch tính"],
         status: "coming_soon",
         release_date: "2026-11-20",
         rating: 0,
-        total_reviews: "0",
+        total_reviews: 0,
         description: "Một vụ án mạng bí ẩn đưa vị thám tử vào vòng xoáy tội lỗi và những âm mưu đen tối.",
+        director: "Park Chan-wook",
+        cast: ["Song Kang-ho", "Lee Byung-hun", "Jeon Do-yeon"],
+        storyline: "Một vụ án mạng bí ẩn đưa vị thám tử vào vòng xoáy tội lỗi và những âm mưu đen tối.",
+        language: "Tiếng Hàn (Phụ đề Việt)",
+        rated: "C18",
       },
     ]);
     console.log(`🎬 [Seed]: Đã tạo ${movies.length} phim (${movies.filter(m => m.status === "now_playing").length} đang chiếu, ${movies.filter(m => m.status === "coming_soon").length} sắp chiếu).`);
@@ -216,9 +325,9 @@ async function seedDatabase() {
 
     // ===================== TẠO RẠP & CINEMA =====================
     const cinemas = await Cinema.insertMany([
-      { name: "CineZ Hùng Vương Plaza", address: "126 Hùng Vương, Quận 5, TP.HCM", city: "Hồ Chí Minh", image: "https://cdn.galaxycine.vn/media/2024/12/hungvuong--1734077338559.png" },
-      { name: "CineZ Vạn Hạnh Mall", address: "11 Sư Vạn Hạnh, Quận 10, TP.HCM", city: "Hồ Chí Minh", image: "https://cdn.galaxycine.vn/media/2024/12/vanhanh--1734077588229.png" },
-      { name: "CineZ Vincom Thảo Điền", address: "159 Xa Lộ Hà Nội, Quận 2, TP.HCM", city: "Hồ Chí Minh", image: "https://cdn.galaxycine.vn/media/2024/12/vincom-thaodien-1734077906549.png" },
+      { name: "CineZ Hùng Vương Plaza", address: "126 Hùng Vương, Quận 5, TP.HCM", city: "Hồ Chí Minh", image: "https://picsum.photos/seed/cinezhungvuong/400/300" },
+      { name: "CineZ Vạn Hạnh Mall", address: "11 Sư Vạn Hạnh, Quận 10, TP.HCM", city: "Hồ Chí Minh", image: "https://picsum.photos/seed/cinezvanhanh/400/300" },
+      { name: "CineZ Vincom Thảo Điền", address: "159 Xa Lộ Hà Nội, Quận 2, TP.HCM", city: "Hồ Chí Minh", image: "https://picsum.photos/seed/cinezvincom/400/300" },
     ]);
     console.log(`🏢 [Seed]: Đã tạo ${cinemas.length} cụm rạp.`);
 
@@ -313,10 +422,10 @@ async function seedDatabase() {
 
     // ===================== TẠO COMBO =====================
     const combos = await Combo.insertMany([
-      { name: "Combo Solo", price: 65000, image: "https://www.cgv.vn/media/catalog/product/placeholder/default/COMBO_S.jpg", items: ["Bắp ngọt lớn", "Nước ngọt 32oz"], description: "1 Bắp ngọt lớn + 1 Nước ngọt ly lớn", status: "active" },
-      { name: "Combo Couple", price: 95000, image: "https://www.cgv.vn/media/catalog/product/placeholder/default/COMBO_L.jpg", items: ["Bắp ngọt lớn", "Nước ngọt 32oz x2"], description: "1 Bắp lớn + 2 Nước ngọt ly lớn", status: "active" },
-      { name: "Combo Family", price: 159000, image: "https://www.cgv.vn/media/catalog/product/placeholder/default/COMBO_FAMILY.jpg", items: ["Bắp ngọt lớn x2", "Nước ngọt 32oz x3"], description: "2 Bắp lớn + 3 Nước ngọt ly lớn", status: "active" },
-      { name: "Combo Student", price: 49000, image: "https://www.cgv.vn/media/catalog/product/placeholder/default/COMBO_S.jpg", items: ["Bắp ngọt nhỏ", "Nước ngọt 22oz"], description: "1 Bắp nhỏ + 1 Nước ngọt nhỏ", status: "active" },
+      { name: "Combo Solo", price: 65000, image: "https://picsum.photos/seed/combo-solo/300/300", items: ["Bắp ngọt lớn", "Nước ngọt 32oz"], description: "1 Bắp ngọt lớn + 1 Nước ngọt ly lớn", status: "active" },
+      { name: "Combo Couple", price: 95000, image: "https://picsum.photos/seed/combo-couple/300/300", items: ["Bắp ngọt lớn", "Nước ngọt 32oz x2"], description: "1 Bắp lớn + 2 Nước ngọt ly lớn", status: "active" },
+      { name: "Combo Family", price: 159000, image: "https://picsum.photos/seed/combo-family/300/300", items: ["Bắp ngọt lớn x2", "Nước ngọt 32oz x3"], description: "2 Bắp lớn + 3 Nước ngọt ly lớn", status: "active" },
+      { name: "Combo Student", price: 49000, image: "https://picsum.photos/seed/combo-student/300/300", items: ["Bắp ngọt nhỏ", "Nước ngọt 22oz"], description: "1 Bắp nhỏ + 1 Nước ngọt nhỏ", status: "active" },
       { name: "Burger Meal", price: 79000, image: "", items: ["Burger gà", "Khoai tây chiên", "Nước ngọt 32oz"], description: "Burger gà + Khoai tây chiên + Nước ngọt", status: "active" },
     ]);
     console.log(`🍿 [Seed]: Đã tạo ${combos.length} combo.`);
@@ -333,10 +442,10 @@ async function seedDatabase() {
 
     // ===================== TẠO SLIDER =====================
     const sliders = await Slider.insertMany([
-      { title: "Lật Mặt 7: Một Điều Ước", imageUrl: "https://homepage.lyhaiproductions.com/wp-content/uploads/2024/04/LM7_BANNER.jpg", image: "https://homepage.lyhaiproductions.com/wp-content/uploads/2024/04/LM7_BANNER.jpg", linkUrl: "", link: "", description: "Phim gia đình cảm động nhất năm", order: 1, active: true },
-      { title: "Avatar: Fire and Ash", imageUrl: "https://images.squarespace-cdn.com/content/v1/511cbfc4e4b0a70bc10b5030/1441865201502-V68U797D66WHLI6SFO9Y/avatar-banner.jpg", image: "https://images.squarespace-cdn.com/content/v1/511cbfc4e4b0a70bc10b5030/1441865201502-V68U797D66WHLI6SFO9Y/avatar-banner.jpg", linkUrl: "", link: "", description: "Hành trình trở lại Pandora", order: 2, active: true },
-      { title: "Deadpool & Wolverine", imageUrl: "https://image.tmdb.org/t/p/original/9l1eZi1RPN6Y0JQJ5SVFNEjPkKp.jpg", image: "https://image.tmdb.org/t/p/original/9l1eZi1RPN6Y0JQJ5SVFNEjPkKp.jpg", linkUrl: "", link: "", description: "Bộ đôi lầy lội nhất vũ trụ", order: 3, active: true },
-      { title: "Inside Out 2", imageUrl: "https://image.tmdb.org/t/p/original/vpnVM9B6NMmQpWeZvVJ3d8CfzqI.jpg", image: "https://image.tmdb.org/t/p/original/vpnVM9B6NMmQpWeZvVJ3d8CfzqI.jpg", linkUrl: "", link: "", description: "Cảm xúc mới, cuộc phiêu lưu mới", order: 4, active: true },
+      { title: "Lật Mặt 7: Một Điều Ước", imageUrl: "https://picsum.photos/seed/slider-latmat7/800/400", image: "https://picsum.photos/seed/slider-latmat7/800/400", linkUrl: "", link: "", description: "Phim gia đình cảm động nhất năm", order: 1, active: true },
+      { title: "Avatar: Fire and Ash", imageUrl: "https://picsum.photos/seed/slider-avatar3/800/400", image: "https://picsum.photos/seed/slider-avatar3/800/400", linkUrl: "", link: "", description: "Hành trình trở lại Pandora", order: 2, active: true },
+      { title: "Deadpool & Wolverine", imageUrl: "https://picsum.photos/seed/slider-deadpool/800/400", image: "https://picsum.photos/seed/slider-deadpool/800/400", linkUrl: "", link: "", description: "Bộ đôi lầy lội nhất vũ trụ", order: 3, active: true },
+      { title: "Inside Out 2", imageUrl: "https://picsum.photos/seed/slider-insideout2/800/400", image: "https://picsum.photos/seed/slider-insideout2/800/400", linkUrl: "", link: "", description: "Cảm xúc mới, cuộc phiêu lưu mới", order: 4, active: true },
     ]);
     console.log(`📺 [Seed]: Đã tạo ${sliders.length} slider.`);
 
@@ -396,19 +505,54 @@ async function seedDatabase() {
     console.log(`🎫 [Seed]: Đã tạo ${bookingDocs.length} đơn đặt vé và hóa đơn (ghế đã được trừ khỏi suất chiếu).`);
 
     // ===================== TẠO REVIEW =====================
-    const reviewMovies = movies.slice(0, 6);
-    await Review.insertMany([
-      { movie: reviewMovies[0]._id, user: testUsers[0]._id, rating: 5, comment: "Phim rất hay và cảm động, diễn xuất tuyệt vời!" },
-      { movie: reviewMovies[0]._id, user: testUsers[1]._id, rating: 5, comment: "Xúc động từ đầu đến cuối." },
-      { movie: reviewMovies[1]._id, user: testUsers[0]._id, rating: 5, comment: "Đồ họa đẹp không tưởng tượng nổi!" },
-      { movie: reviewMovies[1]._id, user: testUsers[2]._id, rating: 4, comment: "Hay nhưng hơi dài." },
-      { movie: reviewMovies[2]._id, user: testUsers[1]._id, rating: 5, comment: "Hài hước và hành động mãn nhãn!" },
-      { movie: reviewMovies[2]._id, user: testUsers[3]._id, rating: 5, comment: "Deadpool và Wolverine quá đỉnh!" },
-      { movie: reviewMovies[3]._id, user: testUsers[0]._id, rating: 4, comment: "Rất phù hợp cho gia đình có trẻ nhỏ." },
-      { movie: reviewMovies[4]._id, user: testUsers[2]._id, rating: 5, comment: "Cảnh chiến đấu hoành tráng!" },
-      { movie: reviewMovies[5]._id, user: testUsers[1]._id, rating: 4, comment: "Kịch bản hay, diễn xuất tốt." },
-    ]);
-    console.log(`⭐ [Seed]: Đã tạo 9 đánh giá phim.`);
+    const reviewMovies = movies.slice(0, 8);
+    const reviewComments = [
+      "Phim rất hay và cảm động, diễn xuất tuyệt vời!",
+      "Xúc động từ đầu đến cuối, không thể rời mắt.",
+      "Đồ họa đẹp không tưởng tượng nổi! Đáng đồng tiền.",
+      "Hay nhưng hơi dài, cần cắt bớt vài phân đoạn.",
+      "Hài hước và hành động mãn nhãn! Đã xem 2 lần.",
+      "Deadpool và Wolverine quá đỉnh! Cặp đôi hoàn hảo.",
+      "Rất phù hợp cho gia đình có trẻ nhỏ. Bé nhà mình rất thích.",
+      "Cảnh chiến đấu hoành tráng! Âm thanh sống động.",
+      "Kịch bản hay, diễn xuất tốt. Nên xem ở rạp IMAX.",
+      "Phim hay nhưng kết thúc hơi có hậu quá đà.",
+      "Một trong những phim hay nhất năm!",
+      "Diễn viên chính quá xuất sắc, nội dung sâu sắc.",
+      "Đạo diễn đã làm rất tốt, từng khung hình đều đẹp.",
+      "Phim giải trí nhẹ nhàng, thích hợp cuối tuần.",
+      "Âm nhạc trong phim rất tuyệt vời, gây xúc động mạnh.",
+      "Lần đầu xem phim Việt mà thấy tự hào như vậy.",
+      "Hiệu ứng đặc biệt quá đỉnh, xem 4DX càng phê.",
+      "Nên có thêm phần 2 vì kết thúc mở quá hấp dẫn.",
+      "Phim mang thông điệp nhân văn sâu sắc.",
+      "Không gian và bối cảnh đẹp đến từng chi tiết.",
+      "Tuyến nhân vật phát triển tốt, ai cũng có câu chuyện.",
+      "Một bộ phim đáng xem ít nhất một lần.",
+      "Các tình tiết gay cấn được đẩy lên cao trào hợp lý.",
+      "Phim có những phút giây vừa vui nhộn vừa xúc động.",
+      "Đã rủ cả nhà đi xem, ai cũng khen hay.",
+      "Phim hành động mãn nhãn, không có chỗ chê.",
+      "Kịch bản chặt chẽ, không có lỗ hổng.",
+      "Diễn viên phụ cũng xuất sắc không kém.",
+      "Một tác phẩm điện ảnh đẳng cấp quốc tế.",
+      "Phim khiến mình suy nghĩ về cuộc sống rất nhiều.",
+    ];
+    const ratingDistribution = [5, 5, 5, 4, 5, 5, 4, 5, 4, 5, 5, 4, 4, 3, 5, 5, 5, 4, 4, 5, 3, 5, 4, 5, 5, 4, 5, 4, 5, 3];
+
+    const reviewDocs: any[] = [];
+    for (let i = 0; i < 30; i++) {
+      const movie = reviewMovies[i % reviewMovies.length];
+      const user = testUsers[i % testUsers.length];
+      reviewDocs.push({
+        movie: movie._id,
+        user: user._id,
+        rating: ratingDistribution[i % ratingDistribution.length],
+        comment: reviewComments[i % reviewComments.length],
+      });
+    }
+    await Review.insertMany(reviewDocs);
+    console.log(`⭐ [Seed]: Đã tạo ${reviewDocs.length} đánh giá phim.`);
 
     // ===================== TỔNG KẾT =====================
     console.log("\n========================================");
@@ -416,6 +560,8 @@ async function seedDatabase() {
     console.log("========================================");
     console.log(`📊 Tổng kết:`);
     console.log(`   - ${genres.length} thể loại`);
+    console.log(`   - ${actors.length} diễn viên`);
+    console.log(`   - ${directors.length} đạo diễn`);
     console.log(`   - ${movies.length} phim`);
     console.log(`   - ${users.length} tài khoản (1 admin, 2 staff, 5 user)`);
     console.log(`   - ${cinemas.length} cụm rạp`);
@@ -426,7 +572,7 @@ async function seedDatabase() {
     console.log(`   - ${promos.length} khuyến mãi`);
     console.log(`   - ${sliders.length} slider`);
     console.log(`   - ${bookingDocs.length} đơn đặt vé + hóa đơn`);
-    console.log(`   - 9 đánh giá phim`);
+    console.log(`   - ${reviewDocs.length} đánh giá phim`);
     console.log("========================================");
     console.log("👤 Admin: admin / admin123");
     console.log("👤 Staff: staff01 / admin123");

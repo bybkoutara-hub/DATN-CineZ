@@ -8,8 +8,13 @@ const router = express.Router();
 
 router.get("/movies", async (req, res) => {
   try {
-    const status = req.query.status as string | undefined;
-    const filter: Record<string, unknown> = status ? { status } : {};
+    const { status, genre, search } = req.query;
+    const filter: Record<string, unknown> = {};
+    if (status) filter.status = status;
+    if (genre) filter.genres = { $in: [genre] };
+    if (search) {
+      filter.title = { $regex: String(search), $options: "i" } as any;
+    }
     const movies = await Movie.find(filter).sort({ release_date: -1 });
     res.status(200).json({ success: true, data: movies });
   } catch (error: any) {

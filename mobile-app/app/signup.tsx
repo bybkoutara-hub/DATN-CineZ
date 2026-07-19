@@ -15,7 +15,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { registerApi } from "../services/authService";
+import { loginApi, registerApi } from "../services/authService";
 
 const BACKGROUND_BLACK = "#000000";
 const SURFACE_DARK = "#121212";
@@ -47,8 +47,12 @@ export default function SignUpScreen() {
     try {
       const res = await registerApi(email, password, name, phone);
       if (res?.success) {
-        // Đăng ký xong -> sang màn đăng nhập, điền sẵn email cho tiện
-        router.replace({ pathname: "/sign-in", params: { email } });
+        try {
+          await loginApi(email, password);
+          router.replace("/(tabs)");
+        } catch {
+          router.replace({ pathname: "/sign-in", params: { email } });
+        }
       } else {
         Alert.alert("Đăng ký thất bại", res?.message || "Vui lòng thử lại");
       }

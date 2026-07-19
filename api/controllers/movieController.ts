@@ -4,11 +4,11 @@ import Showtime from "../models/showtimeModel.js";
 
 export const getMovies = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { status } = req.query;
-    let filter = {};
-    if (status) {
-      filter = { status };
-    }
+    const { status, search, genre } = req.query;
+    const filter: Record<string, any> = {};
+    if (status) filter.status = status;
+    if (search) filter.title = { $regex: String(search), $options: "i" };
+    if (genre) filter.genres = { $in: [genre] };
     const movies = await Movie.find(filter);
     res.status(200).json({ success: true, data: movies });
   } catch (error: any) {
@@ -66,12 +66,10 @@ export const getMovieDetailWithShowtimes = async (req: Request, res: Response): 
   }
 };
 
-// Hàm hỗ trợ Manager thêm suất chiếu (ĐÃ FIX ĐỒNG BỘ TÊN TRƯỜNG SCHEMA movie_id)
 export const addShowtime = async (req: Request, res: Response): Promise<void> => {
   try {
     const { movieId, roomName, startTime, price } = req.body;
     
-    // Tạo sẵn cụm 20 ghế mặc định tự động từ A1 -> B10
     const availableSeats = [];
     for (let row of ["A", "B"]) {
       for (let i = 1; i <= 10; i++) {
@@ -79,9 +77,8 @@ export const addShowtime = async (req: Request, res: Response): Promise<void> =>
       }
     }
 
-    // Đổi trường gán từ movieId sang movie_id cho đúng Schema Database
     const newShowtime = new Showtime({ 
-      movie_id: movieId, 
+      movieId, 
       roomName, 
       startTime, 
       price, 

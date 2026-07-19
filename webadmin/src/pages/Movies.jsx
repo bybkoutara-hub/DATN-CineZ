@@ -13,7 +13,8 @@ const Movies = () => {
   const [showModal, setShowModal] = useState(false);
   const [newMovie, setNewMovie] = useState({
     title: '', originalTitle: '', poster: '', description: '',
-    genres: '', director: '', duration: '', releaseDate: '', rated: 'P', status: 'now_playing', rating: ''
+    genres: '', director: '', cast: '', duration: '', releaseDate: '',
+    rated: 'P', status: 'now_playing', rating: '', storyline: ''
   });
 
   const fetchMovies = async () => {
@@ -50,13 +51,17 @@ const Movies = () => {
         duration: parseInt(newMovie.duration) || 0,
         release_date: newMovie.releaseDate,
         status: newMovie.status,
-        rating: parseFloat(newMovie.rating) || 0
+        rating: parseFloat(newMovie.rating) || 0,
+        director: newMovie.director,
+        cast: newMovie.cast.split(',').map(c => c.trim()).filter(Boolean),
+        storyline: newMovie.storyline,
+        rated: newMovie.rated
       };
       const res = await movieAPI.create(movieData);
       if (res.success) {
         await fetchMovies();
         setShowModal(false);
-        setNewMovie({ title: '', originalTitle: '', poster: '', description: '', genres: '', director: '', duration: '', releaseDate: '', rated: 'P', status: 'now_playing', rating: '' });
+        setNewMovie({ title: '', originalTitle: '', poster: '', description: '', genres: '', director: '', cast: '', duration: '', releaseDate: '', rated: 'P', status: 'now_playing', rating: '', storyline: '' });
       }
     } catch (error) {
       console.error('Failed to add movie:', error);
@@ -66,7 +71,7 @@ const Movies = () => {
   const openModal = () => setShowModal(true);
   const closeModal = () => {
     setShowModal(false);
-    setNewMovie({ title: '', originalTitle: '', poster: '', description: '', genres: '', director: '', duration: '', releaseDate: '', rated: 'P', status: 'now_playing', rating: '' });
+    setNewMovie({ title: '', originalTitle: '', poster: '', description: '', genres: '', director: '', cast: '', duration: '', releaseDate: '', rated: 'P', status: 'now_playing', rating: '', storyline: '' });
   };
 
   const filteredMovies = movies.filter(movie => {
@@ -261,7 +266,11 @@ const Movies = () => {
                 </div>
                 <div className="form-group" style={{gridColumn: '1 / -1'}}>
                   <label className="form-label">Mô tả</label>
-                  <textarea className="form-input w-full" name="description" value={newMovie.description} onChange={handleInputChange} rows={3} />
+                  <textarea className="form-input w-full" name="description" value={newMovie.description} onChange={handleInputChange} rows={2} />
+                </div>
+                <div className="form-group" style={{gridColumn: '1 / -1'}}>
+                  <label className="form-label">Nội dung phim (Storyline)</label>
+                  <textarea className="form-input w-full" name="storyline" value={newMovie.storyline} onChange={handleInputChange} rows={3} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Thể loại (phân cách bằng dấu phẩy)</label>
@@ -270,6 +279,10 @@ const Movies = () => {
                 <div className="form-group">
                   <label className="form-label">Đạo diễn</label>
                   <input className="form-input w-full" name="director" value={newMovie.director} onChange={handleInputChange} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Diễn viên (phân cách bằng dấu phẩy)</label>
+                  <input className="form-input w-full" name="cast" value={newMovie.cast} onChange={handleInputChange} placeholder="Diễn viên A, Diễn viên B" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Thời lượng (phút) <span className="text-danger">*</span></label>

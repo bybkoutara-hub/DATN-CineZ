@@ -4,15 +4,19 @@ import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getMovieDetail } from "../services/movieService"; // Đảm bảo đường dẫn này đúng với dự án của bạn
+import { getMovieDetail } from "../services/movieService";
+import { getMovieReviews, addReview, deleteReview } from "../services/reviewService";
+import { getStoredUser } from "../services/authService";
 
 // ==========================================
 // HỆ MÀU SẮC CHUẨN FIGMA
@@ -31,11 +35,30 @@ export default function MovieDetailScreen() {
   const [showtimes, setShowtimes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // State quản lý việc chọn rạp phim từ danh sách lịch chiếu động
-  const [selectedCinema, setSelectedCinema] = useState<string | null>(null);
+  // State quản lý việc chọn phòng chiếu từ danh sách lịch chiếu
+  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
   
   // State quản lý suất chiếu cụ thể được chọn trực tiếp bởi người dùng
   const [selectedShowtimeId, setSelectedShowtimeId] = useState<string | null>(null);
+
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewPage, setReviewPage] = useState(1);
+  const [reviewTotalPages, setReviewTotalPages] = useState(1);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  const loadReviews = async (page = 1) => {
+    if (id) {
+      const res = await getMovieReviews(id as string, page);
+      if (res.success) {
+        setReviews(res.data);
+        setReviewPage(res.pagination.page);
+        setReviewTotalPages(res.pagination.pages);
+      }
+    }
+  };
 
   // Gọi API Backend lấy thông tin chi tiết phim khi màn hình được load
   useEffect(() => {
@@ -47,9 +70,9 @@ export default function MovieDetailScreen() {
           setMovie(data.movie);
           setShowtimes(data.showtimes);
 
-          // Nếu có danh sách suất chiếu, tự động chọn rạp đầu tiên xuất hiện trong lịch chiếu
+          // Nếu có danh sách suất chiếu, tự động chọn phòng đầu tiên
           if (data.showtimes && data.showtimes.length > 0) {
-            setSelectedCinema(data.showtimes[0].roomName); 
+            setSelectedRoom(data.showtimes[0].roomName); 
           }
         } catch (error) {
           console.error("Lỗi tải chi tiết phim từ Server:", error);
@@ -58,8 +81,45 @@ export default function MovieDetailScreen() {
         }
       };
       loadMovieData();
+      loadReviews();
+      getStoredUser().then(setCurrentUser);
     }
   }, [id]);
+
+  const handleSubmitReview = async () => {
+    try {
+      const res = await addReview(id as string, reviewRating, reviewComment);
+      if (res.success) {
+        Alert.alert("Thành công", "Đánh giá của bạn đã được gửi!");
+        setShowReviewForm(false);
+        setReviewComment("");
+        setReviewRating(5);
+        loadReviews();
+      }
+    } catch (error) {
+      Alert.alert("Lỗi", "Không thể gửi đánh giá. Vui lòng thử lại!");
+    }
+  };
+
+  const handleDeleteReview = (reviewId: string) => {
+    Alert.alert("Xóa đánh giá", "Bạn có chắc muốn xóa đánh giá này?", [
+      { text: "Hủy", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const res = await deleteReview(reviewId);
+            if (res.success) {
+              loadReviews(reviewPage);
+            }
+          } catch {
+            Alert.alert("Lỗi", "Không thể xóa đánh giá");
+          }
+        },
+      },
+    ]);
+  };
 
   // Loading Indicator hiển thị trong lúc chờ phản hồi từ API
   if (loading) {
@@ -83,11 +143,11 @@ export default function MovieDetailScreen() {
     );
   }
 
-  // Lọc ra danh sách các rạp duy nhất (Unique Cinemas/Rooms) từ mảng suất chiếu trả về
-  const uniqueCinemas = Array.from(new Set(showtimes.map((s) => s.roomName)));
+  // Lọc ra danh sách phòng duy nhất từ mảng suất chiếu
+  const uniqueRooms = Array.from(new Set(showtimes.map((s) => s.roomName)));
 
-  // Lấy ra danh sách suất chiếu thuộc về rạp hiện tại đang được nhấn chọn
-  const filteredShowtimes = showtimes.filter((s) => s.roomName === selectedCinema);
+  // Lấy suất chiếu thuộc phòng đang chọn
+  const filteredShowtimes = showtimes.filter((s) => s.roomName === selectedRoom);
 
   return (
     <View style={styles.container}>
@@ -140,7 +200,7 @@ export default function MovieDetailScreen() {
           <View style={styles.actionRow}>
             <View style={styles.starsContainer}>
               {[1, 2, 3, 4, 5].map((star) => {
-                const currentRating = movie.rating ? Math.round(movie.rating / 2) : 4;
+                const currentRating = movie.rating ? Math.round(movie.rating) : 0;
                 return (
                   <FontAwesome
                     key={star}
@@ -168,16 +228,26 @@ export default function MovieDetailScreen() {
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Thể loại:</Text>
             <Text style={styles.metaValue}>
-              {Array.isArray(movie.genres) ? movie.genres.join(", ") : movie.genres || "Action, Drama"}
+              {Array.isArray(movie.genres) ? movie.genres.join(", ") : movie.genres || "Đang cập nhật"}
+            </Text>
+          </View>
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Đạo diễn:</Text>
+            <Text style={styles.metaValue}>{movie.director || "Đang cập nhật"}</Text>
+          </View>
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Diễn viên:</Text>
+            <Text style={styles.metaValue}>
+              {Array.isArray(movie.cast) ? movie.cast.join(", ") : movie.cast || "Đang cập nhật"}
             </Text>
           </View>
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Kiểm duyệt:</Text>
-            <Text style={styles.metaValue}>{movie.status === "now_playing" ? "13+" : "P"}</Text>
+            <Text style={styles.metaValue}>{movie.rated || "P"}</Text>
           </View>
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Ngôn ngữ:</Text>
-            <Text style={styles.metaValue}>Tiếng Anh / Phụ đề Việt</Text>
+            <Text style={styles.metaValue}>{movie.language || "Đang cập nhật"}</Text>
           </View>
         </View>
 
@@ -185,26 +255,25 @@ export default function MovieDetailScreen() {
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Nội dung phim</Text>
           <Text style={styles.storylineText}>
-            {movie.storyline || "Hệ thống đang cập nhật phần mô tả nội dung câu chuyện cho bộ phim xuất sắc này..."}
-            <Text style={styles.seeMoreText}> Xem thêm</Text>
+            {movie.storyline || movie.description || "Hệ thống đang cập nhật phần mô tả nội dung câu chuyện cho bộ phim xuất sắc này..."}
           </Text>
         </View>
 
-        {/* 5. CINEMA LIST SECTION (Lấy danh sách phòng/rạp từ các Suất chiếu) */}
+        {/* 5. ROOM LIST SECTION */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Rạp chiếu</Text>
-          {uniqueCinemas.length === 0 ? (
-            <Text style={styles.noShowtimeText}>Hiện tại chưa có lịch rạp khả dụng cho phim này.</Text>
+          <Text style={styles.sectionTitle}>Phòng chiếu</Text>
+          {uniqueRooms.length === 0 ? (
+            <Text style={styles.noShowtimeText}>Hiện tại chưa có lịch chiếu cho phim này.</Text>
           ) : (
-            uniqueCinemas.map((cinemaName, index) => {
-              const isSelected = selectedCinema === cinemaName;
+            uniqueRooms.map((roomName, index) => {
+              const isSelected = selectedRoom === roomName;
               return (
                 <TouchableOpacity
                   key={index}
                   activeOpacity={0.85}
                   onPress={() => {
-                    setSelectedCinema(cinemaName);
-                    setSelectedShowtimeId(null); // Reset lại suất chiếu đã chọn khi đổi rạp
+                    setSelectedRoom(roomName);
+                    setSelectedShowtimeId(null);
                   }}
                   style={[
                     styles.cinemaCard,
@@ -212,9 +281,9 @@ export default function MovieDetailScreen() {
                   ]}
                 >
                   <View style={styles.cinemaMainInfo}>
-                    <Text style={styles.cinemaName}>{cinemaName}</Text>
+                    <Text style={styles.cinemaName}>{roomName}</Text>
                     <Text style={styles.cinemaSubDetails}>
-                      Hệ thống rạp chiếu CineZ Premium kĩ thuật số chất lượng cao
+                      CineZ - Phòng chiếu chất lượng cao
                     </Text>
                   </View>
 
@@ -227,10 +296,10 @@ export default function MovieDetailScreen() {
           )}
         </View>
 
-        {/* 6. SUẤT CHIẾU TƯƠNG ỨNG RẠP ĐƯỢC CHỌN */}
-        {selectedCinema && (
+        {/* 6. SUẤT CHIẾU THEO PHÒNG ĐÃ CHỌN */}
+        {selectedRoom && (
           <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Suất chiếu tại {selectedCinema}</Text>
+            <Text style={styles.sectionTitle}>Suất chiếu - {selectedRoom}</Text>
             {filteredShowtimes.length === 0 ? (
               <Text style={styles.noShowtimeText}>Không có suất chiếu nào hôm nay.</Text>
             ) : (
@@ -266,7 +335,104 @@ export default function MovieDetailScreen() {
           </View>
         )}
 
-        <View style={{ height: 120 }} />
+        {/* 8. BÌNH LUẬN / ĐÁNH GIÁ */}
+        <View style={styles.sectionContainer}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <Text style={styles.sectionTitle}>Bình luận</Text>
+            <TouchableOpacity onPress={() => setShowReviewForm(!showReviewForm)}>
+              <Text style={{ color: "#E2A43B", fontSize: 14, fontWeight: "600" }}>
+                {showReviewForm ? "Huỷ" : "Viết bình luận"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {showReviewForm && (
+            <View style={{ backgroundColor: "#1A1A1A", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+              <Text style={{ color: "#fff", marginBottom: 8, fontSize: 14 }}>Đánh giá của bạn:</Text>
+              <View style={{ flexDirection: "row", marginBottom: 12 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity key={star} onPress={() => setReviewRating(star)}>
+                    <FontAwesome
+                      name={star <= reviewRating ? "star" : "star-o"}
+                      size={28}
+                      color={star <= reviewRating ? "#E2A43B" : "#333"}
+                      style={{ marginRight: 8 }}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextInput
+                style={{ backgroundColor: "#111", color: "#fff", borderRadius: 8, padding: 12, fontSize: 14, minHeight: 80, textAlignVertical: "top" }}
+                placeholder="Chia sẻ cảm nhận của bạn về bộ phim..."
+                placeholderTextColor="#666"
+                value={reviewComment}
+                onChangeText={setReviewComment}
+                multiline
+              />
+              <TouchableOpacity
+                style={{ backgroundColor: "#E2A43B", borderRadius: 8, padding: 12, alignItems: "center", marginTop: 12 }}
+                onPress={handleSubmitReview}
+              >
+                <Text style={{ color: "#000", fontWeight: "700", fontSize: 15 }}>Gửi đánh giá</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {reviews.length === 0 ? (
+            <Text style={styles.noShowtimeText}>Chưa có bình luận nào. Hãy là người đầu tiên đánh giá!</Text>
+          ) : (
+            reviews.map((review) => (
+              <View key={review._id} style={{ backgroundColor: "#1A1A1A", borderRadius: 12, padding: 14, marginBottom: 12 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
+                  <Text style={{ color: "#E2A43B", fontWeight: "600", fontSize: 14 }}>
+                    {review.user?.name || "Người dùng"}
+                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <FontAwesome
+                        key={star}
+                        name={star <= review.rating ? "star" : "star-o"}
+                        size={12}
+                        color={star <= review.rating ? "#E2A43B" : "#333"}
+                        style={{ marginLeft: 2 }}
+                      />
+                    ))}
+                    {currentUser && review.user?._id === currentUser?._id && (
+                      <TouchableOpacity onPress={() => handleDeleteReview(review._id)} style={{ marginLeft: 8 }}>
+                        <Ionicons name="trash-outline" size={14} color="#ff4444" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+                <Text style={{ color: "#BBB", fontSize: 13, lineHeight: 18 }}>{review.comment}</Text>
+                <Text style={{ color: "#555", fontSize: 11, marginTop: 6 }}>
+                  {new Date(review.createdAt).toLocaleDateString("vi-VN")}
+                </Text>
+              </View>
+            ))
+          )}
+          {reviewTotalPages > 1 && (
+            <View style={{ flexDirection: "row", justifyContent: "center", gap: 8, marginTop: 8 }}>
+              <TouchableOpacity
+                style={{ padding: 8, opacity: reviewPage > 1 ? 1 : 0.3 }}
+                disabled={reviewPage <= 1}
+                onPress={() => loadReviews(reviewPage - 1)}
+              >
+                <Ionicons name="chevron-back" size={20} color="#E2A43B" />
+              </TouchableOpacity>
+              <Text style={{ color: "#888", fontSize: 14, alignSelf: "center" }}>
+                {reviewPage} / {reviewTotalPages}
+              </Text>
+              <TouchableOpacity
+                style={{ padding: 8, opacity: reviewPage < reviewTotalPages ? 1 : 0.3 }}
+                disabled={reviewPage >= reviewTotalPages}
+                onPress={() => loadReviews(reviewPage + 1)}
+              >
+                <Ionicons name="chevron-forward" size={20} color="#E2A43B" />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       {/* 7. FIXED BOTTOM CONTINUE BUTTON */}

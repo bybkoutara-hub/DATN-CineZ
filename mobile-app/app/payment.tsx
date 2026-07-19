@@ -118,7 +118,6 @@ export default function PaymentScreen() {
 
     if (result.type === "success" && result.url) {
       const { queryParams } = Linking.parse(result.url);
-      // status có thể là string hoặc string[] -> chuẩn hóa về string đầu tiên
       const rawStatus = queryParams?.status;
       const status = Array.isArray(rawStatus) ? rawStatus[0] : rawStatus;
       if (status === "success") {
@@ -126,14 +125,11 @@ export default function PaymentScreen() {
         router.replace("/(tabs)/ticket");
         return;
       }
-      // Thất bại/sai số tiền: backend đã tự hủy & hoàn ghế qua return URL
       Alert.alert(
         "Thanh toán chưa hoàn tất",
         "Giao dịch không thành công hoặc đã bị hủy. Vé sẽ không được giữ.",
       );
     } else {
-      // Người dùng đóng trình duyệt giữa chừng -> backend chưa nhận được kết quả.
-      // Chủ động hủy đơn pending để hoàn ghế lại cho người khác.
       await cancelBooking(bookingId);
       Alert.alert(
         "Đã hủy thanh toán",

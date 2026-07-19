@@ -11,6 +11,9 @@ import Seat from "../models/seatModel";
 import Booking from "../models/bookingModel";
 import Invoice from "../models/invoiceModel";
 import User from "../models/userModel";
+import Actor from "../models/actorModel";
+import Director from "../models/directorModel";
+import Review from "../models/reviewModel";
 
 // ==================== AUTH ====================
 
@@ -72,7 +75,7 @@ export const getGenres = async (_req: Request, res: Response): Promise<void> => 
     const genres = await Genre.find().sort({ name: 1 });
     res.status(200).json(genres);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy danh sách thể loại", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy danh sách thể loại", error });
   }
 };
 
@@ -80,12 +83,12 @@ export const getGenreById = async (req: Request, res: Response): Promise<void> =
   try {
     const genre = await Genre.findById(req.params.id);
     if (!genre) {
-      res.status(404).json({ message: "Không tìm thấy thể loại" });
+      res.status(404).json({ success: false, message: "Không tìm thấy thể loại" });
       return;
     }
     res.status(200).json(genre);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy chi tiết thể loại", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy chi tiết thể loại", error });
   }
 };
 
@@ -93,9 +96,9 @@ export const createGenre = async (req: Request, res: Response): Promise<void> =>
   try {
     const newGenre = new Genre(req.body);
     const saved = await newGenre.save();
-    res.status(201).json({ message: "Thêm thể loại thành công!", data: saved });
+    res.status(201).json({ success: true, message: "Thêm thể loại thành công!", data: saved });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi tạo thể loại", error });
+    res.status(500).json({ success: false, message: "Lỗi tạo thể loại", error });
   }
 };
 
@@ -103,12 +106,12 @@ export const updateGenre = async (req: Request, res: Response): Promise<void> =>
   try {
     const updated = await Genre.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updated) {
-      res.status(404).json({ message: "Không tìm thấy thể loại" });
+      res.status(404).json({ success: false, message: "Không tìm thấy thể loại" });
       return;
     }
-    res.status(200).json({ message: "Cập nhật thể loại thành công!", data: updated });
+    res.status(200).json({ success: true, message: "Cập nhật thể loại thành công!", data: updated });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi cập nhật thể loại", error });
+    res.status(500).json({ success: false, message: "Lỗi cập nhật thể loại", error });
   }
 };
 
@@ -116,12 +119,12 @@ export const deleteGenre = async (req: Request, res: Response): Promise<void> =>
   try {
     const deleted = await Genre.findByIdAndDelete(req.params.id);
     if (!deleted) {
-      res.status(404).json({ message: "Không tìm thấy thể loại" });
+      res.status(404).json({ success: false, message: "Không tìm thấy thể loại" });
       return;
     }
-    res.status(200).json({ message: "Xóa thể loại thành công!" });
+    res.status(200).json({ success: true, message: "Xóa thể loại thành công!" });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi xóa thể loại", error });
+    res.status(500).json({ success: false, message: "Lỗi xóa thể loại", error });
   }
 };
 
@@ -136,7 +139,7 @@ export const getAdminMovies = async (req: Request, res: Response): Promise<void>
     const movies = await Movie.find(filter).sort({ createdAt: -1 });
     res.status(200).json(movies);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy danh sách phim", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy danh sách phim", error });
   }
 };
 
@@ -144,12 +147,12 @@ export const getAdminMovieById = async (req: Request, res: Response): Promise<vo
   try {
     const movie = await Movie.findById(req.params.id);
     if (!movie) {
-      res.status(404).json({ message: "Không tìm thấy phim" });
+      res.status(404).json({ success: false, message: "Không tìm thấy phim" });
       return;
     }
     res.status(200).json(movie);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy chi tiết phim", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy chi tiết phim", error });
   }
 };
 
@@ -157,9 +160,9 @@ export const createAdminMovie = async (req: Request, res: Response): Promise<voi
   try {
     const newMovie = new Movie(req.body);
     const saved = await newMovie.save();
-    res.status(201).json({ message: "Đã thêm phim mới vào hệ thống!", data: saved });
+    res.status(201).json({ success: true, message: "Đã thêm phim mới vào hệ thống!", data: saved });
   } catch (error: any) {
-    res.status(500).json({ message: "Không thể thêm phim mới", error });
+    res.status(500).json({ success: false, message: "Không thể thêm phim mới", error });
   }
 };
 
@@ -167,12 +170,12 @@ export const updateAdminMovie = async (req: Request, res: Response): Promise<voi
   try {
     const updated = await Movie.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updated) {
-      res.status(404).json({ message: "Không tìm thấy phim" });
+      res.status(404).json({ success: false, message: "Không tìm thấy phim" });
       return;
     }
-    res.status(200).json({ message: "Cập nhật thành công!", data: updated });
+    res.status(200).json({ success: true, message: "Cập nhật thành công!", data: updated });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi cập nhật phim", error });
+    res.status(500).json({ success: false, message: "Lỗi cập nhật phim", error });
   }
 };
 
@@ -180,12 +183,12 @@ export const deleteAdminMovie = async (req: Request, res: Response): Promise<voi
   try {
     const deleted = await Movie.findByIdAndDelete(req.params.id);
     if (!deleted) {
-      res.status(404).json({ message: "Không tìm thấy phim" });
+      res.status(404).json({ success: false, message: "Không tìm thấy phim" });
       return;
     }
-    res.status(200).json({ message: "Đã xóa phim thành công!" });
+    res.status(200).json({ success: true, message: "Đã xóa phim thành công!" });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi xóa phim", error });
+    res.status(500).json({ success: false, message: "Lỗi xóa phim", error });
   }
 };
 
@@ -196,7 +199,7 @@ export const getRooms = async (_req: Request, res: Response): Promise<void> => {
     const rooms = await Room.find().sort({ name: 1 });
     res.status(200).json(rooms);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy danh sách phòng", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy danh sách phòng", error });
   }
 };
 
@@ -204,12 +207,12 @@ export const getRoomById = async (req: Request, res: Response): Promise<void> =>
   try {
     const room = await Room.findById(req.params.id);
     if (!room) {
-      res.status(404).json({ message: "Không tìm thấy phòng" });
+      res.status(404).json({ success: false, message: "Không tìm thấy phòng" });
       return;
     }
     res.status(200).json(room);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy chi tiết phòng", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy chi tiết phòng", error });
   }
 };
 
@@ -221,9 +224,9 @@ export const createRoom = async (req: Request, res: Response): Promise<void> => 
     }
     const newRoom = new Room(data);
     const saved = await newRoom.save();
-    res.status(201).json({ message: "Thêm phòng thành công!", data: saved });
+    res.status(201).json({ success: true, message: "Thêm phòng thành công!", data: saved });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi tạo phòng", error });
+    res.status(500).json({ success: false, message: "Lỗi tạo phòng", error });
   }
 };
 
@@ -231,12 +234,12 @@ export const updateRoom = async (req: Request, res: Response): Promise<void> => 
   try {
     const updated = await Room.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updated) {
-      res.status(404).json({ message: "Không tìm thấy phòng" });
+      res.status(404).json({ success: false, message: "Không tìm thấy phòng" });
       return;
     }
-    res.status(200).json({ message: "Cập nhật phòng thành công!", data: updated });
+    res.status(200).json({ success: true, message: "Cập nhật phòng thành công!", data: updated });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi cập nhật phòng", error });
+    res.status(500).json({ success: false, message: "Lỗi cập nhật phòng", error });
   }
 };
 
@@ -244,13 +247,13 @@ export const deleteRoom = async (req: Request, res: Response): Promise<void> => 
   try {
     const deleted = await Room.findByIdAndDelete(req.params.id);
     if (!deleted) {
-      res.status(404).json({ message: "Không tìm thấy phòng" });
+      res.status(404).json({ success: false, message: "Không tìm thấy phòng" });
       return;
     }
     await Seat.deleteMany({ room: req.params.id });
-    res.status(200).json({ message: "Xóa phòng thành công!" });
+    res.status(200).json({ success: true, message: "Xóa phòng thành công!" });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi xóa phòng", error });
+    res.status(500).json({ success: false, message: "Lỗi xóa phòng", error });
   }
 };
 
@@ -259,7 +262,7 @@ export const getRoomSeats = async (req: Request, res: Response): Promise<void> =
     const seats = await Seat.find({ room: req.params.id }).sort({ row: 1, number: 1 });
     res.status(200).json(seats);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy sơ đồ ghế", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy sơ đồ ghế", error });
   }
 };
 
@@ -283,7 +286,7 @@ export const getAdminShowtimes = async (req: Request, res: Response): Promise<vo
       .sort({ startTime: 1 });
     res.status(200).json(showtimes);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi khi lấy danh sách suất chiếu", error });
+    res.status(500).json({ success: false, message: "Lỗi khi lấy danh sách suất chiếu", error });
   }
 };
 
@@ -292,12 +295,12 @@ export const getAdminShowtimeById = async (req: Request, res: Response): Promise
     const showtime = await Showtime.findById(req.params.id)
       .populate("movieId", "title poster_url duration genres");
     if (!showtime) {
-      res.status(404).json({ message: "Không tìm thấy suất chiếu" });
+      res.status(404).json({ success: false, message: "Không tìm thấy suất chiếu" });
       return;
     }
     res.status(200).json(showtime);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy chi tiết suất chiếu", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy chi tiết suất chiếu", error });
   }
 };
 
@@ -305,9 +308,9 @@ export const createAdminShowtime = async (req: Request, res: Response): Promise<
   try {
     const newShowtime = new Showtime(req.body);
     const saved = await newShowtime.save();
-    res.status(201).json({ message: "Tạo suất chiếu thành công!", data: saved });
+    res.status(201).json({ success: true, message: "Tạo suất chiếu thành công!", data: saved });
   } catch (error: any) {
-    res.status(500).json({ message: "Không thể tạo suất chiếu", error });
+    res.status(500).json({ success: false, message: "Không thể tạo suất chiếu", error });
   }
 };
 
@@ -315,12 +318,12 @@ export const updateAdminShowtime = async (req: Request, res: Response): Promise<
   try {
     const updated = await Showtime.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updated) {
-      res.status(404).json({ message: "Không tìm thấy suất chiếu" });
+      res.status(404).json({ success: false, message: "Không tìm thấy suất chiếu" });
       return;
     }
-    res.status(200).json({ message: "Cập nhật suất chiếu thành công!", data: updated });
+    res.status(200).json({ success: true, message: "Cập nhật suất chiếu thành công!", data: updated });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi cập nhật suất chiếu", error });
+    res.status(500).json({ success: false, message: "Lỗi cập nhật suất chiếu", error });
   }
 };
 
@@ -328,12 +331,12 @@ export const deleteAdminShowtime = async (req: Request, res: Response): Promise<
   try {
     const deleted = await Showtime.findByIdAndDelete(req.params.id);
     if (!deleted) {
-      res.status(404).json({ message: "Không tìm thấy suất chiếu" });
+      res.status(404).json({ success: false, message: "Không tìm thấy suất chiếu" });
       return;
     }
-    res.status(200).json({ message: "Đã xóa suất chiếu thành công!" });
+    res.status(200).json({ success: true, message: "Đã xóa suất chiếu thành công!" });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi xóa suất chiếu", error });
+    res.status(500).json({ success: false, message: "Lỗi xóa suất chiếu", error });
   }
 };
 
@@ -349,7 +352,7 @@ export const getBookedSeats = async (req: Request, res: Response): Promise<void>
     bookings.forEach((b) => bookedSeats.push(...b.seats));
     res.status(200).json({ success: true, bookedSeats });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy trạng thái ghế", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy trạng thái ghế", error });
   }
 };
 
@@ -362,7 +365,7 @@ export const getCombos = async (req: Request, res: Response): Promise<void> => {
     const combos = await Combo.find(filter).sort({ price: 1 });
     res.status(200).json(combos);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy danh sách combo", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy danh sách combo", error });
   }
 };
 
@@ -370,12 +373,12 @@ export const getComboById = async (req: Request, res: Response): Promise<void> =
   try {
     const combo = await Combo.findById(req.params.id);
     if (!combo) {
-      res.status(404).json({ message: "Không tìm thấy combo" });
+      res.status(404).json({ success: false, message: "Không tìm thấy combo" });
       return;
     }
     res.status(200).json(combo);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy chi tiết combo", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy chi tiết combo", error });
   }
 };
 
@@ -383,9 +386,9 @@ export const createCombo = async (req: Request, res: Response): Promise<void> =>
   try {
     const newCombo = new Combo(req.body);
     const saved = await newCombo.save();
-    res.status(201).json({ message: "Thêm combo thành công!", data: saved });
+    res.status(201).json({ success: true, message: "Thêm combo thành công!", data: saved });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi tạo combo", error });
+    res.status(500).json({ success: false, message: "Lỗi tạo combo", error });
   }
 };
 
@@ -393,12 +396,12 @@ export const updateCombo = async (req: Request, res: Response): Promise<void> =>
   try {
     const updated = await Combo.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updated) {
-      res.status(404).json({ message: "Không tìm thấy combo" });
+      res.status(404).json({ success: false, message: "Không tìm thấy combo" });
       return;
     }
-    res.status(200).json({ message: "Cập nhật combo thành công!", data: updated });
+    res.status(200).json({ success: true, message: "Cập nhật combo thành công!", data: updated });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi cập nhật combo", error });
+    res.status(500).json({ success: false, message: "Lỗi cập nhật combo", error });
   }
 };
 
@@ -406,12 +409,12 @@ export const deleteCombo = async (req: Request, res: Response): Promise<void> =>
   try {
     const deleted = await Combo.findByIdAndDelete(req.params.id);
     if (!deleted) {
-      res.status(404).json({ message: "Không tìm thấy combo" });
+      res.status(404).json({ success: false, message: "Không tìm thấy combo" });
       return;
     }
-    res.status(200).json({ message: "Đã xóa combo" });
+    res.status(200).json({ success: true, message: "Đã xóa combo" });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi xóa combo", error });
+    res.status(500).json({ success: false, message: "Lỗi xóa combo", error });
   }
 };
 
@@ -426,7 +429,7 @@ export const getPromotions = async (req: Request, res: Response): Promise<void> 
     const promotions = await Promotion.find(filter).sort({ createdAt: -1 });
     res.status(200).json(promotions);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy danh sách khuyến mãi", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy danh sách khuyến mãi", error });
   }
 };
 
@@ -434,12 +437,12 @@ export const getPromotionById = async (req: Request, res: Response): Promise<voi
   try {
     const promotion = await Promotion.findById(req.params.id);
     if (!promotion) {
-      res.status(404).json({ message: "Không tìm thấy khuyến mãi" });
+      res.status(404).json({ success: false, message: "Không tìm thấy khuyến mãi" });
       return;
     }
     res.status(200).json(promotion);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy chi tiết khuyến mãi", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy chi tiết khuyến mãi", error });
   }
 };
 
@@ -447,9 +450,9 @@ export const createPromotion = async (req: Request, res: Response): Promise<void
   try {
     const newPromotion = new Promotion(req.body);
     const saved = await newPromotion.save();
-    res.status(201).json({ message: "Thêm khuyến mãi thành công!", data: saved });
+    res.status(201).json({ success: true, message: "Thêm khuyến mãi thành công!", data: saved });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi tạo khuyến mãi", error });
+    res.status(500).json({ success: false, message: "Lỗi tạo khuyến mãi", error });
   }
 };
 
@@ -457,12 +460,12 @@ export const updatePromotion = async (req: Request, res: Response): Promise<void
   try {
     const updated = await Promotion.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updated) {
-      res.status(404).json({ message: "Không tìm thấy khuyến mãi" });
+      res.status(404).json({ success: false, message: "Không tìm thấy khuyến mãi" });
       return;
     }
-    res.status(200).json({ message: "Cập nhật khuyến mãi thành công!", data: updated });
+    res.status(200).json({ success: true, message: "Cập nhật khuyến mãi thành công!", data: updated });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi cập nhật khuyến mãi", error });
+    res.status(500).json({ success: false, message: "Lỗi cập nhật khuyến mãi", error });
   }
 };
 
@@ -470,12 +473,12 @@ export const deletePromotion = async (req: Request, res: Response): Promise<void
   try {
     const deleted = await Promotion.findByIdAndDelete(req.params.id);
     if (!deleted) {
-      res.status(404).json({ message: "Không tìm thấy khuyến mãi" });
+      res.status(404).json({ success: false, message: "Không tìm thấy khuyến mãi" });
       return;
     }
-    res.status(200).json({ message: "Xóa khuyến mãi thành công!" });
+    res.status(200).json({ success: true, message: "Xóa khuyến mãi thành công!" });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi xóa khuyến mãi", error });
+    res.status(500).json({ success: false, message: "Lỗi xóa khuyến mãi", error });
   }
 };
 
@@ -544,7 +547,7 @@ export const getMembers = async (req: Request, res: Response): Promise<void> => 
     const users = await User.find(filter).select("-password").sort({ createdAt: -1 });
     res.status(200).json(users);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy danh sách thành viên", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy danh sách thành viên", error });
   }
 };
 
@@ -552,12 +555,12 @@ export const getMemberById = async (req: Request, res: Response): Promise<void> 
   try {
     const user = await User.findById(req.params.id).select("-password");
     if (!user) {
-      res.status(404).json({ message: "Không tìm thấy thành viên" });
+      res.status(404).json({ success: false, message: "Không tìm thấy thành viên" });
       return;
     }
     res.status(200).json(user);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy chi tiết thành viên", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy chi tiết thành viên", error });
   }
 };
 
@@ -570,12 +573,12 @@ export const updateMember = async (req: Request, res: Response): Promise<void> =
       { new: true }
     ).select("-password");
     if (!updated) {
-      res.status(404).json({ message: "Không tìm thấy thành viên" });
+      res.status(404).json({ success: false, message: "Không tìm thấy thành viên" });
       return;
     }
-    res.status(200).json({ message: "Cập nhật thành viên thành công!", data: updated });
+    res.status(200).json({ success: true, message: "Cập nhật thành viên thành công!", data: updated });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi cập nhật thành viên", error });
+    res.status(500).json({ success: false, message: "Lỗi cập nhật thành viên", error });
   }
 };
 
@@ -589,7 +592,7 @@ export const getMemberBookings = async (req: Request, res: Response): Promise<vo
       .sort({ createdAt: -1 });
     res.status(200).json(bookings);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy lịch sử đặt vé", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy lịch sử đặt vé", error });
   }
 };
 
@@ -613,7 +616,7 @@ export const getStaffs = async (req: Request, res: Response): Promise<void> => {
       .sort({ createdAt: -1 });
     res.status(200).json(staff);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy danh sách nhân viên", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy danh sách nhân viên", error });
   }
 };
 
@@ -621,12 +624,12 @@ export const getStaffById = async (req: Request, res: Response): Promise<void> =
   try {
     const staff = await User.findById(req.params.id).select("-password");
     if (!staff) {
-      res.status(404).json({ message: "Không tìm thấy nhân viên" });
+      res.status(404).json({ success: false, message: "Không tìm thấy nhân viên" });
       return;
     }
     res.status(200).json(staff);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy chi tiết nhân viên", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy chi tiết nhân viên", error });
   }
 };
 
@@ -668,12 +671,12 @@ export const updateStaff = async (req: Request, res: Response): Promise<void> =>
     if (active !== undefined) updateData.active = active;
     const updated = await User.findByIdAndUpdate(req.params.id, updateData, { new: true }).select("-password");
     if (!updated) {
-      res.status(404).json({ message: "Không tìm thấy nhân viên" });
+      res.status(404).json({ success: false, message: "Không tìm thấy nhân viên" });
       return;
     }
-    res.status(200).json({ message: "Cập nhật nhân viên thành công!", data: updated });
+    res.status(200).json({ success: true, message: "Cập nhật nhân viên thành công!", data: updated });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi cập nhật nhân viên", error });
+    res.status(500).json({ success: false, message: "Lỗi cập nhật nhân viên", error });
   }
 };
 
@@ -681,12 +684,12 @@ export const deleteStaff = async (req: Request, res: Response): Promise<void> =>
   try {
     const deleted = await User.findByIdAndDelete(req.params.id);
     if (!deleted) {
-      res.status(404).json({ message: "Không tìm thấy nhân viên" });
+      res.status(404).json({ success: false, message: "Không tìm thấy nhân viên" });
       return;
     }
-    res.status(200).json({ message: "Xóa nhân viên thành công!" });
+    res.status(200).json({ success: true, message: "Xóa nhân viên thành công!" });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi xóa nhân viên", error });
+    res.status(500).json({ success: false, message: "Lỗi xóa nhân viên", error });
   }
 };
 
@@ -699,7 +702,7 @@ export const getSliders = async (req: Request, res: Response): Promise<void> => 
     const sliders = await Slider.find(filter).sort({ order: 1, createdAt: -1 });
     res.status(200).json(sliders);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy danh sách slider", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy danh sách slider", error });
   }
 };
 
@@ -707,12 +710,12 @@ export const getSliderById = async (req: Request, res: Response): Promise<void> 
   try {
     const slider = await Slider.findById(req.params.id);
     if (!slider) {
-      res.status(404).json({ message: "Không tìm thấy slider" });
+      res.status(404).json({ success: false, message: "Không tìm thấy slider" });
       return;
     }
     res.status(200).json(slider);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy chi tiết slider", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy chi tiết slider", error });
   }
 };
 
@@ -720,9 +723,9 @@ export const createSlider = async (req: Request, res: Response): Promise<void> =
   try {
     const newSlider = new Slider(req.body);
     const saved = await newSlider.save();
-    res.status(201).json({ message: "Thêm slider thành công!", data: saved });
+    res.status(201).json({ success: true, message: "Thêm slider thành công!", data: saved });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi tạo slider", error });
+    res.status(500).json({ success: false, message: "Lỗi tạo slider", error });
   }
 };
 
@@ -730,12 +733,12 @@ export const updateSlider = async (req: Request, res: Response): Promise<void> =
   try {
     const updated = await Slider.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updated) {
-      res.status(404).json({ message: "Không tìm thấy slider" });
+      res.status(404).json({ success: false, message: "Không tìm thấy slider" });
       return;
     }
-    res.status(200).json({ message: "Cập nhật slider thành công!", data: updated });
+    res.status(200).json({ success: true, message: "Cập nhật slider thành công!", data: updated });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi cập nhật slider", error });
+    res.status(500).json({ success: false, message: "Lỗi cập nhật slider", error });
   }
 };
 
@@ -743,12 +746,12 @@ export const deleteSlider = async (req: Request, res: Response): Promise<void> =
   try {
     const deleted = await Slider.findByIdAndDelete(req.params.id);
     if (!deleted) {
-      res.status(404).json({ message: "Không tìm thấy slider" });
+      res.status(404).json({ success: false, message: "Không tìm thấy slider" });
       return;
     }
-    res.status(200).json({ message: "Xóa slider thành công!" });
+    res.status(200).json({ success: true, message: "Xóa slider thành công!" });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi xóa slider", error });
+    res.status(500).json({ success: false, message: "Lỗi xóa slider", error });
   }
 };
 
@@ -756,15 +759,15 @@ export const reorderSliders = async (req: Request, res: Response): Promise<void>
   try {
     const { items } = req.body;
     if (!Array.isArray(items)) {
-      res.status(400).json({ message: "Dữ liệu không hợp lệ!" });
+      res.status(400).json({ success: false, message: "Dữ liệu không hợp lệ!" });
       return;
     }
     for (const item of items) {
       await Slider.findByIdAndUpdate(item._id, { order: item.order });
     }
-    res.status(200).json({ message: "Sắp xếp slider thành công!" });
+    res.status(200).json({ success: true, message: "Sắp xếp slider thành công!" });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi sắp xếp slider", error });
+    res.status(500).json({ success: false, message: "Lỗi sắp xếp slider", error });
   }
 };
 
@@ -780,7 +783,7 @@ export const getSeats = async (req: Request, res: Response): Promise<void> => {
     const seats = await Seat.find(filter).populate("room", "name").sort({ row: 1, number: 1 });
     res.status(200).json(seats);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy danh sách ghế", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy danh sách ghế", error });
   }
 };
 
@@ -789,7 +792,7 @@ export const getSeatsByRoom = async (req: Request, res: Response): Promise<void>
     const seats = await Seat.find({ room: req.params.roomId }).sort({ row: 1, number: 1 });
     res.status(200).json(seats);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy ghế theo phòng", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy ghế theo phòng", error });
   }
 };
 
@@ -797,7 +800,7 @@ export const bulkCreateSeats = async (req: Request, res: Response): Promise<void
   try {
     const { room: roomId, seats: seatsData } = req.body;
     if (!roomId || !Array.isArray(seatsData) || seatsData.length === 0) {
-      res.status(400).json({ message: "Dữ liệu không hợp lệ!" });
+      res.status(400).json({ success: false, message: "Dữ liệu không hợp lệ!" });
       return;
     }
     await Seat.deleteMany({ room: roomId });
@@ -811,9 +814,9 @@ export const bulkCreateSeats = async (req: Request, res: Response): Promise<void
       price: s.price || 0,
     }));
     const saved = await Seat.insertMany(seatsToInsert);
-    res.status(201).json({ message: "Tạo ghế thành công!", data: saved });
+    res.status(201).json({ success: true, message: "Tạo ghế thành công!", data: saved });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi tạo ghế hàng loạt", error });
+    res.status(500).json({ success: false, message: "Lỗi tạo ghế hàng loạt", error });
   }
 };
 
@@ -821,12 +824,12 @@ export const updateSeat = async (req: Request, res: Response): Promise<void> => 
   try {
     const updated = await Seat.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updated) {
-      res.status(404).json({ message: "Không tìm thấy ghế" });
+      res.status(404).json({ success: false, message: "Không tìm thấy ghế" });
       return;
     }
-    res.status(200).json({ message: "Cập nhật ghế thành công!", data: updated });
+    res.status(200).json({ success: true, message: "Cập nhật ghế thành công!", data: updated });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi cập nhật ghế", error });
+    res.status(500).json({ success: false, message: "Lỗi cập nhật ghế", error });
   }
 };
 
@@ -834,12 +837,12 @@ export const deleteSeat = async (req: Request, res: Response): Promise<void> => 
   try {
     const deleted = await Seat.findByIdAndDelete(req.params.id);
     if (!deleted) {
-      res.status(404).json({ message: "Không tìm thấy ghế" });
+      res.status(404).json({ success: false, message: "Không tìm thấy ghế" });
       return;
     }
-    res.status(200).json({ message: "Xóa ghế thành công!" });
+    res.status(200).json({ success: true, message: "Xóa ghế thành công!" });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi xóa ghế", error });
+    res.status(500).json({ success: false, message: "Lỗi xóa ghế", error });
   }
 };
 
@@ -864,7 +867,7 @@ export const getAdminBookings = async (req: Request, res: Response): Promise<voi
       .sort({ createdAt: -1 });
     res.status(200).json(bookings);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy danh sách đặt vé", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy danh sách đặt vé", error });
   }
 };
 
@@ -877,12 +880,12 @@ export const getAdminBookingById = async (req: Request, res: Response): Promise<
       .populate({ path: "showtimeId", populate: { path: "movieId", select: "title poster_url duration genres" } })
       .populate("combo", "name price items");
     if (!booking) {
-      res.status(404).json({ message: "Không tìm thấy đặt vé" });
+      res.status(404).json({ success: false, message: "Không tìm thấy đặt vé" });
       return;
     }
     res.status(200).json(booking);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy chi tiết đặt vé", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy chi tiết đặt vé", error });
   }
 };
 
@@ -894,12 +897,12 @@ export const updateBookingStatus = async (req: Request, res: Response): Promise<
     if (paymentStatus) updateData.paymentStatus = paymentStatus;
     const updated = await Booking.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!updated) {
-      res.status(404).json({ message: "Không tìm thấy đặt vé" });
+      res.status(404).json({ success: false, message: "Không tìm thấy đặt vé" });
       return;
     }
-    res.status(200).json({ message: "Cập nhật đặt vé thành công!", data: updated });
+    res.status(200).json({ success: true, message: "Cập nhật đặt vé thành công!", data: updated });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi cập nhật đặt vé", error });
+    res.status(500).json({ success: false, message: "Lỗi cập nhật đặt vé", error });
   }
 };
 
@@ -911,12 +914,12 @@ export const cancelBooking = async (req: Request, res: Response): Promise<void> 
       { new: true }
     );
     if (!updated) {
-      res.status(404).json({ message: "Không tìm thấy đặt vé" });
+      res.status(404).json({ success: false, message: "Không tìm thấy đặt vé" });
       return;
     }
-    res.status(200).json({ message: "Hủy đặt vé thành công!", data: updated });
+    res.status(200).json({ success: true, message: "Hủy đặt vé thành công!", data: updated });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi hủy đặt vé", error });
+    res.status(500).json({ success: false, message: "Lỗi hủy đặt vé", error });
   }
 };
 
@@ -946,7 +949,7 @@ export const getInvoices = async (req: Request, res: Response): Promise<void> =>
       .sort({ issuedAt: -1 });
     res.status(200).json(invoices);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy danh sách hóa đơn", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy danh sách hóa đơn", error });
   }
 };
 
@@ -964,12 +967,12 @@ export const getInvoiceById = async (req: Request, res: Response): Promise<void>
         ],
       });
     if (!invoice) {
-      res.status(404).json({ message: "Không tìm thấy hóa đơn" });
+      res.status(404).json({ success: false, message: "Không tìm thấy hóa đơn" });
       return;
     }
     res.status(200).json(invoice);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy chi tiết hóa đơn", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy chi tiết hóa đơn", error });
   }
 };
 
@@ -986,12 +989,12 @@ export const getInvoiceByBooking = async (req: Request, res: Response): Promise<
         ],
       });
     if (!invoice) {
-      res.status(404).json({ message: "Không tìm thấy hóa đơn cho đặt vé này" });
+      res.status(404).json({ success: false, message: "Không tìm thấy hóa đơn cho đặt vé này" });
       return;
     }
     res.status(200).json(invoice);
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy hóa đơn theo đặt vé", error });
+    res.status(500).json({ success: false, message: "Lỗi lấy hóa đơn theo đặt vé", error });
   }
 };
 
@@ -999,17 +1002,17 @@ export const createInvoice = async (req: Request, res: Response): Promise<void> 
   try {
     const { booking: bookingId, method, transactionId, status } = req.body;
     if (!bookingId) {
-      res.status(400).json({ message: "Thiếu thông tin đặt vé!" });
+      res.status(400).json({ success: false, message: "Thiếu thông tin đặt vé!" });
       return;
     }
     const booking = await Booking.findById(bookingId);
     if (!booking) {
-      res.status(404).json({ message: "Không tìm thấy đặt vé!" });
+      res.status(404).json({ success: false, message: "Không tìm thấy đặt vé!" });
       return;
     }
     const existing = await Invoice.findOne({ booking: bookingId });
     if (existing) {
-      res.status(400).json({ message: "Hóa đơn cho đặt vé này đã tồn tại!" });
+      res.status(400).json({ success: false, message: "Hóa đơn cho đặt vé này đã tồn tại!" });
       return;
     }
     const newInvoice = new Invoice({
@@ -1023,9 +1026,9 @@ export const createInvoice = async (req: Request, res: Response): Promise<void> 
     if (saved.status === "paid") {
       await Booking.findByIdAndUpdate(bookingId, { paymentStatus: "completed" });
     }
-    res.status(201).json({ message: "Tạo hóa đơn thành công!", data: saved });
+    res.status(201).json({ success: true, message: "Tạo hóa đơn thành công!", data: saved });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi tạo hóa đơn", error });
+    res.status(500).json({ success: false, message: "Lỗi tạo hóa đơn", error });
   }
 };
 
@@ -1038,12 +1041,12 @@ export const updateInvoice = async (req: Request, res: Response): Promise<void> 
     if (transactionId !== undefined) updateData.transactionId = transactionId;
     const updated = await Invoice.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!updated) {
-      res.status(404).json({ message: "Không tìm thấy hóa đơn" });
+      res.status(404).json({ success: false, message: "Không tìm thấy hóa đơn" });
       return;
     }
-    res.status(200).json({ message: "Cập nhật hóa đơn thành công!", data: updated });
+    res.status(200).json({ success: true, message: "Cập nhật hóa đơn thành công!", data: updated });
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi cập nhật hóa đơn", error });
+    res.status(500).json({ success: false, message: "Lỗi cập nhật hóa đơn", error });
   }
 };
 
@@ -1102,7 +1105,7 @@ export const getDashboardRevenue = async (req: Request, res: Response): Promise<
 
     res.status(200).json(Object.values(revenueByDate));
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy doanh thu", error: error.message });
+    res.status(500).json({ success: false, message: "Lỗi lấy doanh thu", error: error.message });
   }
 };
 
@@ -1124,7 +1127,7 @@ export const getDashboardRevenueByMovie = async (_req: Request, res: Response): 
 
     res.status(200).json(Object.values(revenueByMovie).sort((a, b) => b.revenue - a.revenue));
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy doanh thu theo phim", error: error.message });
+    res.status(500).json({ success: false, message: "Lỗi lấy doanh thu theo phim", error: error.message });
   }
 };
 
@@ -1149,6 +1152,184 @@ export const getDashboardTopMovies = async (req: Request, res: Response): Promis
 
     res.status(200).json(Object.values(movieStats).sort((a: any, b: any) => b.revenue - a.revenue).slice(0, limit));
   } catch (error: any) {
-    res.status(500).json({ message: "Lỗi lấy top phim", error: error.message });
+    res.status(500).json({ success: false, message: "Lỗi lấy top phim", error: error.message });
+  }
+};
+
+// ==================== ACTORS (Admin) ====================
+
+export const getAdminActors = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const actors = await Actor.find().sort({ name: 1 });
+    res.status(200).json(actors);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi lấy danh sách diễn viên", error });
+  }
+};
+
+export const getAdminActorById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const actor = await Actor.findById(req.params.id);
+    if (!actor) {
+      res.status(404).json({ success: false, message: "Không tìm thấy diễn viên" });
+      return;
+    }
+    res.status(200).json(actor);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi lấy chi tiết diễn viên", error });
+  }
+};
+
+export const createActor = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const newActor = new Actor(req.body);
+    const saved = await newActor.save();
+    res.status(201).json({ success: true, message: "Thêm diễn viên thành công!", data: saved });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi tạo diễn viên", error });
+  }
+};
+
+export const updateActor = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const updated = await Actor.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) {
+      res.status(404).json({ success: false, message: "Không tìm thấy diễn viên" });
+      return;
+    }
+    res.status(200).json({ success: true, message: "Cập nhật diễn viên thành công!", data: updated });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi cập nhật diễn viên", error });
+  }
+};
+
+export const deleteActor = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const deleted = await Actor.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      res.status(404).json({ success: false, message: "Không tìm thấy diễn viên" });
+      return;
+    }
+    res.status(200).json({ success: true, message: "Xóa diễn viên thành công!" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi xóa diễn viên", error });
+  }
+};
+
+// ==================== DIRECTORS (Admin) ====================
+
+export const getAdminDirectors = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const directors = await Director.find().sort({ name: 1 });
+    res.status(200).json(directors);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi lấy danh sách đạo diễn", error });
+  }
+};
+
+export const getAdminDirectorById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const director = await Director.findById(req.params.id);
+    if (!director) {
+      res.status(404).json({ success: false, message: "Không tìm thấy đạo diễn" });
+      return;
+    }
+    res.status(200).json(director);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi lấy chi tiết đạo diễn", error });
+  }
+};
+
+export const createDirector = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const newDirector = new Director(req.body);
+    const saved = await newDirector.save();
+    res.status(201).json({ success: true, message: "Thêm đạo diễn thành công!", data: saved });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi tạo đạo diễn", error });
+  }
+};
+
+export const updateDirector = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const updated = await Director.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!updated) {
+      res.status(404).json({ success: false, message: "Không tìm thấy đạo diễn" });
+      return;
+    }
+    res.status(200).json({ success: true, message: "Cập nhật đạo diễn thành công!", data: updated });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi cập nhật đạo diễn", error });
+  }
+};
+
+export const deleteDirector = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const deleted = await Director.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      res.status(404).json({ success: false, message: "Không tìm thấy đạo diễn" });
+      return;
+    }
+    res.status(200).json({ success: true, message: "Xóa đạo diễn thành công!" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi xóa đạo diễn", error });
+  }
+};
+
+// ==================== REVIEWS (Admin) ====================
+
+export const getAdminReviews = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { movieId, page = "1", limit = "20" } = req.query;
+    const filter = movieId ? { movie: String(movieId) } : {};
+    const pageNum = parseInt(page as string, 10);
+    const limitNum = parseInt(limit as string, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    const [reviews, total] = await Promise.all([
+      Review.find(filter)
+        .populate("movie", "title poster_url")
+        .populate("user", "fullName email")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum),
+      Review.countDocuments(filter),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: reviews,
+      pagination: { page: pageNum, limit: limitNum, total, pages: Math.ceil(total / limitNum) },
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi lấy danh sách bình luận", error });
+  }
+};
+
+export const getAdminReviewById = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const review = await Review.findById(req.params.id)
+      .populate("movie", "title poster_url")
+      .populate("user", "fullName email");
+    if (!review) {
+      res.status(404).json({ success: false, message: "Không tìm thấy bình luận" });
+      return;
+    }
+    res.status(200).json(review);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi lấy chi tiết bình luận", error });
+  }
+};
+
+export const deleteAdminReview = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const deleted = await Review.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      res.status(404).json({ success: false, message: "Không tìm thấy bình luận" });
+      return;
+    }
+    res.status(200).json({ success: true, message: "Xóa bình luận thành công!" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi xóa bình luận", error });
   }
 };

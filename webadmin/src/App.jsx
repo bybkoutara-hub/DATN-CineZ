@@ -14,6 +14,9 @@ import Promotions from './pages/Promotions'
 import Members from './pages/Members'
 import Staff from './pages/Staff'
 import Invoices from './pages/Invoices'
+import Actors from './pages/Actors'
+import Directors from './pages/Directors'
+import Reviews from './pages/Reviews'
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) {
@@ -54,6 +57,9 @@ function App() {
           <AdminRoute><Staff /></AdminRoute>
         } />
         <Route path="invoices" element={<Invoices />} />
+        <Route path="actors" element={<Actors />} />
+        <Route path="directors" element={<Directors />} />
+        <Route path="reviews" element={<Reviews />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

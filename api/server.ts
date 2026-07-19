@@ -12,6 +12,9 @@ import paymentRoutes from "./routes/paymentRoutes";
 import comboRoutes from "./routes/comboRoutes";
 import promotionRoutes from "./routes/promotionRoutes";
 import reviewRoutes from "./routes/reviewRoutes";
+import genreRoutes from "./routes/genreRoutes";
+import directorRoutes from "./routes/directorRoutes";
+import actorRoutes from "./routes/actorRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import mobileRoutes from "./routes/mobileRoutes";
 
@@ -38,6 +41,9 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/combos", comboRoutes);
 app.use("/api/promotions", promotionRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/genres", genreRoutes);
+app.use("/api/directors", directorRoutes);
+app.use("/api/actors", actorRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/mobile", mobileRoutes);
 
