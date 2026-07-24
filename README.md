@@ -24,8 +24,9 @@ DATN-CineZ/
 │   │   │   ├── ticket.tsx        # Vé của tôi
 │   │   │   └── profile.tsx       # Tài khoản
 │   │   ├── sign-in.tsx           # Đăng nhập
-│   │   ├── sign-up.tsx           # Đăng ký
+│   │   ├── signup.tsx            # Đăng ký
 │   │   ├── verification.tsx      # Xác thực
+│   │   ├── username.tsx          # Cập nhật tên
 │   │   ├── movie-detail.tsx      # Chi tiết phim + chọn suất
 │   │   ├── select-seat.tsx       # Sơ đồ ghế 18 cột (Couple/VIP/Thường)
 │   │   ├── combo.tsx             # Bắp nước
@@ -34,8 +35,8 @@ DATN-CineZ/
 │   │   └── movie-comments.tsx    # Bình luận phim
 │   ├── services/                 # API calls (api, auth, booking, combo, movie...)
 │   ├── constants/                # api.ts, theme.ts
-│   ├── hooks/                    # Custom hooks
-│   ├── utils/                    # Format tiền, ngày giờ
+│   ├── hooks/                    # use-color-scheme, use-theme-color
+│   ├── utils/                    # format.ts (tiền, ngày giờ)
 │   └── package.json
 │
 ├── api/
@@ -45,22 +46,24 @@ DATN-CineZ/
 │   ├── models/                   # Mongoose: User, Movie, Showtime, Booking...
 │   ├── middlewares/              # auth.middleware.ts (JWT protect)
 │   ├── utils/                    # vnpay.ts (sort, hash, verify) · sendBookingEmail
-│   ├── scripts/                  # seed.ts · seed-full.ts
+│   ├── scripts/                  # seed.ts · seed-full.ts · cleanup.ts
 │   ├── types/                    # index.ts (TypeScript types)
-│   ├── .env
 │   ├── .env.example
 │   └── package.json
 │
-├── webadmin/                     # React admin (quản lý phim, suất chiếu, thống kê)
+├── webadmin/                     # React admin
 │   ├── public/
 │   ├── src/
-│   │   ├── pages/                # Movies, Showtimes, Dashboard...
+│   │   ├── pages/                # Dashboard, Movies, Showtimes, Seats, Combos,
+│   │   │                         #   Rooms, Users, Promotions, Reviews...
+│   │   ├── components/           # UI components
 │   │   ├── api/                  # apiService.js (có 401 interceptor)
+│   │   ├── contexts/             # AuthContext, ThemeContext
+│   │   ├── layouts/              # AdminLayout
+│   │   ├── assets/               # Images, icons
 │   │   └── ...
 │   └── package.json
 │
-├── VNPay/                        # Mã nguồn VNPay tham khảo
-├── .gitignore
 └── README.md
 ```
 
@@ -108,6 +111,7 @@ npm run dev        # tsx watch server.ts → http://localhost:5000
 | `npm run build` | `tsc` | Build ra `dist/` |
 | `npm start` | `node dist/server.js` | Production |
 | `npm run seed` | `tsx scripts/seed.ts` | Seed dữ liệu mẫu |
+| `npm run seed-full` | `tsx scripts/seed-full.ts` | Seed nhiều dữ liệu hơn |
 
 ### 3. Cấu hình VNPay
 
@@ -163,14 +167,19 @@ npm start
 | GET | `/api/cinemas?city=` | — | Danh sách rạp |
 | POST | `/api/bookings` | ✅ | Tạo đơn đặt vé |
 | GET | `/api/bookings/my-history` | ✅ | Lịch sử vé (populated) |
+| GET | `/api/bookings/mine` | ✅ | Vé của tôi |
 | POST | `/api/bookings/:id/cancel` | ✅ | Hủy đơn pending |
-| POST | `/api/payments/vnpay/create` | ✅ | Tạo URL thanh toán VNPay |
-| POST | `/api/payments/vnpay/confirm` | ✅ | Xác nhận kết quả VNPay |
+| GET | `/api/bookings/:id` | ✅ | Chi tiết đơn vé |
+| POST | `/api/payments/vnpay/create-url` | ✅ | Tạo URL thanh toán VNPay |
+| POST | `/api/payments/vnpay/confirm` | ✅ | Xác nhận kết quả VNPay (từ app) |
 | GET | `/api/payments/vnpay/return` | — | Return URL từ VNPay |
+| GET | `/api/payments/vnpay/ipn` | — | IPN từ VNPay (server-side) |
+| GET | `/api/payments/booking/:bookingId` | ✅ | Trạng thái thanh toán |
 | GET | `/api/combos` | — | Danh sách combo/bắp nước |
 | GET | `/api/promotions` | — | Khuyến mãi |
 | POST | `/api/promotions/apply` | — | Áp mã giảm giá |
-| GET/POST | `/api/reviews` | * | Đánh giá phim |
+| GET | `/api/reviews?movieId=` | — | Đánh giá phim |
+| POST | `/api/reviews` | ✅ | Tạo đánh giá |
 
 ---
 
