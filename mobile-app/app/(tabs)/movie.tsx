@@ -2,10 +2,10 @@ import { Feather, FontAwesome } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
+import { Image } from "expo-image";
 import {
     ActivityIndicator,
     Dimensions,
-    Image,
     ScrollView,
     StyleSheet,
     Text,
@@ -159,7 +159,13 @@ export default function MovieScreen() {
                 activeOpacity={0.85}
                 onPress={() => router.push({ pathname: "/movie-detail", params: { id: movie._id } })}
               >
-                <Image source={{ uri: movie.poster_url || "https://via.placeholder.com/300x450" }} style={styles.posterImage} resizeMode="cover" />
+                <Image
+                  source={{ uri: movie.poster_url || "https://via.placeholder.com/300x450" }}
+                  style={styles.posterImage}
+                  contentFit="cover"
+                  placeholder={{ uri: "https://via.placeholder.com/300x450?text=Loading" }}
+                  cachePolicy="disk"
+                />
                 <Text style={styles.posterTitle} numberOfLines={2}>{movie.title}</Text>
                 <View style={styles.posterMeta}>
                   <FontAwesome name="star" size={12} color={PRIMARY_YELLOW} />
@@ -199,7 +205,7 @@ const styles = StyleSheet.create({
   tabIndicator: { width: "50%", height: "100%", backgroundColor: PRIMARY_YELLOW, borderRadius: 1.5 },
   moviesGrid: { paddingHorizontal: 24, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   posterCard: { width: CARD_WIDTH, marginBottom: 20 },
-  posterImage: { width: CARD_WIDTH, height: CARD_WIDTH * 1.6, borderRadius: 12, backgroundColor: '#222' },
+  posterImage: { width: CARD_WIDTH, height: CARD_WIDTH * 1.6, borderRadius: 12, backgroundColor: '#2a2a2a' },
   posterTitle: { color: '#FFFFFF', fontSize: 13, fontWeight: '700', marginTop: 8 },
   posterMeta: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
   posterRating: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },

@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -5,7 +6,6 @@ import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -79,8 +79,9 @@ export default function TicketListScreen() {
   );
 
   const renderTicketItem = ({ item }: { item: any }) => {
-    const movie = item?.showtimeId?.movieId || {};
-    const showtime = item?.showtimeId || {};
+    const movie = item?.showtime?.movieId || item?.showtimeId?.movieId || {};
+    const showtime = item?.showtime || item?.showtimeId || {};
+    const posterUrl = movie.poster_url || item.moviePoster || "https://via.placeholder.com/95x120";
     return (
       <TouchableOpacity
         style={styles.ticketCard}
@@ -92,7 +93,7 @@ export default function TicketListScreen() {
             params: {
               bookingId: item._id || "",
               title: movie.title || "Phim",
-              poster: movie.poster_url || "",
+              poster: posterUrl,
               duration: String(movie.duration || ""),
               room: showtime.roomName || "",
               time: formatTime(showtime.startTime),
@@ -107,11 +108,10 @@ export default function TicketListScreen() {
       >
         {/* Poster Phim */}
         <Image
-          source={{
-            uri: movie.poster_url || "https://via.placeholder.com/95x120",
-          }}
+          source={{ uri: posterUrl }}
           style={styles.posterImage}
-          resizeMode="cover"
+          contentFit="cover"
+          cachePolicy="disk"
         />
 
         {/* Nội dung thông tin vé bên phải */}

@@ -6,6 +6,7 @@ import './Movies.css';
 const Movies = () => {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const [viewMode, setViewMode] = useState('grid');
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,11 +21,13 @@ const Movies = () => {
   const fetchMovies = async () => {
     try {
       setLoading(true);
+      setError('');
       const res = await movieAPI.getAll();
       if (res.success) {
         setMovies(res.data || []);
       }
     } catch (error) {
+      setError(error?.response?.data?.message || 'Không thể tải danh sách phim');
       console.error('Failed to fetch movies:', error);
     } finally {
       setLoading(false);
@@ -158,6 +161,13 @@ const Movies = () => {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="card glass text-center py-xl mb-lg" style={{borderLeft: '4px solid #ef4444'}}>
+          <p className="text-danger text-lg">{error}</p>
+          <button className="btn btn-primary mt-md" onClick={fetchMovies}>Thử lại</button>
+        </div>
+      )}
 
       {loading ? (
         <div className="card glass text-center py-2xl">

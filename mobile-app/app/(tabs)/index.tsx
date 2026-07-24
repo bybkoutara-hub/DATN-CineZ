@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import { Feather, FontAwesome, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -5,7 +6,6 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -145,7 +145,12 @@ export default function HomeScreen() {
                   <TouchableOpacity activeOpacity={0.9} style={styles.nowPlayingCardInner}
                     onPress={() => router.push({ pathname: "/movie-detail", params: { id: movie._id } })}
                   >
-                    <Image source={{ uri: movie.poster_url || "https://via.placeholder.com/500x750" }} style={styles.nowPlayingImage} />
+                    <Image
+                      source={{ uri: movie.poster_url || "https://via.placeholder.com/500x750" }}
+                      style={styles.nowPlayingImage}
+                      contentFit="cover"
+                      cachePolicy="disk"
+                    />
                     <Text style={styles.movieTitle} numberOfLines={1}>{movie.title}</Text>
                     <Text style={styles.movieSubText}>{movie.duration} phút • {movie.genres?.join(", ") || "Hành động"}</Text>
                     <View style={styles.ratingRow}>
@@ -175,7 +180,12 @@ export default function HomeScreen() {
               <TouchableOpacity key={movie._id || index} style={styles.comingSoonCard}
                 onPress={() => router.push({ pathname: "/movie-detail", params: { id: movie._id } })}
               >
-                <Image source={{ uri: movie.poster_url || "https://via.placeholder.com/300x450" }} style={styles.comingSoonImage} />
+                <Image
+                  source={{ uri: movie.poster_url || "https://via.placeholder.com/300x450" }}
+                  style={styles.comingSoonImage}
+                  contentFit="cover"
+                  cachePolicy="disk"
+                />
                 <Text style={styles.comingSoonTitle} numberOfLines={2}>{movie.title}</Text>
                 <View style={styles.infoRow}>
                   <Ionicons name="film-outline" size={12} color="#999999" />
@@ -241,7 +251,7 @@ const styles = StyleSheet.create({
   seeAllBtn: { flexDirection: "row", alignItems: "center" },
   seeAllText: { color: PRIMARY_YELLOW, fontSize: 13, fontWeight: "500" },
   nowPlayingCardInner: { width: SCREEN_WIDTH - 48, alignItems: "center" },
-  nowPlayingImage: { width: "100%", height: 410, borderRadius: 16, marginBottom: 16 },
+  nowPlayingImage: { width: "100%", height: 410, borderRadius: 16, marginBottom: 16, backgroundColor: '#2a2a2a' },
   movieTitle: { color: "#ffffff", fontSize: 22, fontWeight: "700", marginBottom: 6, textAlign: "center" },
   movieSubText: { color: "#888888", fontSize: 13, marginBottom: 8 },
   ratingRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
@@ -253,7 +263,7 @@ const styles = StyleSheet.create({
   horizontalList: { marginBottom: 24 },
   horizontalListContent: { paddingHorizontal: 24, gap: 16 },
   comingSoonCard: { width: 145 },
-  comingSoonImage: { width: "100%", height: 215, borderRadius: 14, marginBottom: 10 },
+  comingSoonImage: { width: "100%", height: 215, borderRadius: 14, marginBottom: 10, backgroundColor: '#2a2a2a' },
   comingSoonTitle: { color: "#ffffff", fontSize: 14, fontWeight: "700", marginBottom: 6, lineHeight: 18 },
   infoRow: { flexDirection: "row", alignItems: "center", marginBottom: 4, gap: 6 },
   infoText: { color: "#888888", fontSize: 12 },

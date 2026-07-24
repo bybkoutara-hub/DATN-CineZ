@@ -193,6 +193,53 @@ export const createPayment = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+export const confirmVnpayPayment = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { vnpayParams } = req.body;
+    if (!vnpayParams) {
+      res.status(400).json({ success: false, message: "Thiếu dữ liệu VNPay." });
+      return;
+    }
+
+    const { isValid, responseCode, txnRef } = verifyVnpReturn(vnpayParams);
+    if (!isValid) {
+      res.status(400).json({ success: false, message: "Chữ ký VNPay không hợp lệ." });
+      return;
+    }
+
+    const booking: any = await Booking.findById(txnRef);
+    if (!booking) {
+      res.status(404).json({ success: false, message: "Không tìm thấy đơn đặt vé." });
+      return;
+    }
+
+    if (booking.status === "paid" || booking.status === "completed") {
+      res.status(200).json({ success: true, status: "success" });
+      return;
+    }
+
+    if (responseCode === "00") {
+      const updated = await Booking.findOneAndUpdate(
+        { _id: txnRef, status: "pending" },
+        { status: "paid", paymentStatus: "completed" },
+        { new: true }
+      );
+      if (updated) sendBookingConfirmationEmail(String(updated._id));
+      res.status(200).json({ success: true, status: "success" });
+    } else {
+      await Booking.findOneAndUpdate(
+        { _id: txnRef, status: "pending" },
+        { status: "cancelled", paymentStatus: "cancelled" },
+        { new: true }
+      );
+      await releaseSeats(booking.showtimeId || booking.showtime, booking.seats || []);
+      res.status(200).json({ success: true, status: "failed" });
+    }
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 export const getPaymentByBooking = async (req: Request, res: Response): Promise<void> => {
   try {
     const booking = await Booking.findById(req.params.bookingId);

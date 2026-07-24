@@ -2,6 +2,11 @@ import { type Request, type Response } from "express";
 import Movie from "../models/movieModel.js";
 import Showtime from "../models/showtimeModel.js";
 
+const fixPosterUrl = (url: string): string => {
+  if (!url) return "";
+  return url.replace("media.themoviedb.org", "image.tmdb.org");
+};
+
 export const getMovies = async (req: Request, res: Response): Promise<void> => {
   try {
     const { status, search, genre } = req.query;
@@ -10,7 +15,12 @@ export const getMovies = async (req: Request, res: Response): Promise<void> => {
     if (search) filter.title = { $regex: String(search), $options: "i" };
     if (genre) filter.genres = { $in: [genre] };
     const movies = await Movie.find(filter);
-    res.status(200).json({ success: true, data: movies });
+    const data = movies.map((m) => {
+      const obj = m.toObject();
+      obj.poster_url = fixPosterUrl(obj.poster_url);
+      return obj;
+    });
+    res.status(200).json({ success: true, data });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -50,10 +60,12 @@ export const getMovieDetailWithShowtimes = async (req: Request, res: Response): 
     }).sort({ startTime: 1 }); 
 
     // 3. ĐÓNG GÓI ĐÚNG DẠNG LỒNG NHAU THEO KỲ VỌNG CỦA FRONTEND MOVIE_SERVICE
+    const movieObj = movie.toObject();
+    movieObj.poster_url = fixPosterUrl(movieObj.poster_url);
     res.status(200).json({
       success: true,
       data: {
-        movie: movie,
+        movie: movieObj,
         showtimes: showtimes || []
       }
     });

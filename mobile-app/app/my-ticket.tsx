@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import {
   Feather,
   FontAwesome5,
@@ -9,16 +10,15 @@ import { StatusBar } from "expo-status-bar";
 import React from "react";
 import {
   Dimensions,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import Barcode from "react-native-barcode-svg";
+import QRCode from "react-native-qrcode-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const BG_BLACK = "#000000";
 const TEXT_LIGHT = "#FFFFFF";
@@ -94,7 +94,8 @@ export default function MyTicketScreen() {
               <Image
                 source={{ uri: ticket.poster }}
                 style={styles.largeMoviePoster}
-                resizeMode="cover"
+                contentFit="cover"
+                cachePolicy="disk"
               />
               <View style={styles.movieMainDetails}>
                 <Text style={styles.moviePrimaryTitle} numberOfLines={2}>
@@ -222,16 +223,13 @@ export default function MyTicketScreen() {
             <View style={styles.rightDeepCircleHole} />
           </View>
 
-          {/* PHẦN CHỨA MÃ VẠCH THẬT */}
+          {/* PHẦN CHỨA MÃ QR */}
           <View style={styles.bottomBarcodeArea}>
-            <Barcode
+            <QRCode
               value={barcodeValue}
-              format="CODE128"
-              maxWidth={SCREEN_WIDTH - 120}
-              height={70}
-              singleBarWidth={2}
+              size={180}
               backgroundColor="#FFFFFF"
-              lineColor="#000000"
+              color="#000000"
             />
             <Text style={styles.finalOrderStringText}>
               Mã đặt vé: {ticket.bookingId || "--"}

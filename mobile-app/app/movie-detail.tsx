@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -5,7 +6,6 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -154,13 +154,15 @@ export default function MovieDetailScreen() {
       <StatusBar style="light" />
 
       {/* 1. HERO POSTER BACKGROUND (Lấy dữ liệu động từ poster_url backend) */}
-      <ImageBackground
-        source={{
-          uri: movie.poster_url || "https://image.tmdb.org/t/p/w500/7WsyChQLEftFiDOVTGkv3hFpyyt.jpg",
-        }}
-        style={styles.heroBackground}
-        resizeMode="cover"
-      >
+      <View style={styles.heroBackground}>
+        <Image
+          source={{
+            uri: movie.poster_url || "https://image.tmdb.org/t/p/w500/7WsyChQLEftFiDOVTGkv3hFpyyt.jpg",
+          }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          cachePolicy="disk"
+        />
         <SafeAreaView edges={["top"]} style={styles.headerSafeArea}>
           <TouchableOpacity
             style={styles.backButton}
@@ -170,7 +172,7 @@ export default function MovieDetailScreen() {
             <Ionicons name="arrow-back" size={26} color="#ffffff" />
           </TouchableOpacity>
         </SafeAreaView>
-      </ImageBackground>
+      </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}

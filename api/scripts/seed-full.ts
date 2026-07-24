@@ -114,7 +114,7 @@ async function seedDatabase() {
     const movies = await Movie.insertMany([
       {
         title: "Lật Mặt 7: Một Điều Ước",
-        poster_url: "https://media.themoviedb.org/t/p/w500/2mg6ktvWxsOG9iMBP4P1pwOYltk.jpg",
+        poster_url: "https://image.tmdb.org/t/p/w500/2mg6ktvWxsOG9iMBP4P1pwOYltk.jpg",
         duration: 138,
         genres: ["Gia đình", "Tình cảm", "Kịch tính"],
         status: "now_playing",
@@ -130,7 +130,7 @@ async function seedDatabase() {
       },
       {
         title: "Avatar: Fire and Ash",
-        poster_url: "https://media.themoviedb.org/t/p/w500/w6DBmG260sCHBQdGzkBIVn9gAQZ.jpg",
+        poster_url: "https://image.tmdb.org/t/p/w500/w6DBmG260sCHBQdGzkBIVn9gAQZ.jpg",
         duration: 160,
         genres: ["Hành động", "Khoa học viễn tưởng", "Phiêu lưu"],
         status: "now_playing",
@@ -162,7 +162,7 @@ async function seedDatabase() {
       },
       {
         title: "Inside Out 2",
-        poster_url: "https://media.themoviedb.org/t/p/w500/wAIFnJ5OeFU7tTnCWHiROsszS29.jpg",
+        poster_url: "https://image.tmdb.org/t/p/w500/wAIFnJ5OeFU7tTnCWHiROsszS29.jpg",
         duration: 96,
         genres: ["Hoạt hình", "Gia đình", "Hài hước"],
         status: "now_playing",
@@ -194,7 +194,7 @@ async function seedDatabase() {
       },
       {
         title: "Mai",
-        poster_url: "https://media.themoviedb.org/t/p/w500/2nF8xD200rcDawuCg5ObxxqA2fC.jpg",
+        poster_url: "https://image.tmdb.org/t/p/w500/2nF8xD200rcDawuCg5ObxxqA2fC.jpg",
         duration: 131,
         genres: ["Tâm lý", "Tình cảm", "Kịch tính"],
         status: "now_playing",
@@ -210,7 +210,7 @@ async function seedDatabase() {
       },
       {
         title: "Kong: Đảo Đầu Lâu",
-        poster_url: "https://media.themoviedb.org/t/p/w500/ktotbBFrmO58kAKoPvpbChy53EB.jpg",
+        poster_url: "https://image.tmdb.org/t/p/w500/ktotbBFrmO58kAKoPvpbChy53EB.jpg",
         duration: 118,
         genres: ["Hành động", "Phiêu lưu", "Khoa học viễn tưởng"],
         status: "now_playing",
@@ -226,7 +226,7 @@ async function seedDatabase() {
       },
       {
         title: "Quỷ Nhập Tràng 2",
-        poster_url: "https://media.themoviedb.org/t/p/w500/mEH96rSqjuDLI5rAnu7sTIDTdc8.jpg",
+        poster_url: "https://image.tmdb.org/t/p/w500/mEH96rSqjuDLI5rAnu7sTIDTdc8.jpg",
         duration: 120,
         genres: ["Kinh dị", "Tâm lý", "Kịch tính"],
         status: "now_playing",
@@ -258,7 +258,7 @@ async function seedDatabase() {
       },
       {
         title: "Siêu Trộm 2",
-        poster_url: "https://media.themoviedb.org/t/p/w500/usoYdcapXSsqAM1bDOtD7H42Wxe.jpg",
+        poster_url: "https://image.tmdb.org/t/p/w500/usoYdcapXSsqAM1bDOtD7H42Wxe.jpg",
         duration: 122,
         genres: ["Hành động", "Hài hước", "Tội phạm"],
         status: "coming_soon",
@@ -274,7 +274,7 @@ async function seedDatabase() {
       },
       {
         title: "Biệt Đội Săn Ma",
-        poster_url: "https://media.themoviedb.org/t/p/w500/3nBk7laQ3TAu2b5KKAUOIzvJZvB.jpg",
+        poster_url: "https://image.tmdb.org/t/p/w500/3nBk7laQ3TAu2b5KKAUOIzvJZvB.jpg",
         duration: 105,
         genres: ["Hài hước", "Kinh dị", "Gia đình"],
         status: "coming_soon",
@@ -290,7 +290,7 @@ async function seedDatabase() {
       },
       {
         title: "Vòng Xoay Tội Lỗi",
-        poster_url: "https://media.themoviedb.org/t/p/w500/vc2S0dvgpsM0XfSiXZDMVkRCSSU.jpg",
+        poster_url: "https://image.tmdb.org/t/p/w500/vc2S0dvgpsM0XfSiXZDMVkRCSSU.jpg",
         duration: 135,
         genres: ["Tội phạm", "Tâm lý", "Kịch tính"],
         status: "coming_soon",

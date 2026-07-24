@@ -1,13 +1,11 @@
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import * as WebBrowser from "expo-web-browser";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,8 +14,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { WebView } from "react-native-webview";
 import { cancelBooking, createBooking } from "../services/bookingService";
 import { createVnpayUrl } from "../services/paymentService";
+import api from "../services/api";
 
 // ==========================================
 // HỆ MÀU SẮC CHUẨN FIGMA
@@ -29,8 +29,7 @@ const TEXT_LIGHT = "#FFFFFF";
 const TEXT_MUTED = "#888888";
 const BORDER_GRAY = "#242426";
 
-// Deep link app sẽ nhận lại sau khi thanh toán VNPay xong
-const VNPAY_RETURN_SCHEME = "mobileapp://vnpay-return";
+const VNPAY_RETURN_URL = "/api/payments/vnpay/return";
 
 export default function PaymentScreen() {
   const router = useRouter();
@@ -66,6 +65,8 @@ export default function PaymentScreen() {
   // State quản lý phương thức được chọn (Mặc định chọn VNPay)
   const [selectedMethod, setSelectedMethod] = useState("vnpay");
   const [submitting, setSubmitting] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [vnpayBookingId, setVnpayBookingId] = useState<string | null>(null);
 
   // Mã đơn hàng ngẫu nhiên hiển thị cho đẹp (không gửi lên server)
   const orderId = String(showtimeId || "").slice(-8).toUpperCase() || "MB000000";
@@ -99,7 +100,7 @@ export default function PaymentScreen() {
     router.replace("/(tabs)/ticket");
   };
 
-  // Đặt vé VNPay: tạo vé pending -> lấy URL thanh toán -> mở trình duyệt -> xử lý kết quả
+  // Đặt vé VNPay: tạo vé pending -> lấy URL thanh toán -> mở WebView
   const handleVnpayBooking = async () => {
     const res = await createBooking({
       showtimeId,
@@ -113,30 +114,61 @@ export default function PaymentScreen() {
       throw new Error("Không tạo được đơn đặt vé.");
     }
 
-    const paymentUrl = await createVnpayUrl(bookingId);
-    const result = await WebBrowser.openAuthSessionAsync(paymentUrl, VNPAY_RETURN_SCHEME);
+    const url = await createVnpayUrl(bookingId);
+    setVnpayBookingId(bookingId);
+    setPaymentUrl(url);
+  };
 
-    if (result.type === "success" && result.url) {
-      const { queryParams } = Linking.parse(result.url);
-      const rawStatus = queryParams?.status;
-      const status = Array.isArray(rawStatus) ? rawStatus[0] : rawStatus;
-      if (status === "success") {
+  // Xử lý khi WebView VNPay chuyển hướng về return URL
+  const handleVnpayNavigation = useCallback(async (navState: any) => {
+    const { url } = navState;
+    if (!url || !url.includes(VNPAY_RETURN_URL)) return;
+
+    const queryString = url.split("?")[1];
+    if (!queryString) return;
+
+    const params: Record<string, string> = {};
+    queryString.split("&").forEach((pair) => {
+      const eqIdx = pair.indexOf("=");
+      if (eqIdx === -1) {
+        params[decodeURIComponent(pair)] = "";
+      } else {
+        const key = decodeURIComponent(pair.substring(0, eqIdx));
+        const val = decodeURIComponent(pair.substring(eqIdx + 1).replace(/\+/g, " "));
+        params[key] = val;
+      }
+    });
+
+    setPaymentUrl(null);
+
+    try {
+      const res = await api.post("/payments/vnpay/confirm", { vnpayParams: params });
+      if (res.data?.success && res.data?.status === "success") {
         Alert.alert("Thanh toán thành công", "Cảm ơn bạn! Vé đã được xác nhận.");
         router.replace("/(tabs)/ticket");
-        return;
+      } else {
+        Alert.alert(
+          "Thanh toán chưa hoàn tất",
+          "Giao dịch không thành công hoặc đã bị hủy.",
+        );
       }
-      Alert.alert(
-        "Thanh toán chưa hoàn tất",
-        "Giao dịch không thành công hoặc đã bị hủy. Vé sẽ không được giữ.",
-      );
-    } else {
-      await cancelBooking(bookingId);
+    } catch {
+      Alert.alert("Lỗi", "Không thể xác nhận thanh toán.");
+    }
+  }, [router]);
+
+  // Hủy thanh toán VNPay khi người dùng đóng WebView
+  const handleCancelVnpay = useCallback(async () => {
+    setPaymentUrl(null);
+    if (vnpayBookingId) {
+      await cancelBooking(vnpayBookingId);
       Alert.alert(
         "Đã hủy thanh toán",
-        "Bạn đã đóng cửa sổ thanh toán. Ghế đã được hoàn lại, bạn có thể đặt lại bất cứ lúc nào.",
+        "Ghế đã được hoàn lại, bạn có thể đặt lại bất cứ lúc nào.",
       );
     }
-  };
+    setVnpayBookingId(null);
+  }, [vnpayBookingId]);
 
   // Xử lý nút thanh toán theo phương thức đang chọn
   const handlePayment = async () => {
@@ -162,13 +194,36 @@ export default function PaymentScreen() {
     }
   };
 
+  if (paymentUrl) {
+    return (
+      <View style={[styles.container, { paddingTop: 40 }]}>
+        <StatusBar style="light" />
+        <WebView
+          source={{ uri: paymentUrl }}
+          onNavigationStateChange={handleVnpayNavigation}
+          originWhitelist={["*"]}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          style={{ flex: 1 }}
+        />
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={handleCancelVnpay}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.cancelButtonText}>Hủy thanh toán</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar style="light" />
 
       {/* ==========================================
-          1. THANH TIÊU ĐỀ
-          ========================================== */}
+           1. THANH TIÊU ĐỀ
+           ========================================== */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => router.back()}
@@ -194,6 +249,8 @@ export default function PaymentScreen() {
               uri: moviePoster || "https://via.placeholder.com/100x150",
             }}
             style={styles.poster}
+            contentFit="cover"
+            cachePolicy="disk"
           />
           <View style={styles.cardTextSection}>
             <Text style={styles.movieTitle} numberOfLines={2}>{movieTitle}</Text>
@@ -588,5 +645,16 @@ const styles = StyleSheet.create({
     color: BACKGROUND_BLACK,
     fontSize: 16,
     fontWeight: "700",
+  },
+  cancelButton: {
+    backgroundColor: "#ff3b30",
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

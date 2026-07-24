@@ -130,7 +130,6 @@ const Showtimes = () => {
       roomId: form.roomId,
       date: form.date,
       startTime: form.startTime,
-      endTime: form.endTime,
       basePrice: Number(form.basePrice),
       status: form.status,
     };
@@ -146,7 +145,8 @@ const Showtimes = () => {
       setModalOpen(false);
       fetchData();
     } catch (err) {
-      showNotification(err.message || 'Thao tác thất bại', 'error');
+      const serverMsg = err.response?.data?.message || err.response?.data?.error || err.message;
+      showNotification(serverMsg || 'Thao tác thất bại', 'error');
     }
   };
 

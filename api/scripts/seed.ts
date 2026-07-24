@@ -54,7 +54,7 @@ async function seedDatabase() {
     const createdMovies = await Movie.insertMany([
       {
         title: "Lật Mặt 7: Một Điều Ước",
-        poster_url: "https://media.themoviedb.org/t/p/w500/2mg6ktvWxsOG9iMBP4P1pwOYltk.jpg",
+        poster_url: "https://image.tmdb.org/t/p/w500/2mg6ktvWxsOG9iMBP4P1pwOYltk.jpg",
         duration: 138,
         genres: ["Gia đình", "Tình cảm", "Kịch tính"],
         status: "now_playing",
@@ -67,11 +67,11 @@ async function seedDatabase() {
         director: "Lý Hải",
         cast: ["Thanh Hiền", "Trương Minh Cường", "Đinh Y Nhung", "Quách Ngọc Tuyên"],
         language: "Tiếng Việt (Có phụ đề tiếng Anh)",
-        banner_url: "https://media.themoviedb.org/t/p/w780/1K7pHhCZprfDXB7LkCquIK62yCb.jpg"
+        banner_url: "https://image.tmdb.org/t/p/w780/1K7pHhCZprfDXB7LkCquIK62yCb.jpg"
       },
       {
         title: "Avatar: Fire and Ash",
-        poster_url: "https://media.themoviedb.org/t/p/w500/w6DBmG260sCHBQdGzkBIVn9gAQZ.jpg",
+        poster_url: "https://image.tmdb.org/t/p/w500/w6DBmG260sCHBQdGzkBIVn9gAQZ.jpg",
         duration: 160,
         genres: ["Hành động", "Khoa học viễn tưởng", "Phiêu lưu"],
         status: "now_playing",
@@ -83,7 +83,7 @@ async function seedDatabase() {
         director: "James Cameron",
         cast: ["Sam Worthington", "Zoe Saldana", "Sigourney Weaver", "Oona Chaplin"],
         language: "Tiếng Anh (Phụ đề tiếng Việt)",
-        banner_url: "https://media.themoviedb.org/t/p/w780/u8DU5fkLoM5tTRukzPC31oGPxaQ.jpg"
+        banner_url: "https://image.tmdb.org/t/p/w780/u8DU5fkLoM5tTRukzPC31oGPxaQ.jpg"
       }
     ]);
     console.log("🎬 [Seed]: Đã nạp xong 2 phim siêu chi tiết.");

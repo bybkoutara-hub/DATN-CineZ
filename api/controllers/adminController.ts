@@ -306,24 +306,82 @@ export const getAdminShowtimeById = async (req: Request, res: Response): Promise
 
 export const createAdminShowtime = async (req: Request, res: Response): Promise<void> => {
   try {
-    const newShowtime = new Showtime(req.body);
-    const saved = await newShowtime.save();
+    const { movieId, roomId, roomName: roomNameBody, date, startTime, basePrice, price: priceBody, status } = req.body;
+
+    if (!movieId) {
+      res.status(400).json({ success: false, message: "Thiếu thông tin phim" });
+      return;
+    }
+
+    const room = await Room.findById(roomId);
+    if (!room) {
+      res.status(404).json({ success: false, message: "Không tìm thấy phòng chiếu" });
+      return;
+    }
+
+    const startDate = new Date(date || new Date());
+    if (startTime) {
+      const [hours, minutes] = startTime.split(":").map(Number);
+      startDate.setHours(hours, minutes, 0, 0);
+    }
+
+    const seatLabels: string[] = [];
+    const rowLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    for (let r = 0; r < (room.rows_count || 8); r++) {
+      for (let c = 1; c <= (room.seats_per_row || 15); c++) {
+        seatLabels.push(`${rowLetters[r]}${c}`);
+      }
+    }
+
+    const showtimeData = {
+      movieId,
+      roomName: room.name,
+      startTime: startDate,
+      price: basePrice ?? priceBody ?? 0,
+      availableSeats: seatLabels,
+      status: status || "active",
+    };
+
+    const saved = await Showtime.create(showtimeData);
     res.status(201).json({ success: true, message: "Tạo suất chiếu thành công!", data: saved });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: "Không thể tạo suất chiếu", error });
+    console.error("createAdminShowtime error:", error);
+    res.status(500).json({ success: false, message: "Không thể tạo suất chiếu", error: error.message || error, stack: error.stack });
   }
 };
 
 export const updateAdminShowtime = async (req: Request, res: Response): Promise<void> => {
   try {
-    const updated = await Showtime.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const { roomId, date, startTime, basePrice, price: priceBody, ...rest } = req.body;
+    const updateData: Record<string, any> = { ...rest };
+
+    if (roomId) {
+      const room = await Room.findById(roomId);
+      if (room) {
+        updateData.roomName = room.name;
+      }
+    }
+
+    if (date || startTime) {
+      const existing = await Showtime.findById(req.params.id);
+      const startDate = new Date(date || existing?.startTime || new Date());
+      if (startTime) {
+        const [hours, minutes] = startTime.split(":").map(Number);
+        startDate.setHours(hours, minutes, 0, 0);
+      }
+      updateData.startTime = startDate;
+    }
+
+    if (basePrice !== undefined) updateData.price = basePrice;
+
+    const updated = await Showtime.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
     if (!updated) {
       res.status(404).json({ success: false, message: "Không tìm thấy suất chiếu" });
       return;
     }
     res.status(200).json({ success: true, message: "Cập nhật suất chiếu thành công!", data: updated });
   } catch (error: any) {
-    res.status(500).json({ success: false, message: "Lỗi cập nhật suất chiếu", error });
+    res.status(500).json({ success: false, message: "Lỗi cập nhật suất chiếu", error: error.message || error });
   }
 };
 

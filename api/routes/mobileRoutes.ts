@@ -6,6 +6,11 @@ import { protect } from "../middlewares/auth.middleware";
 
 const router = express.Router();
 
+const fixPosterUrl = (url: string): string => {
+  if (!url) return "";
+  return url.replace("media.themoviedb.org", "image.tmdb.org");
+};
+
 router.get("/movies", async (req, res) => {
   try {
     const { status, genre, search } = req.query;
@@ -16,7 +21,12 @@ router.get("/movies", async (req, res) => {
       filter.title = { $regex: String(search), $options: "i" } as any;
     }
     const movies = await Movie.find(filter).sort({ release_date: -1 });
-    res.status(200).json({ success: true, data: movies });
+    const data = movies.map((m) => {
+      const obj = m.toObject();
+      obj.poster_url = fixPosterUrl(obj.poster_url);
+      return obj;
+    });
+    res.status(200).json({ success: true, data });
   } catch (error: any) {
     res.status(500).json({ success: false, message: "Lỗi lấy phim mobile", error: error.message });
   }

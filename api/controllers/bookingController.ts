@@ -69,17 +69,31 @@ export const getMyBookings = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+const fixPosterUrl = (url: string): string => {
+  if (!url) return "";
+  return url.replace("media.themoviedb.org", "image.tmdb.org");
+};
+
 // Lịch sử vé (mobile app gọi /my-history)
 export const getMyBookingHistory = async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = req.user?.id;
     const history = await Booking.find({ user: userId })
       .populate({
-        path: "showtimeId",
+        path: "showtime",
         populate: { path: "movieId", select: "title poster_url duration" },
       })
       .sort({ createdAt: -1 });
-    res.status(200).json({ success: true, count: history.length, data: history });
+    const data = history.map((b) => {
+      const obj = b.toObject();
+      const movie = obj.showtime?.movieId || obj.showtimeId?.movieId || {};
+      if (movie.poster_url) {
+        movie.poster_url = fixPosterUrl(movie.poster_url);
+      }
+      obj.moviePoster = movie.poster_url || "";
+      return obj;
+    });
+    res.status(200).json({ success: true, count: data.length, data });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message, error: error.message });
   }
@@ -130,3 +144,5 @@ export const getBookingById = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+

@@ -17,6 +17,7 @@ import directorRoutes from "./routes/directorRoutes";
 import actorRoutes from "./routes/actorRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import mobileRoutes from "./routes/mobileRoutes";
+import imageRoutes from "./routes/imageRoutes";
 
 dotenv.config();
 
@@ -46,6 +47,7 @@ app.use("/api/directors", directorRoutes);
 app.use("/api/actors", actorRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/mobile", mobileRoutes);
+app.use("/api/images", imageRoutes);
 
 app.get("/", (_req, res) => {
   res.send("Hệ thống CineZ Movie Booking API đang chạy! 🎬");
