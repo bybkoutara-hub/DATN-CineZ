@@ -18,29 +18,49 @@ Monorepo 3 thành phần:
 DATN-CineZ/
 ├── mobile-app/
 │   ├── app/
-│   │   ├── (tabs)/              # Tab: Trang chủ · Phim · Vé · Tài khoản
-│   │   ├── sign-in.tsx · sign-up.tsx · verification.tsx
-│   │   ├── movie-detail.tsx     # Chi tiết phim + chọn suất
-│   │   ├── select-seat.tsx      # Sơ đồ ghế 18 cột (Couple/VIP)
-│   │   ├── combo.tsx            # Bắp nước
-│   │   ├── payment.tsx          # Thanh toán (VNPay WebView)
-│   │   └── my-ticket.tsx        # Vé QR
-│   ├── services/                # API calls
-│   ├── constants/               # api.ts, theme.ts
+│   │   ├── (tabs)/
+│   │   │   ├── index.tsx         # Trang chủ
+│   │   │   ├── movie.tsx         # Danh sách phim
+│   │   │   ├── ticket.tsx        # Vé của tôi
+│   │   │   └── profile.tsx       # Tài khoản
+│   │   ├── sign-in.tsx           # Đăng nhập
+│   │   ├── sign-up.tsx           # Đăng ký
+│   │   ├── verification.tsx      # Xác thực
+│   │   ├── movie-detail.tsx      # Chi tiết phim + chọn suất
+│   │   ├── select-seat.tsx       # Sơ đồ ghế 18 cột (Couple/VIP/Thường)
+│   │   ├── combo.tsx             # Bắp nước
+│   │   ├── payment.tsx           # Thanh toán (VNPay WebView / Tiền mặt)
+│   │   ├── my-ticket.tsx         # Chi tiết vé (QR)
+│   │   └── movie-comments.tsx    # Bình luận phim
+│   ├── services/                 # API calls (api, auth, booking, combo, movie...)
+│   ├── constants/                # api.ts, theme.ts
+│   ├── hooks/                    # Custom hooks
+│   ├── utils/                    # Format tiền, ngày giờ
 │   └── package.json
 │
 ├── api/
-│   ├── server.ts                # Entry point
-│   ├── routes/                  # auth, movies, showtimes, bookings, payments...
-│   ├── controllers/             # Business logic
-│   ├── models/                  # Mongoose schemas
-│   ├── middlewares/             # JWT auth
-│   ├── utils/                   # vnpay.ts (hash + verify), sendBookingEmail
-│   ├── scripts/seed.ts          # Seed dữ liệu mẫu
+│   ├── server.ts                 # Entry: Express + MongoDB + routes
+│   ├── routes/                   # auth, bookings, movies, payments, combos...
+│   ├── controllers/              # Logic: createBooking, getMyBookingHistory...
+│   ├── models/                   # Mongoose: User, Movie, Showtime, Booking...
+│   ├── middlewares/              # auth.middleware.ts (JWT protect)
+│   ├── utils/                    # vnpay.ts (sort, hash, verify) · sendBookingEmail
+│   ├── scripts/                  # seed.ts · seed-full.ts
+│   ├── types/                    # index.ts (TypeScript types)
+│   ├── .env
 │   ├── .env.example
 │   └── package.json
 │
-├── webadmin/                    # React admin panel
+├── webadmin/                     # React admin (quản lý phim, suất chiếu, thống kê)
+│   ├── public/
+│   ├── src/
+│   │   ├── pages/                # Movies, Showtimes, Dashboard...
+│   │   ├── api/                  # apiService.js (có 401 interceptor)
+│   │   └── ...
+│   └── package.json
+│
+├── VNPay/                        # Mã nguồn VNPay tham khảo
+├── .gitignore
 └── README.md
 ```
 
