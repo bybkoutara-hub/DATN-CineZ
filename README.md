@@ -184,12 +184,7 @@ Chọn combo → Thanh toán (VNPay WebView / Tiền mặt) → Vé QR
 - [x] Seed dữ liệu mẫu (phim, suất chiếu, combo)
 - [x] Web admin: quản lý phim, suất chiếu, thống kê
 
-### Còn lại
-- [ ] Thanh toán Momo / ZaloPay
-- [ ] Định vị rạp theo GPS
-- [ ] Push notification
-- [ ] Đa ngôn ngữ
-- [ ] Unit test + CI/CD
+
 
 ---
 
