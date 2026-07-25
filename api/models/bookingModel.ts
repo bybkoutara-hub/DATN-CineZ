@@ -15,6 +15,9 @@ export interface IBooking extends Document {
   qrCode?: string;
   userId?: mongoose.Types.ObjectId;
   showtimeId?: mongoose.Types.ObjectId;
+  promoCode?: string;
+  discount?: number;
+  appliedPromotion?: mongoose.Types.ObjectId;
 }
 
 const BookingSchema: Schema = new Schema(
@@ -33,6 +36,9 @@ const BookingSchema: Schema = new Schema(
     qrCode: { type: String, default: "" },
     userId: { type: Schema.Types.ObjectId, ref: "User" },
     showtimeId: { type: Schema.Types.ObjectId, ref: "Showtime" },
+    promoCode: { type: String, default: "" },
+    discount: { type: Number, default: 0 },
+    appliedPromotion: { type: Schema.Types.ObjectId, ref: "Promotion" },
   },
   { timestamps: true }
 );

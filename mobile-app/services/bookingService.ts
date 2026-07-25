@@ -18,6 +18,7 @@ export const createBooking = async (payload: {
   combos?: { name: string; quantity: number; price: number }[];
   totalPrice: number;
   paymentMethod?: string;
+  promoCode?: string;
 }) => {
   const response = await api.post("/bookings", payload);
   return response.data;

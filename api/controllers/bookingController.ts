@@ -1,12 +1,13 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import Booking from "../models/bookingModel";
 import Showtime from "../models/showtimeModel";
 import Combo from "../models/comboModel";
+import Promotion from "../models/promotionModel";
 
-// Tạo đơn đặt vé (chọn ghế + combo)
 export const createBooking = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { showtimeId, showtime: showtimeAlt, seats, combos, combo, totalPrice, paymentMethod } = req.body;
+    const { showtimeId, showtime: showtimeAlt, seats, combos, combo, totalPrice, paymentMethod, promoCode } = req.body;
     const showtimeIdStr = showtimeId || showtimeAlt;
     if (!showtimeIdStr) {
       res.status(400).json({ success: false, message: "Thiếu thông tin suất chiếu" });
@@ -29,11 +30,44 @@ export const createBooking = async (req: Request, res: Response): Promise<void> 
       if (found) comboPrice = found.price;
     }
 
+    const rawTotal = seatPrice + comboPrice;
+
+    // Apply promo code if provided
+    let discount = 0;
+    let appliedPromotionId: mongoose.Types.ObjectId | undefined = undefined;
+    let finalPromoCode = "";
+
+    if (promoCode) {
+      const promo = await Promotion.findOne({ code: (promoCode as string).toUpperCase(), active: true });
+      if (promo) {
+        const now = new Date();
+        if (now >= promo.startDate && now <= promo.endDate) {
+          if (promo.usageLimit === 0 || promo.usedCount < promo.usageLimit) {
+            if (rawTotal >= promo.minOrderValue) {
+              if (promo.discountType === "percent") {
+                discount = Math.round(rawTotal * promo.discountValue / 100);
+                if (promo.maxDiscount > 0 && discount > promo.maxDiscount) {
+                  discount = promo.maxDiscount;
+                }
+              } else {
+                discount = promo.discountValue;
+              }
+              appliedPromotionId = promo._id;
+              finalPromoCode = promo.code;
+              await Promotion.findByIdAndUpdate(promo._id, { $inc: { usedCount: 1 } });
+            }
+          }
+        }
+      }
+    }
+
     // Remove booked seats from showtime.availableSeats
     if (seats && Array.isArray(seats)) {
       st.availableSeats = st.availableSeats.filter((s: string) => !seats.includes(s));
       await st.save();
     }
+
+    const finalTotal = Math.max(0, rawTotal - discount);
 
     const booking = await Booking.create({
       user: req.user?.id,
@@ -43,12 +77,15 @@ export const createBooking = async (req: Request, res: Response): Promise<void> 
       seats,
       combo: comboId,
       comboQuantity: combos?.length || 0,
-      totalPrice: totalPrice || seatPrice + comboPrice,
-      totalAmount: totalPrice || seatPrice + comboPrice,
+      totalPrice: finalTotal,
+      totalAmount: finalTotal,
       status: paymentMethod === "cash" ? "paid" : "pending",
       paymentStatus: paymentMethod === "cash" ? "completed" : "pending",
       paymentMethod: paymentMethod || "cash",
       combos: combos || [],
+      promoCode: finalPromoCode,
+      discount,
+      appliedPromotion: appliedPromotionId,
     });
 
     res.status(201).json({ success: true, data: booking });

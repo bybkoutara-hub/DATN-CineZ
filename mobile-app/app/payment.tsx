@@ -68,6 +68,16 @@ export default function PaymentScreen() {
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [vnpayBookingId, setVnpayBookingId] = useState<string | null>(null);
 
+  // State cho mã giảm giá
+  const [promoCode, setPromoCode] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState(0);
+  const [applyingPromo, setApplyingPromo] = useState(false);
+  const [promoError, setPromoError] = useState("");
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [appliedPromoCode, setAppliedPromoCode] = useState("");
+
+  const finalTotal = Math.max(0, grandTotal - appliedDiscount);
+
   // Mã đơn hàng ngẫu nhiên hiển thị cho đẹp (không gửi lên server)
   const orderId = String(showtimeId || "").slice(-8).toUpperCase() || "MB000000";
 
@@ -93,8 +103,9 @@ export default function PaymentScreen() {
       showtimeId,
       seats,
       combos,
-      totalPrice: grandTotal,
+      totalPrice: finalTotal,
       paymentMethod: "cash",
+      promoCode: promoApplied ? appliedPromoCode : undefined,
     });
     Alert.alert("Đặt vé thành công", "Vé đã được giữ. Vui lòng thanh toán khi đến quầy.");
     router.replace("/(tabs)/ticket");
@@ -106,8 +117,9 @@ export default function PaymentScreen() {
       showtimeId,
       seats,
       combos,
-      totalPrice: grandTotal,
+      totalPrice: finalTotal,
       paymentMethod: "vnpay",
+      promoCode: promoApplied ? appliedPromoCode : undefined,
     });
     const bookingId = res?.data?._id;
     if (!bookingId) {
@@ -169,6 +181,43 @@ export default function PaymentScreen() {
     }
     setVnpayBookingId(null);
   }, [vnpayBookingId]);
+
+  // Áp dụng mã giảm giá
+  const handleApplyPromo = async () => {
+    const code = promoCode.trim();
+    if (!code) {
+      setPromoError("Vui lòng nhập mã giảm giá");
+      return;
+    }
+    setApplyingPromo(true);
+    setPromoError("");
+    try {
+      const res = await api.post("/promotions/apply", { code, orderTotal: grandTotal });
+      if (res.data?.success) {
+        const { discount, finalTotal: ft } = res.data.data;
+        setAppliedDiscount(discount);
+        setPromoApplied(true);
+        setAppliedPromoCode(code.toUpperCase());
+        setPromoError("");
+      }
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "Mã giảm giá không hợp lệ";
+      setPromoError(msg);
+      setAppliedDiscount(0);
+      setPromoApplied(false);
+    } finally {
+      setApplyingPromo(false);
+    }
+  };
+
+  // Xóa mã giảm giá đã áp dụng
+  const handleRemovePromo = () => {
+    setPromoCode("");
+    setAppliedDiscount(0);
+    setPromoApplied(false);
+    setAppliedPromoCode("");
+    setPromoError("");
+  };
 
   // Xử lý nút thanh toán theo phương thức đang chọn
   const handlePayment = async () => {
@@ -303,25 +352,49 @@ export default function PaymentScreen() {
         {/* ==========================================
             4. KHỐI NHẬP MÃ GIẢM GIÁ
             ========================================== */}
-        <View style={styles.discountRow}>
-          <View style={styles.inputWrapper}>
-            <Ionicons
-              name="ticket-outline"
-              size={18}
-              color={TEXT_MUTED}
-              style={styles.ticketIcon}
-            />
-            <TextInput
-              placeholder="Mã giảm giá"
-              placeholderTextColor={TEXT_MUTED}
-              style={styles.discountInput}
-              autoCorrect={false}
-            />
+        {!promoApplied ? (
+          <View style={styles.discountRow}>
+            <View style={styles.inputWrapper}>
+              <Ionicons
+                name="ticket-outline"
+                size={18}
+                color={TEXT_MUTED}
+                style={styles.ticketIcon}
+              />
+              <TextInput
+                placeholder="Mã giảm giá"
+                placeholderTextColor={TEXT_MUTED}
+                style={styles.discountInput}
+                autoCorrect={false}
+                value={promoCode}
+                onChangeText={(text) => { setPromoCode(text); setPromoError(""); }}
+              />
+            </View>
+            <TouchableOpacity
+              style={[styles.applyButton, applyingPromo && { opacity: 0.6 }]}
+              activeOpacity={0.8}
+              onPress={handleApplyPromo}
+              disabled={applyingPromo}
+            >
+              {applyingPromo ? (
+                <ActivityIndicator color={BACKGROUND_BLACK} size="small" />
+              ) : (
+                <Text style={styles.applyText}>Áp dụng</Text>
+              )}
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.applyButton} activeOpacity={0.8}>
-            <Text style={styles.applyText}>Áp dụng</Text>
-          </TouchableOpacity>
-        </View>
+        ) : (
+          <View style={styles.appliedPromoRow}>
+            <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
+            <Text style={styles.appliedPromoText}>Mã {appliedPromoCode} đã được áp dụng</Text>
+            <TouchableOpacity onPress={handleRemovePromo} activeOpacity={0.7}>
+              <Ionicons name="close-circle" size={20} color={TEXT_MUTED} />
+            </TouchableOpacity>
+          </View>
+        )}
+        {promoError ? (
+          <Text style={styles.promoErrorText}>{promoError}</Text>
+        ) : null}
 
         <View style={styles.divider} />
 
@@ -329,9 +402,24 @@ export default function PaymentScreen() {
             5. TỔNG TIỀN
             ========================================== */}
         <View style={styles.totalRow}>
+          <Text style={styles.totalLabel}>Tạm tính</Text>
+          <Text style={styles.orderValueBold}>
+            {grandTotal.toLocaleString("vi-VN")} đ
+          </Text>
+        </View>
+        {appliedDiscount > 0 && (
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Giảm giá</Text>
+            <Text style={styles.discountValueText}>
+              -{appliedDiscount.toLocaleString("vi-VN")} đ
+            </Text>
+          </View>
+        )}
+        <View style={styles.divider} />
+        <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Tổng cộng</Text>
           <Text style={styles.totalValue}>
-            {grandTotal.toLocaleString("vi-VN")} đ
+            {finalTotal.toLocaleString("vi-VN")} đ
           </Text>
         </View>
 
@@ -402,8 +490,8 @@ export default function PaymentScreen() {
           ) : (
             <Text style={styles.continueText}>
               {selectedMethod === "vnpay"
-                ? `Thanh toán ${grandTotal.toLocaleString("vi-VN")} đ`
-                : `Đặt vé ${grandTotal.toLocaleString("vi-VN")} đ`}
+                ? `Thanh toán ${finalTotal.toLocaleString("vi-VN")} đ`
+                : `Đặt vé ${finalTotal.toLocaleString("vi-VN")} đ`}
             </Text>
           )}
         </TouchableOpacity>
@@ -507,6 +595,32 @@ const styles = StyleSheet.create({
   discountRow: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  appliedPromoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(76, 175, 80, 0.1)",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  appliedPromoText: {
+    flex: 1,
+    color: "#4CAF50",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  promoErrorText: {
+    color: "#ff4444",
+    fontSize: 13,
+    marginTop: 8,
+    marginLeft: 4,
+  },
+  discountValueText: {
+    color: "#4CAF50",
+    fontSize: 16,
+    fontWeight: "700",
   },
   inputWrapper: {
     flex: 1,
