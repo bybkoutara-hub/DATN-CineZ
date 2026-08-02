@@ -4,6 +4,107 @@ import Booking from "../models/bookingModel";
 import Showtime from "../models/showtimeModel";
 import Combo from "../models/comboModel";
 import Promotion from "../models/promotionModel";
+import {
+  acquireShowtimeLock,
+  releaseShowtimeLock,
+  holdSeatsAtomic,
+  nowPlusHold,
+} from "../services/seatReservationService";
+
+/** Số ghế tối đa được đặt trong một lần (1 booking). */
+export const MAX_SEATS_PER_BOOKING = 8;
+
+/**
+ * Kiểm tra danh sách ghế hợp lệ trước khi giữ ghế:
+ * - không rỗng
+ * - không quá MAX_SEATS_PER_BOOKING ghế
+ * - không bị trùng lặp
+ * - không vượt số ghế trống hiện có của suất chiếu
+ * Trả về message lỗi hoặc null nếu hợp lệ.
+ */
+const validateSeatRequest = (seats: unknown, availableCount: number): string | null => {
+  if (!Array.isArray(seats) || seats.length === 0) {
+    return "Chưa chọn ghế";
+  }
+  if (seats.length > MAX_SEATS_PER_BOOKING) {
+    return `Mỗi lần đặt tối đa ${MAX_SEATS_PER_BOOKING} ghế (bạn đang chọn ${seats.length} ghế)`;
+  }
+  if (new Set(seats.map((s) => String(s))).size !== seats.length) {
+    return "Danh sách ghế bị trùng lặp, vui lòng chọn lại";
+  }
+  if (seats.length > availableCount) {
+    return `Suất chiếu chỉ còn ${availableCount} ghế trống`;
+  }
+  return null;
+};
+
+/**
+ * API 1 — Giữ ghế tạm thời (15 phút):
+ * POST /api/bookings/hold { showtimeId, seats }
+ * - Redis Lock (SET NX EX 900) tuần tự hóa: 1 thời điểm chỉ 1 user xử lý 1 suất.
+ * - Atomic conditional update: chỉ giữ khi TẤT CẢ ghế vẫn AVAILABLE -> chống 2 người chọn trùng.
+ */
+export const holdBooking = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { showtimeId, seats } = req.body;
+    if (!showtimeId) {
+      res.status(400).json({ success: false, message: "Thiếu thông tin suất chiếu" });
+      return;
+    }
+    if (!Array.isArray(seats) || seats.length === 0) {
+      res.status(400).json({ success: false, message: "Chưa chọn ghế để giữ" });
+      return;
+    }
+    const st = await Showtime.findById(showtimeId);
+    if (!st) {
+      res.status(404).json({ success: false, message: "Không tìm thấy suất chiếu" });
+      return;
+    }
+    const seatError = validateSeatRequest(seats, st.availableSeats?.length ?? 0);
+    if (seatError) {
+      res.status(400).json({ success: false, message: seatError });
+      return;
+    }
+
+    await acquireShowtimeLock(String(showtimeId));
+    const grabbed = await holdSeatsAtomic(String(showtimeId), seats);
+    await releaseShowtimeLock(String(showtimeId));
+
+    if (!grabbed) {
+      res.status(409).json({
+        success: false,
+        message: "Một số ghế vừa được người khác chọn. Vui lòng chọn ghế khác.",
+        conflictSeats: seats,
+      });
+      return;
+    }
+
+    const holdExpiresAt = nowPlusHold();
+    const booking = await Booking.create({
+      user: req.user?.id,
+      userId: req.user?.id,
+      showtime: showtimeId,
+      showtimeId,
+      seats,
+      totalPrice: st.price * seats.length,
+      totalAmount: st.price * seats.length,
+      status: "pending",
+      paymentStatus: "pending",
+      paymentMethod: "hold",
+      holdExpiresAt,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `Đã giữ ghế ${seats.length} trong 15 phút. Hãy thanh toán trước khi hết hạn.`,
+      data: booking,
+      holdExpiresAt,
+      expiresInSeconds: Math.round((holdExpiresAt.getTime() - Date.now()) / 1000),
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 export const createBooking = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -17,6 +118,26 @@ export const createBooking = async (req: Request, res: Response): Promise<void> 
     if (!st) {
       res.status(404).json({ success: false, message: "Không tìm thấy suất chiếu" });
       return;
+    }
+
+    // Giữ ghế: atomic conditional update (chống race — 2 user chọn cùng ghế cùng lúc)
+    if (seats && Array.isArray(seats) && seats.length > 0) {
+      const seatError = validateSeatRequest(seats, st.availableSeats?.length ?? 0);
+      if (seatError) {
+        res.status(400).json({ success: false, message: seatError });
+        return;
+      }
+      await acquireShowtimeLock(String(showtimeIdStr));
+      const grabbed = await holdSeatsAtomic(String(showtimeIdStr), seats);
+      await releaseShowtimeLock(String(showtimeIdStr));
+      if (!grabbed) {
+        res.status(409).json({
+          success: false,
+          message: "Một số ghế vừa được người khác chọn. Vui lòng chọn lại.",
+          conflictSeats: seats,
+        });
+        return;
+      }
     }
 
     // Calculate price
@@ -61,13 +182,8 @@ export const createBooking = async (req: Request, res: Response): Promise<void> 
       }
     }
 
-    // Remove booked seats from showtime.availableSeats
-    if (seats && Array.isArray(seats)) {
-      st.availableSeats = st.availableSeats.filter((s: string) => !seats.includes(s));
-      await st.save();
-    }
-
     const finalTotal = Math.max(0, rawTotal - discount);
+    const isPaidImmediately = paymentMethod === "cash";
 
     const booking = await Booking.create({
       user: req.user?.id,
@@ -79,13 +195,14 @@ export const createBooking = async (req: Request, res: Response): Promise<void> 
       comboQuantity: combos?.length || 0,
       totalPrice: finalTotal,
       totalAmount: finalTotal,
-      status: paymentMethod === "cash" ? "paid" : "pending",
-      paymentStatus: paymentMethod === "cash" ? "completed" : "pending",
+      status: isPaidImmediately ? "paid" : "pending",
+      paymentStatus: isPaidImmediately ? "completed" : "pending",
       paymentMethod: paymentMethod || "cash",
       combos: combos || [],
       promoCode: finalPromoCode,
       discount,
       appliedPromotion: appliedPromotionId,
+      holdExpiresAt: isPaidImmediately ? undefined : nowPlusHold(),
     });
 
     res.status(201).json({ success: true, data: booking });

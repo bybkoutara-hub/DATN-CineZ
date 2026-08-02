@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const BASE_URL = 'http://localhost:5000/api/admin';
+const UPLOAD_URL = 'http://localhost:5000/api/upload';
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -50,6 +51,18 @@ export const movieAPI = {
     const response = await apiClient.delete(`/movies/${id}`);
     return formatResponse(null, response.data.message);
   },
+};
+
+export const uploadImage = async (file) => {
+  const formData = new FormData();
+  formData.append('image', file);
+  const response = await axios.post(`${UPLOAD_URL}/image`, formData, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
 };
 
 export const showtimeAPI = {
@@ -167,6 +180,10 @@ export const roomAPI = {
   delete: async (id) => {
     const response = await apiClient.delete(`/rooms/${id}`);
     return formatResponse(null, response.data.message);
+  },
+  updateLayout: async (id, layout) => {
+    const response = await apiClient.put(`/rooms/${id}/layout`, { layout });
+    return formatResponse(response.data.data || response.data, response.data.message);
   },
 };
 

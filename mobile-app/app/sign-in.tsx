@@ -4,7 +4,6 @@ import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -16,6 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { loginApi } from "../services/authService";
+import { useToast } from "../components/Toast";
 
 // Bảng màu chuẩn hệ thống Dark-Mode Figma
 const BACKGROUND_BLACK = "#000000";
@@ -28,6 +28,7 @@ const BORDER_COLOR = "#1C1C1F";
 export default function SignInScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const toast = useToast();
   const [email, setEmail] = useState((params.email as string) || "");
   const [password, setPassword] = useState("");
   const [secureText, setSecureText] = useState(true);
@@ -35,7 +36,7 @@ export default function SignInScreen() {
 
   const handleSignIn = async () => {
     if (!email || !password) {
-      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
+      toast.error("Vui lòng nhập đầy đủ thông tin");
       return;
     }
 
@@ -45,7 +46,7 @@ export default function SignInScreen() {
       // Token đã được lưu trong loginApi -> vào thẳng trang chủ
       router.replace("/(tabs)");
     } catch {
-      Alert.alert("Đăng nhập thất bại", "Email hoặc mật khẩu không chính xác");
+      toast.error("Email hoặc mật khẩu không chính xác");
     } finally {
       setLoading(false);
     }

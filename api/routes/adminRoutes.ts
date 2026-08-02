@@ -5,7 +5,7 @@ import {
   adminRegister, adminGetProfile, adminUpdateProfile,
   getGenres, getGenreById, createGenre, updateGenre, deleteGenre,
   getAdminMovies, getAdminMovieById, createAdminMovie, updateAdminMovie, deleteAdminMovie,
-  getRooms, getRoomById, createRoom, updateRoom, deleteRoom, getRoomSeats,
+  getRooms, getRoomById, createRoom, updateRoom, deleteRoom, getRoomSeats, updateRoomLayout,
   getAdminShowtimes, getAdminShowtimeById, createAdminShowtime, updateAdminShowtime, deleteAdminShowtime, getBookedSeats,
   getCombos, getComboById, createCombo, updateCombo, deleteCombo,
   getPromotions, getPromotionById, createPromotion, updatePromotion, deletePromotion, validatePromotion,
@@ -53,6 +53,7 @@ router.post("/rooms", protect, requireRole("admin"), createRoom);
 router.put("/rooms/:id", protect, requireRole("admin"), updateRoom);
 router.delete("/rooms/:id", protect, requireRole("admin"), deleteRoom);
 router.get("/rooms/:id/seats", protect, requireRole("admin", "staff"), getRoomSeats);
+router.put("/rooms/:id/layout", protect, requireRole("admin"), updateRoomLayout);
 
 // Showtimes
 router.get("/showtimes", protect, requireRole("admin", "staff"), getAdminShowtimes);

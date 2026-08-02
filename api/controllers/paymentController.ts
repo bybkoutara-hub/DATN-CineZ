@@ -252,3 +252,97 @@ export const getPaymentByBooking = async (req: Request, res: Response): Promise<
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+const isSuccessResultCode = (code: any): boolean =>
+  code === "00" || code === 0 || code === "0" || code === "success" || code === "SUCCESS" || code === "PAID" || code === "completed";
+
+/**
+ * API 3 — Webhook thanh toán (POST /api/payments/webhook)
+ * Nhận callback từ cổng thanh toán (VNPay / MoMo / ZaloPay).
+ * Body: { bookingId, resultCode, transactionId?, provider? }
+ * - Booking còn trong thời gian HOLDING -> PAID, ghế BOOKED (đã loại khỏi availableSeats khi hold).
+ * - Booking đã EXPIRED khi webhook tới trễ -> ghế có thể đã bị người khác đặt:
+ *   chuyển booking -> refunded + nhả ghế + log Auto-refund.
+ * - Idempotent: webhook gửi lại không gây tác dụng phụ.
+ */
+export const paymentWebhook = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { bookingId, resultCode, transactionId, provider } = req.body;
+    if (!bookingId) {
+      res.status(400).json({ success: false, message: "Thiếu bookingId" });
+      return;
+    }
+
+    const booking: any = await Booking.findById(bookingId);
+    if (!booking) {
+      res.status(404).json({ success: false, message: "Không tìm thấy đơn đặt vé" });
+      return;
+    }
+
+    // Idempotent — webhook retry không đổi trạng thái đã xác nhận
+    if (booking.status === "paid" || booking.status === "completed") {
+      res.status(200).json({ success: true, status: "already_paid", message: "Đơn đã thanh toán trước đó" });
+      return;
+    }
+    if (booking.status !== "pending") {
+      res.status(200).json({ success: false, status: booking.status, message: "Đơn không trong trạng thái chờ thanh toán" });
+      return;
+    }
+
+    const now = new Date();
+    const holdExpired = !!(booking.holdExpiresAt && booking.holdExpiresAt < now);
+    const meta = transactionId ? { transactionId: String(transactionId) } : {};
+
+    if (isSuccessResultCode(resultCode)) {
+      if (holdExpired) {
+        // Webhook tới TRỄ (quá 15 phút giữ ghế) — ghế có thể đã nhả/bị người khác đặt:
+        // Kích hoạt Auto-refund cho khách + ghi log.
+        const claimed = await Booking.findOneAndUpdate(
+          { _id: bookingId, status: "pending" },
+          {
+            status: "refunded",
+            paymentStatus: "cancelled",
+            refunded: true,
+            refundNote: "Thanh toán đến sau khi hết hạn giữ ghế (15 phút) — tự động hoàn tiền",
+            ...meta,
+          },
+          { new: true }
+        );
+        if (claimed) {
+          await releaseSeats(claimed.showtimeId || claimed.showtime, claimed.seats || []);
+          console.log(
+            `[Webhook][Auto-Refund] Booking ${bookingId} (${provider || "unknown"}): thanh toán trễ, hết hạn giữ ghế lúc ${booking.holdExpiresAt}. ` +
+            `Hoàn tiền ${booking.totalAmount || booking.totalPrice || 0} VNĐ cho khách. Ghế đã nhả để người khác đặt.`
+          );
+        }
+        res.status(200).json({
+          success: true,
+          status: "refunded",
+          message: "Đơn đã hết hạn giữ ghế — đã tự động hoàn tiền",
+        });
+        return;
+      }
+
+      // Còn thời gian HOLDING -> PAID; ghế đã BOOKED sẵn (bị loại khỏi availableSeats khi giữ)
+      const updated = await Booking.findOneAndUpdate(
+        { _id: bookingId, status: "pending" },
+        { status: "paid", paymentStatus: "completed", ...meta },
+        { new: true }
+      );
+      if (updated) sendBookingConfirmationEmail(String(updated._id));
+      res.status(200).json({ success: true, status: "paid", message: "Thanh toán thành công — vé đã xác nhận" });
+      return;
+    }
+
+    // Thanh toán thất bại -> hủy đơn + nhả ghế cho người khác
+    const cancelled = await Booking.findOneAndUpdate(
+      { _id: bookingId, status: "pending" },
+      { status: "cancelled", paymentStatus: "cancelled", ...meta },
+      { new: true }
+    );
+    if (cancelled) await releaseSeats(cancelled.showtimeId || cancelled.showtime, cancelled.seats || []);
+    res.status(200).json({ success: true, status: "cancelled", message: "Thanh toán thất bại — đã hủy và nhả ghế" });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

@@ -14,6 +14,14 @@ import User from "../models/userModel";
 import Actor from "../models/actorModel";
 import Director from "../models/directorModel";
 import Review from "../models/reviewModel";
+import {
+  buildDefaultLayout,
+  getLayout,
+  getRowSeatNumbers,
+  getSeatLabels,
+  getSeatPrice,
+  sanitizeLayout,
+} from "../utils/seatLayout";
 
 // ==================== AUTH ====================
 
@@ -158,7 +166,8 @@ export const getAdminMovieById = async (req: Request, res: Response): Promise<vo
 
 export const createAdminMovie = async (req: Request, res: Response): Promise<void> => {
   try {
-    const newMovie = new Movie(req.body);
+    const { rating, total_reviews, ...movieData } = req.body;
+    const newMovie = new Movie(movieData);
     const saved = await newMovie.save();
     res.status(201).json({ success: true, message: "Đã thêm phim mới vào hệ thống!", data: saved });
   } catch (error: any) {
@@ -168,7 +177,8 @@ export const createAdminMovie = async (req: Request, res: Response): Promise<voi
 
 export const updateAdminMovie = async (req: Request, res: Response): Promise<void> => {
   try {
-    const updated = await Movie.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const { rating, total_reviews, ...movieData } = req.body;
+    const updated = await Movie.findByIdAndUpdate(req.params.id, movieData, { new: true });
     if (!updated) {
       res.status(404).json({ success: false, message: "Không tìm thấy phim" });
       return;
@@ -181,6 +191,15 @@ export const updateAdminMovie = async (req: Request, res: Response): Promise<voi
 
 export const deleteAdminMovie = async (req: Request, res: Response): Promise<void> => {
   try {
+    const hasShowtime = await Showtime.exists({ movieId: req.params.id });
+    if (hasShowtime) {
+      res.status(400).json({
+        success: false,
+        message: "Không thể xóa phim đang có suất chiếu! Hãy xóa suất chiếu trước.",
+      });
+      return;
+    }
+
     const deleted = await Movie.findByIdAndDelete(req.params.id);
     if (!deleted) {
       res.status(404).json({ success: false, message: "Không tìm thấy phim" });
@@ -219,7 +238,12 @@ export const getRoomById = async (req: Request, res: Response): Promise<void> =>
 export const createRoom = async (req: Request, res: Response): Promise<void> => {
   try {
     const data = { ...req.body };
-    if (data.rows_count && data.seats_per_row && !data.totalSeats) {
+    if (!data.layout) {
+      data.layout = buildDefaultLayout(data.rows_count || 8, data.seats_per_row || 15);
+    }
+    if (data.layout) {
+      data.totalSeats = getSeatLabels(data.layout).length;
+    } else if (data.rows_count && data.seats_per_row && !data.totalSeats) {
       data.totalSeats = data.rows_count * data.seats_per_row;
     }
     const newRoom = new Room(data);
@@ -240,6 +264,82 @@ export const updateRoom = async (req: Request, res: Response): Promise<void> => 
     res.status(200).json({ success: true, message: "Cập nhật phòng thành công!", data: updated });
   } catch (error: any) {
     res.status(500).json({ success: false, message: "Lỗi cập nhật phòng", error });
+  }
+};
+
+// Cập nhật sơ đồ ghế của phòng + đồng bộ xuống toàn bộ suất chiếu (web & app)
+export const updateRoomLayout = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const room = await Room.findById(req.params.id);
+    if (!room) {
+      res.status(404).json({ success: false, message: "Không tìm thấy phòng" });
+      return;
+    }
+
+    const layout = sanitizeLayout(req.body.layout);
+    if (!layout) {
+      res.status(400).json({ success: false, message: "Layout sơ đồ ghế không hợp lệ!" });
+      return;
+    }
+
+    // 1. Lưu layout mới vào phòng
+    room.layout = layout as any;
+    room.rows_count = layout.rows.length;
+    room.seats_per_row = layout.cols;
+    room.totalSeats = getSeatLabels(layout).length;
+    await room.save();
+
+    // 2. Tái tạo ghế theo layout mới (giữ trạng thái của ghế cùng label)
+    const oldSeats = await Seat.find({ room: room._id });
+    const oldByLabel: Record<string, any> = {};
+    oldSeats.forEach((s: any) => (oldByLabel[s.label] = s));
+
+    const seatsToInsert: any[] = [];
+    layout.rows.forEach((row) => {
+      const type = layout.rowTypes?.[row] || "standard";
+      getRowSeatNumbers(layout, row).forEach((number) => {
+        const label = `${row}${number}`;
+        const old = oldByLabel[label];
+        seatsToInsert.push({
+          room: room._id,
+          row,
+          number,
+          label,
+          type,
+          status: old?.status || "available",
+          price: getSeatPrice(type),
+        });
+      });
+    });
+    await Seat.deleteMany({ room: room._id });
+    await Seat.insertMany(seatsToInsert);
+
+    // 3. Đồng bộ xuống toàn bộ suất chiếu của phòng
+    //    (giữ các ghế đã được đặt là đã đặt, chỉ cập nhật layout + danh sách ghế)
+    const labels = getSeatLabels(layout);
+    const disabledLabels = new Set(
+      (await Seat.find({ room: room._id, status: { $in: ["maintenance", "broken"] } })).map(
+        (s: any) => s.label
+      )
+    );
+    const showtimes = await Showtime.find({ roomId: room._id });
+    for (const st of showtimes) {
+      const bookings = await Booking.find({
+        $or: [
+          { showtime: st._id, status: "paid" },
+          { showtimeId: st._id, paymentStatus: "completed" },
+        ],
+      });
+      const booked = new Set<string>();
+      bookings.forEach((b: any) => (b.seats || []).forEach((s: string) => booked.add(s)));
+      st.layout = layout;
+      st.availableSeats = labels.filter((l) => !booked.has(l) && !disabledLabels.has(l));
+      await st.save();
+    }
+
+    res.status(200).json({ success: true, message: "Cập nhật layout thành công!", data: room });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: "Lỗi cập nhật layout", error });
   }
 };
 
@@ -283,6 +383,7 @@ export const getAdminShowtimes = async (req: Request, res: Response): Promise<vo
     }
     const showtimes = await Showtime.find(filter)
       .populate("movieId", "title poster_url duration")
+      .populate("roomId", "name type")
       .sort({ startTime: 1 });
     res.status(200).json(showtimes);
   } catch (error: any) {
@@ -304,12 +405,57 @@ export const getAdminShowtimeById = async (req: Request, res: Response): Promise
   }
 };
 
+// Kiểm tra suất chiếu trùng giờ trong cùng phòng: [startA, endA] ∩ [startB, endB]
+const findTimeConflict = async (
+  roomId: string,
+  startTime: Date,
+  durationMin: number,
+  excludeShowtimeId?: string
+): Promise<any> => {
+  const endTime = new Date(startTime.getTime() + durationMin * 60000);
+  const dayStart = new Date(startTime);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(startTime);
+  dayEnd.setHours(23, 59, 59, 999);
+
+  const sameDay = await Showtime.find({
+    roomId,
+    _id: { $ne: excludeShowtimeId },
+    startTime: { $gte: dayStart, $lte: dayEnd },
+    status: { $ne: "cancelled" },
+  }).populate("movieId", "title duration");
+
+  for (const st of sameDay) {
+    const stStart = new Date(st.startTime);
+    const stDuration = (st as any).movieId?.duration || 120;
+    const stEnd = new Date(stStart.getTime() + stDuration * 60000);
+    if (stStart < endTime && startTime < stEnd) {
+      return st;
+    }
+  }
+  return null;
+};
+
 export const createAdminShowtime = async (req: Request, res: Response): Promise<void> => {
   try {
     const { movieId, roomId, roomName: roomNameBody, date, startTime, basePrice, price: priceBody, status } = req.body;
 
     if (!movieId) {
       res.status(400).json({ success: false, message: "Thiếu thông tin phim" });
+      return;
+    }
+    if (!roomId) {
+      res.status(400).json({ success: false, message: "Thiếu thông tin phòng chiếu" });
+      return;
+    }
+    if (!date || !startTime) {
+      res.status(400).json({ success: false, message: "Vui lòng nhập ngày và giờ chiếu" });
+      return;
+    }
+
+    const movie = await Movie.findById(movieId);
+    if (!movie) {
+      res.status(404).json({ success: false, message: "Không tìm thấy phim" });
       return;
     }
 
@@ -319,26 +465,62 @@ export const createAdminShowtime = async (req: Request, res: Response): Promise<
       return;
     }
 
-    const startDate = new Date(date || new Date());
-    if (startTime) {
-      const [hours, minutes] = startTime.split(":").map(Number);
-      startDate.setHours(hours, minutes, 0, 0);
+    const price = Number(basePrice ?? priceBody ?? 0);
+    if (!price || price <= 0) {
+      res.status(400).json({ success: false, message: "Giá vé phải lớn hơn 0" });
+      return;
     }
 
-    const seatLabels: string[] = [];
-    const rowLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    for (let r = 0; r < (room.rows_count || 8); r++) {
-      for (let c = 1; c <= (room.seats_per_row || 15); c++) {
-        seatLabels.push(`${rowLetters[r]}${c}`);
-      }
+    const [yy, mm, dd] = (date as string).split("-").map(Number);
+    if (!yy || !mm || !dd) {
+      res.status(400).json({ success: false, message: "Ngày chiếu không hợp lệ" });
+      return;
     }
+    const parts = (startTime as string).split(":");
+    const hh = Number(parts[0]);
+    const mmin = Number(parts[1]);
+    if (isNaN(hh) || isNaN(mmin) || hh > 23 || mmin > 59) {
+      res.status(400).json({ success: false, message: "Giờ chiếu không hợp lệ" });
+      return;
+    }
+    const startDate = new Date(yy, mm - 1, dd, hh, mmin, 0, 0);
+
+    if (startDate.getTime() < Date.now() - 5 * 60000) {
+      res.status(400).json({ success: false, message: "Không thể tạo suất chiếu trong quá khứ" });
+      return;
+    }
+
+    // Chặn trùng giờ chiếu trong cùng phòng
+    const conflict = await findTimeConflict(String(roomId), startDate, movie.duration);
+    if (conflict) {
+      const cStart = new Date(conflict.startTime);
+      res.status(400).json({
+        success: false,
+        message: `Phòng này đã có suất chiếu "${(conflict as any).movieId?.title || "phim khác"}` +
+          `" lúc ${cStart.getHours()}:${String(cStart.getMinutes()).padStart(2, "0")} cùng ngày. Vui lòng chọn giờ khác.`,
+      });
+      return;
+    }
+
+    const layout = getLayout(room);
+    const seatLabels = getSeatLabels(layout);
+
+    // Loại ghế đang bảo trì/hỏng khỏi danh sách ghế trống
+    const disabledSeats = await Seat.find({
+      room: room._id,
+      status: { $in: ["maintenance", "broken"] },
+    });
+    const disabledLabels = new Set(disabledSeats.map((s: any) => s.label));
+    const availableSeats = seatLabels.filter((label) => !disabledLabels.has(label));
 
     const showtimeData = {
       movieId,
+      roomId,
       roomName: room.name,
       startTime: startDate,
-      price: basePrice ?? priceBody ?? 0,
-      availableSeats: seatLabels,
+      price,
+      availableSeats,
+      layout,
       status: status || "active",
     };
 
@@ -353,32 +535,79 @@ export const createAdminShowtime = async (req: Request, res: Response): Promise<
 export const updateAdminShowtime = async (req: Request, res: Response): Promise<void> => {
   try {
     const { roomId, date, startTime, basePrice, price: priceBody, ...rest } = req.body;
-    const updateData: Record<string, any> = { ...rest };
-
-    if (roomId) {
-      const room = await Room.findById(roomId);
-      if (room) {
-        updateData.roomName = room.name;
-      }
-    }
-
-    if (date || startTime) {
-      const existing = await Showtime.findById(req.params.id);
-      const startDate = new Date(date || existing?.startTime || new Date());
-      if (startTime) {
-        const [hours, minutes] = startTime.split(":").map(Number);
-        startDate.setHours(hours, minutes, 0, 0);
-      }
-      updateData.startTime = startDate;
-    }
-
-    if (basePrice !== undefined) updateData.price = basePrice;
-
-    const updated = await Showtime.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
-    if (!updated) {
+    const existing = await Showtime.findById(req.params.id);
+    if (!existing) {
       res.status(404).json({ success: false, message: "Không tìm thấy suất chiếu" });
       return;
     }
+
+    const updateData: Record<string, any> = { ...rest };
+    let effectiveRoomId = existing.roomId ? String(existing.roomId) : "";
+    let effectiveStart = new Date(existing.startTime);
+    let durationMin = 120;
+
+    const movie = await Movie.findById(rest.movieId || existing.movieId);
+    if (movie?.duration) durationMin = movie.duration;
+
+    if (roomId) {
+      const room = await Room.findById(roomId);
+      if (!room) {
+        res.status(404).json({ success: false, message: "Không tìm thấy phòng chiếu" });
+        return;
+      }
+      effectiveRoomId = String(room._id);
+      updateData.roomName = room.name;
+      updateData.roomId = room._id;
+      const layout = getLayout(room);
+      updateData.layout = layout;
+      updateData.availableSeats = getSeatLabels(layout);
+    }
+
+    if (date) {
+      const [y, m, d] = (date as string).split("-").map(Number);
+      if (y && m && d) effectiveStart.setFullYear(y, m - 1, d);
+    }
+    if (startTime) {
+      const parts = (startTime as string).split(":");
+      const hours = Number(parts[0]);
+      const minutes = Number(parts[1]);
+      if (isNaN(hours) || isNaN(minutes)) {
+        res.status(400).json({ success: false, message: "Giờ chiếu không hợp lệ" });
+        return;
+      }
+      effectiveStart.setHours(hours, minutes, 0, 0);
+    }
+
+    if (effectiveStart.getTime() < Date.now() - 5 * 60000) {
+      res.status(400).json({ success: false, message: "Không thể đặt suất chiếu trong quá khứ" });
+      return;
+    }
+
+    if (roomId || date || startTime) {
+      const conflict = await findTimeConflict(effectiveRoomId, effectiveStart, durationMin, String(req.params.id));
+      if (conflict) {
+        const cStart = new Date(conflict.startTime);
+        res.status(400).json({
+          success: false,
+          message: `Phòng này đã có suất chiếu "${(conflict as any).movieId?.title || "phim khác"}"` +
+            ` lúc ${cStart.getHours()}:${String(cStart.getMinutes()).padStart(2, "0")} cùng ngày. Vui lòng chọn giờ khác.`,
+        });
+        return;
+      }
+    }
+
+    updateData.startTime = effectiveStart;
+
+    if (basePrice !== undefined || priceBody !== undefined) {
+      const price = Number(basePrice ?? priceBody);
+      if (!price || price <= 0) {
+        res.status(400).json({ success: false, message: "Giá vé phải lớn hơn 0" });
+        return;
+      }
+      updateData.price = price;
+    }
+
+    const updated = await Showtime.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
     res.status(200).json({ success: true, message: "Cập nhật suất chiếu thành công!", data: updated });
   } catch (error: any) {
     res.status(500).json({ success: false, message: "Lỗi cập nhật suất chiếu", error: error.message || error });
@@ -861,17 +1090,70 @@ export const bulkCreateSeats = async (req: Request, res: Response): Promise<void
       res.status(400).json({ success: false, message: "Dữ liệu không hợp lệ!" });
       return;
     }
+
+    const room = await Room.findById(roomId);
+    if (!room) {
+      res.status(404).json({ success: false, message: "Không tìm thấy phòng" });
+      return;
+    }
+
+    // Lưu layout chuẩn vào phòng nếu chưa có (đồng bộ với web & app)
+    if (!room.layout || !Array.isArray(room.layout.rows) || room.layout.rows.length === 0) {
+      room.layout = buildDefaultLayout(room.rows_count || 8, room.seats_per_row || 15);
+      room.totalSeats = getSeatLabels(room.layout).length;
+      await room.save();
+    }
+
+    const layout = getLayout(room);
+    const statusByLabel: Record<string, string> = {};
+    seatsData.forEach((s: any) => {
+      const label = s.label || `${s.row}${s.number}`;
+      if (s.status) statusByLabel[label] = s.status;
+    });
+
     await Seat.deleteMany({ room: roomId });
-    const seatsToInsert = seatsData.map((s: any) => ({
-      room: roomId,
-      row: s.row,
-      number: s.number,
-      label: s.label || `${s.row}${s.number}`,
-      type: s.type || "standard",
-      status: s.status || "available",
-      price: s.price || 0,
-    }));
+
+    const seatsToInsert: any[] = [];
+    layout.rows.forEach((row) => {
+      getRowSeatNumbers(layout, row).forEach((number) => {
+        const label = `${row}${number}`;
+        const type = layout.rowTypes?.[row] || "standard";
+        seatsToInsert.push({
+          room: roomId,
+          row,
+          number,
+          label,
+          type,
+          status: statusByLabel[label] || "available",
+          price: getSeatPrice(type),
+        });
+      });
+    });
+
     const saved = await Seat.insertMany(seatsToInsert);
+
+    // Đồng bộ trạng thái ghế (bảo trì/hỏng) xuống toàn bộ suất chiếu của phòng:
+    // loại ghế không dùng được khỏi availableSeats để app hiển thị đúng
+    const disabledLabels = new Set(
+      (
+        await Seat.find({ room: roomId, status: { $in: ["maintenance", "broken"] } })
+      ).map((s: any) => s.label)
+    );
+    const allLabels = getSeatLabels(layout);
+    const showtimes = await Showtime.find({ roomId });
+    for (const st of showtimes) {
+      const bookings = await Booking.find({
+        $or: [
+          { showtime: st._id, status: "paid" },
+          { showtimeId: st._id, paymentStatus: "completed" },
+        ],
+      });
+      const booked = new Set<string>();
+      bookings.forEach((b: any) => (b.seats || []).forEach((s: string) => booked.add(s)));
+      st.availableSeats = allLabels.filter((l) => !booked.has(l) && !disabledLabels.has(l));
+      await st.save();
+    }
+
     res.status(201).json({ success: true, message: "Tạo ghế thành công!", data: saved });
   } catch (error: any) {
     res.status(500).json({ success: false, message: "Lỗi tạo ghế hàng loạt", error });
@@ -917,8 +1199,8 @@ export const getAdminBookings = async (req: Request, res: Response): Promise<voi
       if (to) filter.createdAt.$lte = new Date(to as string);
     }
     const bookings = await Booking.find(filter)
-      .populate("user", "username fullName email phone")
-      .populate("userId", "username fullName email phone")
+      .populate("user", "username fullName name email phone")
+      .populate("userId", "username fullName name email phone")
       .populate({ path: "showtime", populate: { path: "movieId", select: "title poster_url duration" } })
       .populate({ path: "showtimeId", populate: { path: "movieId", select: "title poster_url duration" } })
       .populate("combo", "name price")
@@ -932,8 +1214,8 @@ export const getAdminBookings = async (req: Request, res: Response): Promise<voi
 export const getAdminBookingById = async (req: Request, res: Response): Promise<void> => {
   try {
     const booking = await Booking.findById(req.params.id)
-      .populate("user", "username fullName email phone")
-      .populate("userId", "username fullName email phone")
+      .populate("user", "username fullName name email phone")
+      .populate("userId", "username fullName name email phone")
       .populate({ path: "showtime", populate: { path: "movieId", select: "title poster_url duration genres" } })
       .populate({ path: "showtimeId", populate: { path: "movieId", select: "title poster_url duration genres" } })
       .populate("combo", "name price items");
@@ -1347,7 +1629,7 @@ export const getAdminReviews = async (req: Request, res: Response): Promise<void
     const [reviews, total] = await Promise.all([
       Review.find(filter)
         .populate("movie", "title poster_url")
-        .populate("user", "fullName email")
+        .populate("user", "fullName name email")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNum),
@@ -1368,7 +1650,7 @@ export const getAdminReviewById = async (req: Request, res: Response): Promise<v
   try {
     const review = await Review.findById(req.params.id)
       .populate("movie", "title poster_url")
-      .populate("user", "fullName email");
+      .populate("user", "fullName name email");
     if (!review) {
       res.status(404).json({ success: false, message: "Không tìm thấy bình luận" });
       return;
@@ -1386,6 +1668,20 @@ export const deleteAdminReview = async (req: Request, res: Response): Promise<vo
       res.status(404).json({ success: false, message: "Không tìm thấy bình luận" });
       return;
     }
+
+    const stats = await Review.aggregate([
+      { $match: { movie: deleted.movie } },
+      { $group: { _id: null, avgRating: { $avg: "$rating" }, count: { $sum: 1 } } },
+    ]);
+    if (stats.length > 0) {
+      await Movie.findByIdAndUpdate(deleted.movie, {
+        rating: Math.round(stats[0].avgRating * 2 * 10) / 10,
+        total_reviews: stats[0].count,
+      });
+    } else {
+      await Movie.findByIdAndUpdate(deleted.movie, { rating: 0, total_reviews: 0 });
+    }
+
     res.status(200).json({ success: true, message: "Xóa bình luận thành công!" });
   } catch (error: any) {
     res.status(500).json({ success: false, message: "Lỗi xóa bình luận", error });

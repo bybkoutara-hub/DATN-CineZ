@@ -2,6 +2,14 @@
   padding-bottom: var(--space-xl);
 }
 
+.layout-editor-row {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
 .seat-map-container {
   overflow-x: auto;
   padding: var(--space-2xl) var(--space-lg);
@@ -49,7 +57,7 @@
   color: white;
   user-select: none;
   box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-  border-top: 3px solid rgba(255,255,255,0.2);
+  border-top: 3px solid rgba(255,255,255,0.25);
 }
 
 .seat:hover {
@@ -61,36 +69,47 @@
   transform: translateY(1px);
 }
 
-/* Seat Types */
+.seat-empty {
+  width: 36px;
+  height: 36px;
+  visibility: hidden;
+}
+
+/* Seat Types - chuẩn layout: thường tím, VIP đỏ, đôi hồng */
 .seat.standard {
-  background: #475569;
+  background: #6B21A8;
 }
 
 .seat.vip {
-  background: #f59e0b;
-  border-top: 3px solid #fcd34d;
+  background: #DC2626;
+  border-top: 3px solid #FCA5A5;
 }
 
 .seat.couple {
-  background: #ec4899;
-  border-top: 3px solid #f9a8d4;
+  background: #EC4899;
+  border-top: 3px solid #F9A8D4;
   width: 82px; /* spans 2 cols roughly */
   grid-column: span 2;
 }
 
+/* Vùng trung tâm (Prime) - viền xanh */
+.seat.center {
+  box-shadow: 0 0 0 2px #22C55E, 0 4px 6px rgba(0,0,0,0.3);
+}
+
 /* Status */
 .seat.maintenance {
-  background: #334155;
-  color: #94a3b8;
+  background: #374151;
+  color: #9CA3AF;
   opacity: 0.6;
-  border-top: 3px solid #1e293b;
+  border-top: 3px solid #1F2937;
   cursor: not-allowed;
 }
 
 .seat.broken {
-  background: #ef4444;
-  color: white;
-  border-top: 3px solid #fca5a5;
+  background: #111827;
+  color: #EF4444;
+  border-top: 3px solid #EF4444;
   cursor: not-allowed;
 }
 
@@ -102,11 +121,12 @@
   border-top: 2px solid rgba(255,255,255,0.2);
 }
 
-.seat-demo.standard { background: #475569; }
-.seat-demo.vip { background: #f59e0b; border-top-color: #fcd34d; }
-.seat-demo.couple { background: #ec4899; border-top-color: #f9a8d4; width: 50px; }
-.seat-demo.maintenance { background: #334155; opacity: 0.6; }
-.seat-demo.broken { background: #ef4444; }
+.seat-demo.standard { background: #6B21A8; }
+.seat-demo.vip { background: #DC2626; border-top-color: #FCA5A5; }
+.seat-demo.couple { background: #EC4899; border-top-color: #F9A8D4; width: 50px; }
+.seat-demo.center { background: transparent; box-shadow: 0 0 0 2px #22C55E; }
+.seat-demo.maintenance { background: #374151; opacity: 0.6; }
+.seat-demo.broken { background: #111827; box-shadow: 0 0 0 2px #EF4444; }
 
 @media (max-width: 768px) {
   .seat {

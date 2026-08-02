@@ -1,12 +1,13 @@
 import express from "express";
-import { createPayment, getPaymentByBooking, createVnpayUrl, vnpReturn, vnpIpn, confirmVnpayPayment } from "../controllers/paymentController";
+import { createPayment, getPaymentByBooking, createVnpayUrl, vnpReturn, vnpIpn, confirmVnpayPayment, paymentWebhook } from "../controllers/paymentController";
 import { protect } from "../middlewares/auth.middleware";
 
 const router = express.Router();
 
-// Public routes - VNPay callbacks (không cần auth)
+// Public routes - VNPay callbacks & webhook thanh toán (không cần auth)
 router.get("/vnpay/return", vnpReturn);
 router.get("/vnpay/ipn", vnpIpn);
+router.post("/webhook", paymentWebhook);
 
 router.use(protect);
 

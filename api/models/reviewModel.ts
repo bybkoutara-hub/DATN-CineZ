@@ -18,4 +18,6 @@ const ReviewSchema: Schema = new Schema(
   { timestamps: true }
 );
 
+ReviewSchema.index({ movie: 1, user: 1 }, { unique: true });
+
 export default mongoose.model<IReview>("Review", ReviewSchema);

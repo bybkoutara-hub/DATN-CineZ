@@ -16,6 +16,14 @@ import Invoice from "../models/invoiceModel.js";
 import Review from "../models/reviewModel.js";
 import Actor from "../models/actorModel.js";
 import Director from "../models/directorModel.js";
+import {
+  DEFAULT_LAYOUT,
+  buildDefaultLayout,
+  getLayout,
+  getRowSeatNumbers,
+  getSeatLabels,
+  getSeatPrice,
+} from "../utils/seatLayout.js";
 
 dotenv.config();
 
@@ -28,10 +36,13 @@ async function seedDatabase() {
     console.log("🟢 [Seed]: Kết nối MongoDB thành công.");
 
     // ===================== XÓA DỮ LIỆU CŨ =====================
+    // Chỉ xóa tài khoản demo (username seed). KHÔNG xóa user đăng ký thật từ app
+    // (username = null, role = user) để tránh mất tài khoản/booking reference.
+    const DEMO_USERNAMES = ["admin", "staff01", "staff02", "user01", "user02", "user03", "user04", "user05"];
     await Promise.all([
       Movie.deleteMany({}),
       Showtime.deleteMany({}),
-      User.deleteMany({}),
+      User.deleteMany({ $or: [{ username: { $in: DEMO_USERNAMES } }, { role: { $in: ["admin", "staff"] } }] }),
       Genre.deleteMany({}),
       Room.deleteMany({}),
       Seat.deleteMany({}),
@@ -119,8 +130,6 @@ async function seedDatabase() {
         genres: ["Gia đình", "Tình cảm", "Kịch tính"],
         status: "now_playing",
         release_date: "2026-04-30",
-        rating: 4.9,
-        total_reviews: 2450,
         description: "Câu chuyện xoay quanh bà Hai, một người mẹ tảo tần nuôi dạy 5 người con khôn lớn. Khi bà gặp tai nạn, những góc khuất và xung đột trong gia đình bắt đầu lộ diện.",
         director: "Lý Hải",
         cast: ["Thanh Hiền", "Trương Minh Cường", "Quốc Cường", "Trần Kim Hải"],
@@ -135,8 +144,6 @@ async function seedDatabase() {
         genres: ["Hành động", "Khoa học viễn tưởng", "Phiêu lưu"],
         status: "now_playing",
         release_date: "2025-12-19",
-        rating: 4.7,
-        total_reviews: 1820,
         description: "Hành trình trở lại hành tinh Pandora. Jake Sully và Neytiri phải đối mặt với bộ tộc người Na'vi của nguyên tố Lửa.",
         director: "James Cameron",
         cast: ["Sam Worthington", "Zoe Saldana", "Sigourney Weaver"],
@@ -151,8 +158,6 @@ async function seedDatabase() {
         genres: ["Hành động", "Hài hước", "Khoa học viễn tưởng"],
         status: "now_playing",
         release_date: "2026-07-25",
-        rating: 4.8,
-        total_reviews: 3200,
         description: "Deadpool hợp tác với Wolverine trong một cuộc phiêu lưu xuyên vũ trụ đầy hỗn loạn và hài hước.",
         director: "Shawn Levy",
         cast: ["Ryan Reynolds", "Hugh Jackman", "Emma Corrin"],
@@ -167,8 +172,6 @@ async function seedDatabase() {
         genres: ["Hoạt hình", "Gia đình", "Hài hước"],
         status: "now_playing",
         release_date: "2026-06-14",
-        rating: 4.6,
-        total_reviews: 1500,
         description: "Riley bước vào tuổi dậy thì và các cảm xúc mới xuất hiện: Lo âu, Ghen tị, Buồn chán và Xấu hổ.",
         director: "Kelsey Mann",
         cast: ["Amy Poehler", "Maya Hawke", "Phyllis Smith"],
@@ -183,8 +186,6 @@ async function seedDatabase() {
         genres: ["Hành động", "Khoa học viễn tưởng", "Phiêu lưu"],
         status: "now_playing",
         release_date: "2026-03-28",
-        rating: 4.5,
-        total_reviews: 980,
         description: "Godzilla và Kong phải hợp tác để đối mặt với một mối đe dọa chưa từng có ẩn giấu trong lòng Trái Đất.",
         director: "Adam Wingard",
         cast: ["Rebecca Hall", "Brian Tyree Henry", "Dan Stevens"],
@@ -199,8 +200,6 @@ async function seedDatabase() {
         genres: ["Tâm lý", "Tình cảm", "Kịch tính"],
         status: "now_playing",
         release_date: "2026-02-10",
-        rating: 4.3,
-        total_reviews: 2100,
         description: "Mai là câu chuyện về người phụ nữ tuổi trung niên với quá khứ đầy sóng gió và hành trình tìm kiếm hạnh phúc.",
         director: "Trấn Thành",
         cast: ["Phương Anh Đào", "Tuấn Trần", "Trấn Thành", "Uyển Ân"],
@@ -215,8 +214,6 @@ async function seedDatabase() {
         genres: ["Hành động", "Phiêu lưu", "Khoa học viễn tưởng"],
         status: "now_playing",
         release_date: "2026-05-01",
-        rating: 4.2,
-        total_reviews: 760,
         description: "Một nhóm thám hiểm đặt chân đến hòn đảo bí ẩn nơi Kong ngự trị và phải chiến đấu để sinh tồn.",
         director: "Jordan Vogt-Roberts",
         cast: ["Tom Hiddleston", "Brie Larson", "Samuel L. Jackson"],
@@ -231,8 +228,6 @@ async function seedDatabase() {
         genres: ["Kinh dị", "Tâm lý", "Kịch tính"],
         status: "now_playing",
         release_date: "2026-05-15",
-        rating: 4.1,
-        total_reviews: 530,
         description: "Những sự kiện siêu nhiên kỳ bí tiếp tục xảy ra tại ngôi làng nhỏ, đe dọa cuộc sống của người dân.",
         director: "Hoàng Nam",
         cast: ["Khả Như", "Nhất Trung", "Lê Nam"],
@@ -332,30 +327,38 @@ async function seedDatabase() {
     console.log(`🏢 [Seed]: Đã tạo ${cinemas.length} cụm rạp.`);
 
     // ===================== TẠO PHÒNG CHIẾU =====================
+    const p01Layout = JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
+    const p02Layout = buildDefaultLayout(8, 14);
+    const p03Layout = buildDefaultLayout(10, 16);
+    const p04Layout = buildDefaultLayout(8, 12);
+    const p05Layout = buildDefaultLayout(6, 10);
+
     const rooms = await Room.insertMany([
-      { name: "Phòng Chiếu 01 (IMAX)", type: "IMAX", rows_count: 10, seats_per_row: 18, totalSeats: 180, status: "active", description: "Phòng IMAX cao cấp" },
-      { name: "Phòng Chiếu 02 (3D VIP)", type: "3D", rows_count: 8, seats_per_row: 14, totalSeats: 112, status: "active", description: "Phòng 3D VIP sang trọng" },
-      { name: "Phòng Chiếu 03 (2D Standard)", type: "2D", rows_count: 10, seats_per_row: 16, totalSeats: 160, status: "active", description: "Phòng chiếu tiêu chuẩn" },
-      { name: "Phòng Chiếu 04 (4DX)", type: "4DX", rows_count: 8, seats_per_row: 12, totalSeats: 96, status: "active", description: "Phòng 4DX hiệu ứng chuyển động" },
-      { name: "Phòng Chiếu 05 (VIP)", type: "VIP", rows_count: 6, seats_per_row: 10, totalSeats: 60, status: "active", description: "Phòng VIP ghế ngồi rộng" },
+      { name: "Phòng Chiếu 01 (IMAX)", type: "IMAX", rows_count: 8, seats_per_row: 15, totalSeats: getSeatLabels(p01Layout).length, status: "active", description: "Phòng IMAX cao cấp", layout: p01Layout },
+      { name: "Phòng Chiếu 02 (3D VIP)", type: "3D", rows_count: 8, seats_per_row: 14, totalSeats: getSeatLabels(p02Layout).length, status: "active", description: "Phòng 3D VIP sang trọng", layout: p02Layout },
+      { name: "Phòng Chiếu 03 (2D Standard)", type: "2D", rows_count: 10, seats_per_row: 16, totalSeats: getSeatLabels(p03Layout).length, status: "active", description: "Phòng chiếu tiêu chuẩn", layout: p03Layout },
+      { name: "Phòng Chiếu 04 (4DX)", type: "4DX", rows_count: 8, seats_per_row: 12, totalSeats: getSeatLabels(p04Layout).length, status: "active", description: "Phòng 4DX hiệu ứng chuyển động", layout: p04Layout },
+      { name: "Phòng Chiếu 05 (VIP)", type: "VIP", rows_count: 6, seats_per_row: 10, totalSeats: getSeatLabels(p05Layout).length, status: "active", description: "Phòng VIP ghế ngồi rộng", layout: p05Layout },
     ]);
     console.log(`🎦 [Seed]: Đã tạo ${rooms.length} phòng chiếu.`);
 
     // ===================== TẠO GHẾ =====================
     const seatDocs: any[] = [];
-    const seatTypes = ["standard", "standard", "standard", "vip", "couple"];
-    const extraPrices = [0, 0, 0, 20000, 10000];
+    const basePrices: Record<string, number> = {
+      IMAX: 120000,
+      "4DX": 130000,
+      "3D": 90000,
+      VIP: 150000,
+      "2D": 75000,
+    };
 
     for (const room of rooms) {
-      const rowLetters = "ABCDEFGHIJ".slice(0, room.rows_count);
-      const basePrice = room.type === "IMAX" ? 120000 : room.type === "4DX" ? 130000 : room.type === "3D" ? 90000 : room.type === "VIP" ? 150000 : 75000;
-
-      for (let r = 0; r < rowLetters.length; r++) {
-        const row = rowLetters[r];
-        const seatsInRow = r === 0 ? room.seats_per_row : room.seats_per_row;
-        for (let n = 1; n <= seatsInRow; n++) {
-          const seatTypeIdx = r >= rowLetters.length - 2 ? (r >= rowLetters.length - 1 ? 3 : 2) : n <= 2 ? 4 : 0;
-          const seatType = seatTypes[seatTypeIdx % seatTypes.length] as "standard" | "vip" | "couple" | "disabled";
+      const layout = getLayout(room);
+      const basePrice = basePrices[room.type] || 75000;
+      layout.rows.forEach((row: string) => {
+        const seatType = layout.rowTypes?.[row] || "standard";
+        const seatPrice = basePrice + (getSeatPrice(seatType) - getSeatPrice("standard"));
+        getRowSeatNumbers(layout, row).forEach((n) => {
           seatDocs.push({
             room: room._id,
             row,
@@ -363,10 +366,10 @@ async function seedDatabase() {
             label: `${row}${n}`,
             type: seatType,
             status: "available",
-            price: basePrice + (extraPrices[seatTypeIdx % extraPrices.length] || 0),
+            price: seatPrice,
           });
-        }
-      }
+        });
+      });
     }
     await Seat.insertMany(seatDocs);
     console.log(`💺 [Seed]: Đã tạo ${seatDocs.length} ghế.`);
@@ -408,17 +411,19 @@ async function seedDatabase() {
 
           showtimeDocs.push({
             movieId: movie._id,
+            roomId: room ? room._id : null,
             roomName,
             startTime,
             price: price + Math.floor(Math.random() * 20000),
             availableSeats: [...allLabels],
+            layout: room ? getLayout(room) : null,
             status: "active",
           });
         }
       }
     }
-    await Showtime.insertMany(showtimeDocs);
-    console.log(`🕐 [Seed]: Đã tạo ${showtimeDocs.length} suất chiếu.`);
+    const insertedShowtimes = await Showtime.insertMany(showtimeDocs);
+    console.log(`🕐 [Seed]: Đã tạo ${insertedShowtimes.length} suất chiếu.`);
 
     // ===================== TẠO COMBO =====================
     const combos = await Combo.insertMany([
@@ -451,7 +456,12 @@ async function seedDatabase() {
 
     // ===================== TẠO BOOKING & INVOICE =====================
     const testUsers = users.filter(u => u.role === "user");
-    const activeShowtimes = showtimeDocs.slice(0, 10);
+    const activeShowtimes = nowPlayingMovies
+      .map(movie => {
+        const movieShowtimes = insertedShowtimes.filter(s => String(s.movieId) === String(movie._id));
+        return movieShowtimes[Math.floor(movieShowtimes.length / 2)];
+      })
+      .filter(Boolean);
 
     const bookingDocs: any[] = [];
     const invoiceDocs: any[] = [];
@@ -543,7 +553,7 @@ async function seedDatabase() {
     const reviewDocs: any[] = [];
     for (let i = 0; i < 30; i++) {
       const movie = reviewMovies[i % reviewMovies.length];
-      const user = testUsers[i % testUsers.length];
+      const user = testUsers[(i + Math.floor(i / reviewMovies.length)) % testUsers.length];
       reviewDocs.push({
         movie: movie._id,
         user: user._id,
@@ -552,7 +562,20 @@ async function seedDatabase() {
       });
     }
     await Review.insertMany(reviewDocs);
+    await Review.syncIndexes();
     console.log(`⭐ [Seed]: Đã tạo ${reviewDocs.length} đánh giá phim.`);
+
+    // Tính điểm phim từ đánh giá thực tế (giống công thức API: avg sao x 2 -> thang 10)
+    const movieStats = await Review.aggregate([
+      { $group: { _id: "$movie", avgRating: { $avg: "$rating" }, count: { $sum: 1 } } },
+    ]);
+    for (const stat of movieStats) {
+      await Movie.findByIdAndUpdate(stat._id, {
+        rating: Math.round(stat.avgRating * 2 * 10) / 10,
+        total_reviews: stat.count,
+      });
+    }
+    console.log(`⭐ [Seed]: Điểm ${movieStats.length} phim được tính từ đánh giá thực tế.`);
 
     // ===================== TỔNG KẾT =====================
     console.log("\n========================================");

@@ -1,8 +1,8 @@
 import { Resend } from "resend";
-import Booking from "../models/bookingModel.js";
+import QRCode from "qrcode";
+import Booking from "../models/bookingModel";
 
-const formatVnd = (value: number): string =>
-  `${(value || 0).toLocaleString("vi-VN")} đ`;
+const formatVnd = (value: number): string => `${(value || 0).toLocaleString("vi-VN")} đ`;
 
 const formatShowtime = (iso?: string | Date): string => {
   if (!iso) return "Đang cập nhật";
@@ -20,6 +20,33 @@ const formatShowtime = (iso?: string | Date): string => {
   }
 };
 
+/** Sinh mã QR vé dạng PNG buffer (nhúng email qua CID để Gmail hiển thị). */
+const generateTicketQr = async (data: {
+  bookingId: string;
+  seats: string[];
+  roomName: string;
+  showtime: string;
+}): Promise<Buffer | null> => {
+  try {
+    const payload = JSON.stringify({
+      type: "CINEZ_TICKET",
+      bookingId: data.bookingId,
+      seats: data.seats,
+      roomName: data.roomName,
+      showtime: data.showtime,
+    });
+    return await QRCode.toBuffer(payload, {
+      width: 220,
+      margin: 1,
+      errorCorrectionLevel: "M",
+      color: { dark: "#000000", light: "#ffffff" },
+    });
+  } catch (err: any) {
+    console.error(`🚨 [Email]: Lỗi sinh mã QR: ${err.message}`);
+    return null;
+  }
+};
+
 const buildEmailHtml = (data: {
   customerName: string;
   movieTitle: string;
@@ -31,16 +58,31 @@ const buildEmailHtml = (data: {
   totalPrice: number;
   bookingId: string;
   paymentMethod: string;
+  hasQr: boolean;
 }): string => {
   const comboRows = data.combos.length
     ? data.combos
         .map(
           (c) =>
-            `<tr><td style="padding:4px 0;color:#444;">${c.name} × ${c.quantity}</td>
+            `<tr><td style="padding:4px 0;color:#444;">${c.name} x ${c.quantity}</td>
              <td style="padding:4px 0;text-align:right;color:#444;">${formatVnd(c.price * c.quantity)}</td></tr>`
         )
         .join("")
     : `<tr><td colspan="2" style="padding:4px 0;color:#888;">Không có combo</td></tr>`;
+
+  const qrBlock = data.hasQr
+    ? `
+      <div style="margin-top:20px;background:#f6f6f6;border-radius:10px;padding:14px;text-align:center;">
+        <p style="margin:0 0 8px;color:#888;font-size:13px;">QUÉT MÃ QR ĐỂ SOÁT VÉ</p>
+        <img src="cid:ticketQr" alt="Mã QR vé" width="180" height="180" style="width:180px;height:180px;border-radius:8px;background:#fff;padding:8px;border:1px solid #e0e0e0;" />
+        <p style="margin:8px 0 0;color:#888;font-size:13px;">Mã đặt vé</p>
+        <p style="margin:4px 0 0;color:#111;font-size:18px;font-weight:bold;letter-spacing:1px;">${data.bookingId}</p>
+      </div>`
+    : `
+      <div style="margin-top:20px;background:#f6f6f6;border-radius:10px;padding:14px;text-align:center;">
+        <p style="margin:0;color:#888;font-size:13px;">MÃ ĐẶT VÉ</p>
+        <p style="margin:4px 0 0;color:#111;font-size:18px;font-weight:bold;letter-spacing:1px;">${data.bookingId}</p>
+      </div>`;
 
   return `
   <div style="background:#0d0d0d;padding:24px 0;font-family:Arial,Helvetica,sans-serif;">
@@ -60,8 +102,8 @@ const buildEmailHtml = (data: {
           }
           <div>
             <h2 style="margin:0 0 8px;font-size:18px;color:#111;">${data.movieTitle}</h2>
-            <p style="margin:2px 0;color:#555;font-size:14px;">🏟️ ${data.roomName}</p>
-            <p style="margin:2px 0;color:#555;font-size:14px;">🕒 ${data.showtime}</p>
+            <p style="margin:2px 0;color:#555;font-size:14px;">🏢 ${data.roomName}</p>
+            <p style="margin:2px 0;color:#555;font-size:14px;">🕐 ${data.showtime}</p>
             <p style="margin:2px 0;color:#555;font-size:14px;">💺 Ghế: <b>${data.seats.join(", ") || "--"}</b></p>
           </div>
         </div>
@@ -81,15 +123,12 @@ const buildEmailHtml = (data: {
           </tr>
         </table>
 
-        <div style="margin-top:20px;background:#f6f6f6;border-radius:10px;padding:14px;text-align:center;">
-          <p style="margin:0;color:#888;font-size:13px;">Mã đặt vé</p>
-          <p style="margin:4px 0 0;color:#111;font-size:18px;font-weight:bold;letter-spacing:1px;">${data.bookingId}</p>
-        </div>
+        ${qrBlock}
 
-        <p style="margin-top:20px;color:#888;font-size:13px;">Vui lòng đưa mã đặt vé này tại quầy để nhận vé. Chúc bạn xem phim vui vẻ! 🍿</p>
+        <p style="margin-top:20px;color:#888;font-size:13px;">Vui lòng đưa mã QR này tại quầy soát vé để nhận vé. Chúc bạn xem phim vui vẻ! 🍿</p>
       </div>
       <div style="background:#111;padding:16px 24px;text-align:center;">
-        <p style="margin:0;color:#777;font-size:12px;">© CineZ Cinema · Email tự động, vui lòng không trả lời.</p>
+        <p style="margin:0;color:#777;font-size:12px;">CineZ Cinema — Email tự động, vui lòng không trả lời.</p>
       </div>
     </div>
   </div>`;
@@ -125,18 +164,33 @@ export const sendBookingConfirmationEmail = async (bookingId: string): Promise<b
 
     const showtime = booking.showtimeId || {};
     const movie = showtime.movieId || {};
+    const showtimeText = formatShowtime(showtime.startTime);
+
+    const qrBuffer = await generateTicketQr({
+      bookingId: String(booking._id),
+      seats: booking.seats || [],
+      roomName: showtime.roomName || "Phòng chiếu CineZ",
+      showtime: showtimeText,
+    });
+
+    if (qrBuffer && !booking.qrCode) {
+      await Booking.findByIdAndUpdate(booking._id, {
+        qrCode: `data:image/png;base64,${qrBuffer.toString("base64")}`,
+      });
+    }
 
     const html = buildEmailHtml({
       customerName: user.name || "Quý khách",
       movieTitle: movie.title || "Vé xem phim",
       poster: movie.poster_url || "",
       roomName: showtime.roomName || "Phòng chiếu CineZ",
-      showtime: formatShowtime(showtime.startTime),
+      showtime: showtimeText,
       seats: booking.seats || [],
       combos: booking.combos || [],
       totalPrice: booking.totalPrice || 0,
       bookingId: String(booking._id),
       paymentMethod: booking.paymentMethod || "Tiền mặt tại quầy",
+      hasQr: !!qrBuffer,
     });
 
     const from = process.env.MAIL_FROM || "CineZ <onboarding@resend.dev>";
@@ -146,17 +200,20 @@ export const sendBookingConfirmationEmail = async (bookingId: string): Promise<b
       to: [user.email],
       subject: `🎬 Xác nhận đặt vé — ${movie.title || "CineZ"}`,
       html,
+      attachments: qrBuffer
+        ? [{ filename: "ticket-qr.png", content: qrBuffer.toString("base64"), contentId: "ticketQr" }]
+        : undefined,
     });
 
     if (error) {
-      console.error(`🔴 [Email]: Gửi thất bại:`, error);
+      console.error(`🚨 [Email]: Gửi thất bại:`, error);
       return false;
     }
 
-    console.log(`🟢 [Email]: Đã gửi xác nhận đặt vé tới ${user.email}`);
+    console.log(`✅ [Email]: Đã gửi xác nhận đặt vé (kèm QR) tới ${user.email}`);
     return true;
   } catch (error: any) {
-    console.error(`🔴 [Email]: Lỗi gửi email: ${error.message}`);
+    console.error(`🚨 [Email]: Lỗi gửi email: ${error.message}`);
     return false;
   }
 };

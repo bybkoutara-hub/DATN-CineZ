@@ -1,5 +1,19 @@
 import mongoose, { Document, Schema } from "mongoose";
 
+export interface ICenterZone {
+  rows: string[];
+  cols: number[];
+}
+
+export interface IRoomLayout {
+  rows: string[];
+  cols: number;
+  numbering: "forward" | "reverse";
+  rowTypes: Record<string, string>;
+  rowStartNumbers: Record<string, number>;
+  centerZone: ICenterZone | null;
+}
+
 export interface IRoom extends Document {
   name: string;
   type: "2D" | "3D" | "IMAX" | "4DX" | "VIP";
@@ -8,6 +22,7 @@ export interface IRoom extends Document {
   totalSeats: number;
   status: "active" | "maintenance";
   description: string;
+  layout: IRoomLayout;
 }
 
 const RoomSchema: Schema = new Schema(
@@ -19,6 +34,14 @@ const RoomSchema: Schema = new Schema(
     totalSeats: { type: Number, default: 120 },
     status: { type: String, enum: ["active", "maintenance"], default: "active" },
     description: { type: String, default: "" },
+    layout: {
+      rows: { type: [String], default: ["A", "B", "C", "D", "E", "F", "G", "H"] },
+      cols: { type: Number, default: 15 },
+      numbering: { type: String, enum: ["forward", "reverse"], default: "reverse" },
+      rowTypes: { type: Map, of: String, default: {} },
+      rowStartNumbers: { type: Map, of: Number, default: {} },
+      centerZone: { type: { rows: [String], cols: [Number] }, default: null },
+    },
   },
   { timestamps: true }
 );

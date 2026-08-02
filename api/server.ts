@@ -18,6 +18,8 @@ import actorRoutes from "./routes/actorRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import mobileRoutes from "./routes/mobileRoutes";
 import imageRoutes from "./routes/imageRoutes";
+import uploadRoutes from "./routes/uploadRoutes";
+import { initSeatReservation, shutdownSeatReservation } from "./services/seatReservationService";
 
 dotenv.config();
 
@@ -30,7 +32,10 @@ app.use(express.json());
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/mbooking";
 mongoose
   .connect(MONGODB_URI)
-  .then((conn) => console.log(`[MongoDB]: Kết nối thành công tại: ${conn.connection.host}`))
+  .then((conn) => {
+    console.log(`[MongoDB]: Kết nối thành công tới: ${conn.connection.host}`);
+    initSeatReservation();
+  })
   .catch((err) => console.error(`[Error]: Lỗi kết nối DB: ${err}`));
 
 app.use("/api/auth", authRoutes);
@@ -47,7 +52,8 @@ app.use("/api/directors", directorRoutes);
 app.use("/api/actors", actorRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/mobile", mobileRoutes);
-app.use("/api/images", imageRoutes);
+  app.use("/api/images", imageRoutes);
+  app.use("/api/upload", uploadRoutes);
 
 app.get("/", (_req, res) => {
   res.send("Hệ thống CineZ Movie Booking API đang chạy! 🎬");
@@ -55,4 +61,13 @@ app.get("/", (_req, res) => {
 
 app.listen(PORT, () => {
   console.log(`[Server]: API đang hoạt động tại port ${PORT}`);
+});
+
+process.on("SIGINT", () => {
+  shutdownSeatReservation();
+  process.exit(0);
+});
+process.on("SIGTERM", () => {
+  shutdownSeatReservation();
+  process.exit(0);
 });

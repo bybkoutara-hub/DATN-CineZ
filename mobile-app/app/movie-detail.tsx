@@ -5,7 +5,6 @@ import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,6 +16,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { getMovieDetail } from "../services/movieService";
 import { getMovieReviews, addReview, deleteReview } from "../services/reviewService";
 import { getStoredUser } from "../services/authService";
+import { useToast } from "../components/Toast";
+import { useConfirm } from "../components/ConfirmModal";
 
 // ==========================================
 // HỆ MÀU SẮC CHUẨN FIGMA
@@ -48,6 +49,8 @@ export default function MovieDetailScreen() {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const toast = useToast();
+  const { confirm } = useConfirm();
 
   const loadReviews = async (page = 1) => {
     if (id) {
@@ -90,35 +93,34 @@ export default function MovieDetailScreen() {
     try {
       const res = await addReview(id as string, reviewRating, reviewComment);
       if (res.success) {
-        Alert.alert("Thành công", "Đánh giá của bạn đã được gửi!");
+        toast.success("Đánh giá của bạn đã được gửi!");
         setShowReviewForm(false);
         setReviewComment("");
         setReviewRating(5);
         loadReviews();
       }
     } catch (error) {
-      Alert.alert("Lỗi", "Không thể gửi đánh giá. Vui lòng thử lại!");
+      toast.error("Không thể gửi đánh giá. Vui lòng thử lại!");
     }
   };
 
-  const handleDeleteReview = (reviewId: string) => {
-    Alert.alert("Xóa đánh giá", "Bạn có chắc muốn xóa đánh giá này?", [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Xóa",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            const res = await deleteReview(reviewId);
-            if (res.success) {
-              loadReviews(reviewPage);
-            }
-          } catch {
-            Alert.alert("Lỗi", "Không thể xóa đánh giá");
-          }
-        },
-      },
-    ]);
+  const handleDeleteReview = async (reviewId: string) => {
+    const ok = await confirm({
+      title: "Xóa đánh giá",
+      message: "Bạn có chắc muốn xóa đánh giá này?",
+      confirmText: "Xóa",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      const res = await deleteReview(reviewId);
+      if (res.success) {
+        loadReviews(reviewPage);
+        toast.success("Đã xóa đánh giá!");
+      }
+    } catch {
+      toast.error("Không thể xóa đánh giá");
+    }
   };
 
   // Loading Indicator hiển thị trong lúc chờ phản hồi từ API
@@ -202,7 +204,7 @@ export default function MovieDetailScreen() {
           <View style={styles.actionRow}>
             <View style={styles.starsContainer}>
               {[1, 2, 3, 4, 5].map((star) => {
-                const currentRating = movie.rating ? Math.round(movie.rating) : 0;
+                const currentRating = movie.rating ? Math.round(movie.rating / 2) : 0;
                 return (
                   <FontAwesome
                     key={star}

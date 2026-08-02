@@ -8,6 +8,8 @@ build/
 .expo/
 *.tsbuildinfo
 .gradle/
+api/**/*.js
+api/**/*.js.map
 
 # ===== Env (không commit secret) =====
 .env

@@ -15,15 +15,26 @@ const ITEMS_PER_PAGE = 10;
 const paymentMethodConfig = {
   cash: { label: 'Tiền mặt', color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
   card: { label: 'Thẻ', color: '#06b6d4', bg: 'rgba(6,182,212,0.12)' },
+  credit_card: { label: 'Thẻ tín dụng', color: '#06b6d4', bg: 'rgba(6,182,212,0.12)' },
   momo: { label: 'MoMo', color: '#ec4899', bg: 'rgba(236,72,153,0.12)' },
   zalopay: { label: 'ZaloPay', color: '#8b5cf6', bg: 'rgba(139,92,246,0.12)' },
+  vnpay: { label: 'VNPay', color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
 };
 
 const paymentStatusConfig = {
   paid: { label: 'Đã thanh toán', color: '#22c55e' },
+  completed: { label: 'Đã thanh toán', color: '#22c55e' },
   pending: { label: 'Chờ thanh toán', color: '#fbbf24' },
   cancelled: { label: 'Đã hủy', color: '#ef4444' },
   refunded: { label: 'Đã hoàn tiền', color: '#f97316' },
+};
+
+const formatDateTime = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} - ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
 const mapBookingToInvoice = (b) => {
@@ -40,28 +51,32 @@ const mapBookingToInvoice = (b) => {
     surcharge: 0,
   }));
 
+  // Đọc liên kết Populate đúng tên field backend trả về (user/userId, showtime/showtimeId)
+  const user = b.user || b.userId;
+  const showtime = b.showtime || b.showtimeId;
+
   return {
     _id: b._id,
     invoiceNumber: b.invoiceNumber || (b._id ? `HD${String(b._id).slice(-6).toUpperCase()}` : 'N/A'),
-    customerId: b.user_id?._id || '',
-    customerName: b.user_id?.fullName || 'N/A',
-    customerPhone: b.user_id?.phone || '',
-    movieTitle: b.showtime_id?.movieId?.title || 'N/A',
-    roomName: b.showtime_id?.roomId?.name || 'N/A',
-    showDate: b.showtime_id?.date || '',
-    showTime: b.showtime_id?.startTime || '',
+    customerId: user?._id || '',
+    customerName: user?.fullName || user?.username || user?.name || (b.user || b.userId ? 'Khách đã xóa' : 'N/A'),
+    customerPhone: user?.phone || '',
+    movieTitle: showtime?.movieId?.title || 'N/A',
+    roomName: showtime?.roomName || showtime?.roomId?.name || 'N/A',
+    showDate: showtime?.startTime ? new Date(showtime.startTime).toISOString().slice(0, 10) : '',
+    showTime: showtime?.startTime ? formatDateTime(showtime.startTime) : '',
     tickets,
-    combos: comboArr.map((c) => ({
+    combos: (Array.isArray(b.combos) ? b.combos : comboArr).map((c) => ({
       name: c.name || 'Combo',
-      quantity: c.items || 1,
+      quantity: c.items || c.quantity || 1,
       price: c.price || 0,
     })),
     seats: seatsArr.join(', '),
     subtotal: b.totalAmount || 0,
-    discount: 0,
+    discount: b.discount || 0,
     total: b.totalAmount || 0,
     paymentMethod: b.paymentMethod || 'cash',
-    paymentStatus: b.paymentStatus || 'pending',
+    paymentStatus: b.paymentStatus || b.status || 'pending',
     createdAt: b.createdAt || '',
   };
 };
@@ -117,7 +132,9 @@ export default function Invoices() {
                        (inv.movieTitle || '').toLowerCase().includes(term);
         }
       }
-      const matchStatus = filterPaymentStatus === 'all' || inv.paymentStatus === filterPaymentStatus;
+      const matchStatus = filterPaymentStatus === 'all' ||
+        (filterPaymentStatus === 'paid' && (inv.paymentStatus === 'paid' || inv.paymentStatus === 'completed')) ||
+        inv.paymentStatus === filterPaymentStatus;
       const matchDateFrom = !filterDateFrom || (inv.showDate && inv.showDate >= filterDateFrom);
       const matchDateTo = !filterDateTo || (inv.showDate && inv.showDate <= filterDateTo);
       return matchSearch && matchStatus && matchDateFrom && matchDateTo;
@@ -130,9 +147,10 @@ export default function Invoices() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  const totalRevenue = filtered.filter(i => i.paymentStatus === 'paid').reduce((sum, i) => sum + i.total, 0);
+  const isPaidStatus = (s) => s === 'paid' || s === 'completed';
+  const totalRevenue = filtered.filter(i => isPaidStatus(i.paymentStatus)).reduce((sum, i) => sum + i.total, 0);
   const totalInvoices = filtered.length;
-  const paidCount = filtered.filter(i => i.paymentStatus === 'paid').length;
+  const paidCount = filtered.filter(i => isPaidStatus(i.paymentStatus)).length;
   const pendingCount = filtered.filter(i => i.paymentStatus === 'pending').length;
 
   const handleExportPDF = async () => {
@@ -144,7 +162,7 @@ export default function Invoices() {
       const res = await bookingAPI.getAll(params);
       const data = Array.isArray(res.data) ? res.data : [];
       const total = data.length;
-      const revenue = data.filter(b => b.paymentStatus === 'paid').reduce((s, b) => s + (b.totalAmount || 0), 0);
+      const revenue = data.filter(b => b.paymentStatus === 'paid' || b.paymentStatus === 'completed').reduce((s, b) => s + (b.totalAmount || 0), 0);
       alert(`Xuất báo cáo thành công!\nTổng số hóa đơn: ${total}\nTổng doanh thu: ${formatCurrency(revenue)}`);
     } catch {
       alert('Không thể xuất báo cáo. Vui lòng thử lại.');
@@ -235,6 +253,7 @@ export default function Invoices() {
             >
               <option value="all">Tất cả trạng thái</option>
               <option value="paid">Đã thanh toán</option>
+              <option value="completed">Đã thanh toán (completed)</option>
               <option value="pending">Chờ xử lý</option>
               <option value="cancelled">Đã hủy</option>
             </select>
@@ -323,7 +342,7 @@ export default function Invoices() {
                       {paymentStatusConfig[inv.paymentStatus]?.label}
                     </span>
                   </td>
-                  <td><span className="invoices-date">{inv.createdAt?.split(' ')[0] || ''}</span></td>
+                  <td><span className="invoices-date">{formatDateTime(inv.createdAt)}</span></td>
                   <td>
                     <button
                       className="invoices-action-btn invoices-action-btn--view"
@@ -404,7 +423,7 @@ export default function Invoices() {
                 </div>
                 <div className="invoices-receipt__info-row">
                   <span className="invoices-receipt__label">Thời gian tạo:</span>
-                  <span className="invoices-receipt__value">{showDetailModal.createdAt}</span>
+                  <span className="invoices-receipt__value">{formatDateTime(showDetailModal.createdAt)}</span>
                 </div>
 
                 <div className="invoices-receipt__divider" />
@@ -443,8 +462,7 @@ export default function Invoices() {
                     </div>
                     <div className="invoices-receipt__detail-row">
                       <span className="invoices-receipt__detail-label">Ngày & Suất:</span>
-                      <span className="invoices-receipt__detail-value">{showDetailModal.showDate} lúc {showDetailModal.showTime}</span>
-                    </div>
+                      <span className="invoices-receipt__detail-value">{showDetailModal.showDate} lúc {showDetailModal.showTime}</span>                    </div>
                   </div>
                 </div>
 

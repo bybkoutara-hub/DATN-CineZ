@@ -2,6 +2,7 @@ import { Image } from "expo-image";
 import { Feather, FontAwesome, Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useIsFocused } from "@react-navigation/native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -46,6 +47,7 @@ const ServiceItem = ({ title, iconImage }: { title: string; iconImage: any }) =>
 
 export default function HomeScreen() {
   const router = useRouter();
+  const isFocused = useIsFocused();
   const [nowPlaying, setNowPlaying] = useState<any[]>([]);
   const [comingSoon, setComingSoon] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,7 +55,9 @@ export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const fetchMoviesData = async (search?: string) => {
     try {
-      setLoading(true);
+      if (nowPlaying.length === 0 && comingSoon.length === 0) {
+        setLoading(true);
+      }
       const [nowPlayingData, comingSoonData] = await Promise.all([
         getNowPlayingMovies(search),
         getComingSoonMovies(search),
@@ -68,8 +72,10 @@ export default function HomeScreen() {
   };
 
   useEffect(() => {
-    fetchMoviesData();
-  }, []);
+    if (isFocused) {
+      fetchMoviesData();
+    }
+  }, [isFocused]);
 
   const handleSearch = () => {
     router.push({ pathname: "/(tabs)/movie", params: { search: searchQuery || "" } });

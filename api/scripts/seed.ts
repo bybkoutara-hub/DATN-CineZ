@@ -26,7 +26,14 @@ async function seedDatabase() {
     await Showtime.deleteMany({});
     await Cinema.deleteMany({});
     await Combo.deleteMany({});
-    await User.deleteMany({ role: { $in: ["admin", "staff", "user"] } });
+    // Chỉ xóa tài khoản demo (username seed). KHÔNG xóa user đăng ký thật từ app
+    // để tránh mất tài khoản/booking reference.
+    await User.deleteMany({
+      $or: [
+        { username: { $in: ["admin", "staff01", "staff02", "user01", "user02", "user03", "user04", "user05"] } },
+        { role: { $in: ["admin", "staff"] } },
+      ],
+    });
     console.log("🧹 [Seed]: Đã làm sạch toàn bộ dữ liệu cũ.");
 
     // 2. Tạo tài khoản Admin mặc định

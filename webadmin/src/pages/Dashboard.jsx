@@ -265,13 +265,15 @@ const Dashboard = () => {
               )}
               {recentBookings.slice(0, 5).map((booking) => {
                 const id = booking._id?.slice(-6).toUpperCase() || booking.invoiceNumber || 'N/A';
-                const customer = booking.user_id?.fullName || booking.user_id?.username || 'Khách';
-                const movie = booking.showtime_id?.movieId?.title || 'N/A';
-                const showtime = booking.showtime_id
-                  ? `${booking.showtime_id.date?.slice(0, 10)} ${booking.showtime_id.startTime}`
+                const user = booking.user || booking.userId;
+                const showtime = booking.showtime || booking.showtimeId;
+                const customer = user?.fullName || user?.username || user?.name || 'Khách';
+                const movie = showtime?.movieId?.title || 'N/A';
+                const showtimeText = showtime?.startTime
+                  ? `${new Date(showtime.startTime).toLocaleDateString('vi-VN')} ${new Date(showtime.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
                   : 'N/A';
                 const total = booking.totalAmount || booking.total || 0;
-                const isPaid = booking.paymentStatus === 'paid' || booking.paymentStatus === 'completed';
+                const isPaid = booking.paymentStatus === 'paid' || booking.paymentStatus === 'completed' || booking.status === 'paid';
                 const time = booking.createdAt
                   ? new Date(booking.createdAt).toLocaleString('vi-VN')
                   : '';
@@ -280,11 +282,11 @@ const Dashboard = () => {
                   <td className="font-semibold">{id}</td>
                   <td>{customer}</td>
                   <td><span className="text-accent font-medium">{movie}</span></td>
-                  <td>{showtime}</td>
+                  <td>{showtimeText}</td>
                   <td className="font-semibold">{formatCurrency(total)}</td>
                   <td>
                     <span className={`badge ${isPaid ? 'badge-success' : 'badge-warning'}`}>
-                      {isPaid ? 'Đã thanh toán' : booking.paymentStatus}
+                      {isPaid ? 'Đã thanh toán' : (booking.paymentStatus === 'pending' ? 'Chờ thanh toán' : booking.paymentStatus)}
                     </span>
                   </td>
                   <td className="text-muted text-sm">{time}</td>

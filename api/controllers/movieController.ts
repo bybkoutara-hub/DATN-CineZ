@@ -1,5 +1,6 @@
 import { type Request, type Response } from "express";
 import Movie from "../models/movieModel.js";
+import Seat from "../models/seatModel.js";
 import Showtime from "../models/showtimeModel.js";
 
 const fixPosterUrl = (url: string): string => {
@@ -114,7 +115,19 @@ export const getShowtimeDetail = async (req: Request, res: Response): Promise<vo
       return;
     }
 
-    res.status(200).json({ success: true, data: showtime });
+    // Danh sách ghế đang bảo trì/hỏng (đồng bộ theo trạng thái ghế trên web admin)
+    const data: any = showtime.toObject();
+    let maintenanceSeats: string[] = [];
+    if (data.roomId) {
+      const disabled = await Seat.find({
+        room: data.roomId,
+        status: { $in: ["maintenance", "broken"] },
+      });
+      maintenanceSeats = disabled.map((s: any) => s.label);
+    }
+    data.maintenanceSeats = maintenanceSeats;
+
+    res.status(200).json({ success: true, data });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

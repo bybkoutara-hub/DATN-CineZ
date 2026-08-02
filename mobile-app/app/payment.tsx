@@ -5,7 +5,6 @@ import { StatusBar } from "expo-status-bar";
 import React, { useState, useCallback } from "react";
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,6 +17,7 @@ import { WebView } from "react-native-webview";
 import { cancelBooking, createBooking } from "../services/bookingService";
 import { createVnpayUrl } from "../services/paymentService";
 import api from "../services/api";
+import { useToast } from "../components/Toast";
 
 // ==========================================
 // HỆ MÀU SẮC CHUẨN FIGMA
@@ -33,6 +33,7 @@ const VNPAY_RETURN_URL = "/api/payments/vnpay/return";
 
 export default function PaymentScreen() {
   const router = useRouter();
+  const toast = useToast();
 
   // Nhận dữ liệu đặt vé từ màn Combo
   const params = useLocalSearchParams();
@@ -107,7 +108,7 @@ export default function PaymentScreen() {
       paymentMethod: "cash",
       promoCode: promoApplied ? appliedPromoCode : undefined,
     });
-    Alert.alert("Đặt vé thành công", "Vé đã được giữ. Vui lòng thanh toán khi đến quầy.");
+    toast.success("Vé đã được giữ. Vui lòng thanh toán khi đến quầy.");
     router.replace("/(tabs)/ticket");
   };
 
@@ -156,31 +157,25 @@ export default function PaymentScreen() {
     try {
       const res = await api.post("/payments/vnpay/confirm", { vnpayParams: params });
       if (res.data?.success && res.data?.status === "success") {
-        Alert.alert("Thanh toán thành công", "Cảm ơn bạn! Vé đã được xác nhận.");
+        toast.success("Cảm ơn bạn! Vé đã được xác nhận.");
         router.replace("/(tabs)/ticket");
       } else {
-        Alert.alert(
-          "Thanh toán chưa hoàn tất",
-          "Giao dịch không thành công hoặc đã bị hủy.",
-        );
+        toast.warning("Giao dịch không thành công hoặc đã bị hủy.");
       }
     } catch {
-      Alert.alert("Lỗi", "Không thể xác nhận thanh toán.");
+      toast.error("Không thể xác nhận thanh toán.");
     }
-  }, [router]);
+  }, [router, toast]);
 
   // Hủy thanh toán VNPay khi người dùng đóng WebView
   const handleCancelVnpay = useCallback(async () => {
     setPaymentUrl(null);
     if (vnpayBookingId) {
       await cancelBooking(vnpayBookingId);
-      Alert.alert(
-        "Đã hủy thanh toán",
-        "Ghế đã được hoàn lại, bạn có thể đặt lại bất cứ lúc nào.",
-      );
+      toast.info("Ghế đã được hoàn lại, bạn có thể đặt lại bất cứ lúc nào.");
     }
     setVnpayBookingId(null);
-  }, [vnpayBookingId]);
+  }, [vnpayBookingId, toast]);
 
   // Áp dụng mã giảm giá
   const handleApplyPromo = async () => {
@@ -222,7 +217,7 @@ export default function PaymentScreen() {
   // Xử lý nút thanh toán theo phương thức đang chọn
   const handlePayment = async () => {
     if (!showtimeId || seats.length === 0) {
-      Alert.alert("Thiếu thông tin", "Không tìm thấy suất chiếu hoặc ghế đã chọn.");
+      toast.warning("Không tìm thấy suất chiếu hoặc ghế đã chọn.");
       return;
     }
     setSubmitting(true);
@@ -237,7 +232,7 @@ export default function PaymentScreen() {
         error?.response?.status === 401
           ? "Bạn cần đăng nhập để đặt vé."
           : error?.response?.data?.message || error?.message || "Đặt vé thất bại, vui lòng thử lại.";
-      Alert.alert("Lỗi", msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }

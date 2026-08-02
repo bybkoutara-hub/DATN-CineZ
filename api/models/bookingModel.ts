@@ -8,7 +8,7 @@ export interface IBooking extends Document {
   comboQuantity: number;
   totalPrice: number;
   totalAmount: number;
-  status: "pending" | "paid" | "cancelled" | "completed";
+  status: "pending" | "paid" | "cancelled" | "completed" | "refunded";
   paymentStatus: "pending" | "completed" | "cancelled";
   paymentMethod?: string;
   combos?: { name: string; quantity: number; price: number }[];
@@ -18,6 +18,9 @@ export interface IBooking extends Document {
   promoCode?: string;
   discount?: number;
   appliedPromotion?: mongoose.Types.ObjectId;
+  holdExpiresAt?: Date;
+  refunded?: boolean;
+  refundNote?: string;
 }
 
 const BookingSchema: Schema = new Schema(
@@ -29,9 +32,12 @@ const BookingSchema: Schema = new Schema(
     comboQuantity: { type: Number, default: 0 },
     totalPrice: { type: Number, default: 0 },
     totalAmount: { type: Number, default: 0 },
-    status: { type: String, enum: ["pending", "paid", "cancelled", "completed"], default: "pending" },
+    status: { type: String, enum: ["pending", "paid", "cancelled", "completed", "refunded"], default: "pending" },
     paymentStatus: { type: String, enum: ["pending", "completed", "cancelled"], default: "pending" },
     paymentMethod: { type: String, default: "" },
+    holdExpiresAt: { type: Date, default: null },
+    refunded: { type: Boolean, default: false },
+    refundNote: { type: String, default: "" },
     combos: { type: [{ name: String, quantity: Number, price: Number }], default: [] },
     qrCode: { type: String, default: "" },
     userId: { type: Schema.Types.ObjectId, ref: "User" },

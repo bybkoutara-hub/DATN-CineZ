@@ -16,7 +16,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { fetchMovieComments, sendComment, deleteCommentService } from "../services/commentService";
-import { Alert } from "react-native"; // Nhớ import Alert từ 'react-native'
+import { useToast } from "../components/Toast";
+import { useConfirm } from "../components/ConfirmModal";
 
 
 const PRIMARY_YELLOW = "#E2A43B";
@@ -27,6 +28,8 @@ const TEXT_MUTED = "#999999";
 export default function MovieCommentsScreen() {
   const router = useRouter();
   const { movieId, movieTitle } = useLocalSearchParams();
+  const toast = useToast();
+  const { confirm } = useConfirm();
 
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -34,28 +37,22 @@ export default function MovieCommentsScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userToken, setUserToken] = useState("");
 
-  const confirmDelete = (commentId: string) => {
-  Alert.alert("Xóa bình luận", "Bạn chắc chắn muốn xóa?", [
-    { text: "Hủy" },
-    { 
-      text: "Xóa", 
-   onPress: async () => {
-      try {
-        // --- DÁN VÀO ĐÂY ---
-        // Gọi API xóa thật từ Server
-        await deleteCommentService(commentId, userToken);
-        
-        // Cập nhật giao diện sau khi xóa thành công
-        setComments((prevComments: any[]) => prevComments.filter((c) => c._id !== commentId));
-        
-        Alert.alert("Thành công", "Đã xóa bình luận!");
-      } catch (error: any) {
-        Alert.alert("Lỗi", "Không thể xóa bình luận");
-      }
+  const confirmDelete = async (commentId: string) => {
+    const ok = await confirm({
+      title: "Xóa bình luận",
+      message: "Bạn chắc chắn muốn xóa?",
+      confirmText: "Xóa",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await deleteCommentService(commentId, userToken);
+      setComments((prevComments: any[]) => prevComments.filter((c) => c._id !== commentId));
+      toast.success("Đã xóa bình luận!");
+    } catch (error: any) {
+      toast.error("Không thể xóa bình luận");
     }
-}
-  ]);
-};
+  };
 
  // 1. Khai báo useRef ở trên đầu Component
 const isMounted = React.useRef(true);

@@ -1,6 +1,7 @@
 import { Feather, FontAwesome } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useIsFocused } from "@react-navigation/native";
 import React, { useEffect, useState } from "react";
 import { Image } from "expo-image";
 import {
@@ -29,6 +30,7 @@ const SURFACE_DARK = "#151517";
 
 export default function MovieScreen() {
   const router = useRouter();
+  const isFocused = useIsFocused();
   const [activeTab, setActiveTab] = useState("now");
   const [nowPlayingMovies, setNowPlayingMovies] = useState<any[]>([]);
   const [comingSoonMovies, setComingSoonMovies] = useState<any[]>([]);
@@ -38,7 +40,9 @@ export default function MovieScreen() {
 
   const fetchMovies = async (search?: string, genre?: string) => {
     try {
-      setLoading(true);
+      if (nowPlayingMovies.length === 0 && comingSoonMovies.length === 0) {
+        setLoading(true);
+      }
       const [nowData, comingData] = await Promise.all([
         getNowPlayingMovies(search, genre),
         getComingSoonMovies(search, genre),
@@ -55,13 +59,9 @@ export default function MovieScreen() {
   const { search: searchParam } = useLocalSearchParams<{ search?: string }>();
 
   useEffect(() => {
-    if (searchParam) {
-      setSearchQuery(searchParam);
-      fetchMovies(searchParam);
-    } else {
-      fetchMovies();
-    }
-  }, [searchParam]);
+    if (!isFocused) return;
+    fetchMovies(searchParam ? String(searchParam) : searchQuery || undefined, selectedGenre || undefined);
+  }, [isFocused, searchParam]);
 
   const handleSelectGenre = (genre: string) => {
     const newGenre = genre === selectedGenre ? null : genre;

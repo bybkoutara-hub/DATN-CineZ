@@ -18,6 +18,24 @@ const calcEndTime = (startTime, durationMin) => {
   return `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
 };
 
+const toDateInput = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${month}-${day}`;
+};
+
+const toTimeInput = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
+const todayDateInput = () => toDateInput(new Date());
+
 const ITEMS_PER_PAGE = 6;
 
 const Showtimes = () => {
@@ -83,12 +101,14 @@ const Showtimes = () => {
       data = data.filter(
         (s) =>
           (s.movieId?.title || '').toLowerCase().includes(q) ||
-          (s.roomId?.name || '').toLowerCase().includes(q),
+          (s.roomId?.name || s.roomName || '').toLowerCase().includes(q),
       );
     }
-    if (filterDate) data = data.filter((s) => s.date === filterDate);
-    if (filterMovie) data = data.filter((s) => s.movieId?._id === filterMovie);
-    if (filterRoom) data = data.filter((s) => s.roomId?._id === filterRoom);
+    if (filterDate) {
+      data = data.filter((s) => toDateInput(s.startTime) === filterDate);
+    }
+    if (filterMovie) data = data.filter((s) => (s.movieId?._id || s.movieId) === filterMovie);
+    if (filterRoom) data = data.filter((s) => (s.roomId?._id || s.roomId) === filterRoom);
     return data;
   }, [showtimes, search, filterDate, filterMovie, filterRoom]);
 
@@ -106,12 +126,12 @@ const Showtimes = () => {
   const openEdit = (item) => {
     setEditingId(item._id);
     setForm({
-      movieId: item.movieId?._id || '',
-      roomId: item.roomId?._id || '',
-      date: item.date,
-      startTime: item.startTime,
-      endTime: item.endTime,
-      basePrice: String(item.basePrice),
+      movieId: item.movieId?._id || item.movieId || '',
+      roomId: item.roomId?._id || item.roomId || '',
+      date: toDateInput(item.startTime),
+      startTime: toTimeInput(item.startTime),
+      endTime: toTimeInput(item.endTime),
+      basePrice: String(item.price ?? item.basePrice ?? ''),
       status: item.status,
     });
     setModalOpen(true);
@@ -273,11 +293,11 @@ const Showtimes = () => {
                 <tr key={s._id}>
                   <td>{(page - 1) * ITEMS_PER_PAGE + idx + 1}</td>
                   <td className="st-movie-cell">{s.movieId?.title || ''}</td>
-                  <td>{s.roomId?.name || ''}</td>
-                  <td>{new Date(s.date).toLocaleDateString('vi-VN')}</td>
-                  <td>{s.startTime}</td>
-                  <td>{s.endTime}</td>
-                  <td className="st-price">{formatCurrency(s.basePrice)}</td>
+                  <td>{s.roomId?.name || s.roomName || ''}</td>
+                  <td>{new Date(s.startTime).toLocaleDateString('vi-VN')}</td>
+                  <td>{toTimeInput(s.startTime)}</td>
+                  <td>{s.endTime ? toTimeInput(s.endTime) : calcEndTime(toTimeInput(s.startTime), s.movieId?.duration)}</td>
+                  <td className="st-price">{formatCurrency(s.price ?? s.basePrice)}</td>
                   <td>
                     <span className={`st-badge ${s.status === 'active' ? 'st-badge-active' : 'st-badge-cancelled'}`}>
                       {s.status === 'active' ? 'Hoạt động' : 'Đã huỷ'}
@@ -358,7 +378,7 @@ const Showtimes = () => {
               <div className="st-form-row">
                 <div className="st-form-group">
                   <label className="st-label">Ngày chiếu <span className="st-required">*</span></label>
-                  <input className="st-input" type="date" name="date" value={form.date} onChange={handleChange} />
+                  <input className="st-input" type="date" name="date" value={form.date} onChange={handleChange} min={todayDateInput()} />
                 </div>
                 <div className="st-form-group">
                   <label className="st-label">Giờ bắt đầu <span className="st-required">*</span></label>

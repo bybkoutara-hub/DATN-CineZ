@@ -4,7 +4,6 @@ import { StatusBar } from "expo-status-bar";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -16,6 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { loginApi, registerApi } from "../services/authService";
+import { useToast } from "../components/Toast";
 
 const BACKGROUND_BLACK = "#000000";
 const SURFACE_DARK = "#121212";
@@ -26,6 +26,7 @@ const BORDER_COLOR = "#1C1C1F";
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const toast = useToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -35,11 +36,11 @@ export default function SignUpScreen() {
 
   const handleSignUp = async () => {
     if (!name || !email || !password) {
-      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ Họ tên, Email và Mật khẩu");
+      toast.error("Vui lòng nhập đầy đủ Họ tên, Email và Mật khẩu");
       return;
     }
     if (password.length < 6) {
-      Alert.alert("Lỗi", "Mật khẩu phải có ít nhất 6 ký tự");
+      toast.error("Mật khẩu phải có ít nhất 6 ký tự");
       return;
     }
 
@@ -47,6 +48,7 @@ export default function SignUpScreen() {
     try {
       const res = await registerApi(email, password, name, phone);
       if (res?.success) {
+        toast.success("Đăng ký thành công!");
         try {
           await loginApi(email, password);
           router.replace("/(tabs)");
@@ -54,13 +56,10 @@ export default function SignUpScreen() {
           router.replace({ pathname: "/sign-in", params: { email } });
         }
       } else {
-        Alert.alert("Đăng ký thất bại", res?.message || "Vui lòng thử lại");
+        toast.error(res?.message || "Vui lòng thử lại");
       }
     } catch (error: any) {
-      Alert.alert(
-        "Đăng ký thất bại",
-        error?.response?.data?.message || "Email có thể đã được sử dụng",
-      );
+      toast.error(error?.response?.data?.message || "Email có thể đã được sử dụng");
     } finally {
       setLoading(false);
     }
