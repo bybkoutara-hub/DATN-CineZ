@@ -3,7 +3,7 @@ import axios from "axios";
 
 // Dùng trực tiếp hàm create
 const api = axios.create({
-  baseURL: "http://192.168.50.114:5000/api", // IP máy thật - đổi theo mạng của bạn
+  baseURL: "http://172.16.98.115:5000/api", // IP máy thật - đổi theo mạng của bạn
   timeout: 10000,
 });
 

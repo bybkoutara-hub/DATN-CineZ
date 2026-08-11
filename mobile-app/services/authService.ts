@@ -20,18 +20,18 @@ export const loginApi = async (email: string, password: string) => {
   }
 };
 
-// Hàm đăng ký mới (backend yêu cầu trường `name`, không phải `fullName`)
+// Hàm đăng ký mới (backend dùng trường `fullName` để lưu tên hiển thị)
 export const registerApi = async (
   email: string,
   password: string,
-  name?: string,
+  fullName?: string,
   phone?: string,
 ) => {
   try {
     const response = await api.post("/auth/register", {
       email,
       password,
-      name,
+      fullName,
       phone,
     });
     return response.data;

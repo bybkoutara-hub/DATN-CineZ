@@ -4,16 +4,12 @@ import mongoose from "mongoose";
 import Movie from "../models/movieModel.js";
 import Showtime from "../models/showtimeModel.js";
 import User from "../models/userModel.js";
+import Cinema from "../models/cinemaModel.js";
+import Combo from "../models/comboModel.js";
 
 dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/mbooking';
-
-const cinemaSchema = new mongoose.Schema({ name: String, address: String });
-const Cinema = mongoose.models.Cinema || mongoose.model("Cinema", cinemaSchema);
-
-const comboSchema = new mongoose.Schema({ name: String, price: Number, description: String });
-const Combo = mongoose.models.Combo || mongoose.model("Combo", comboSchema);
 
 async function seedDatabase() {
   try {
@@ -49,8 +45,8 @@ async function seedDatabase() {
 
     // 3. Thêm Rạp phim & Combo bắp nước mẫu
     await Cinema.insertMany([
-      { name: "MBooking Hùng Vương Plaza", address: "126 Hùng Vương, Quận 5, TP.HCM" },
-      { name: "MBooking Vạn Hạnh Mall", address: "11 Sư Vạn Hạnh, Quận 10, TP.HCM" }
+      { name: "CineZ Hùng Vương Plaza", address: "126 Hùng Vương, Quận 5, TP.HCM", city: "Hồ Chí Minh" },
+      { name: "CineZ Vạn Hạnh Mall", address: "11 Sư Vạn Hạnh, Quận 10, TP.HCM", city: "Hồ Chí Minh" }
     ]);
     await Combo.insertMany([
       { name: "Combo Solo", price: 65000, description: "1 Bắp ngọt lớn + 1 Nước ngọt ly lớn" },
@@ -70,11 +66,9 @@ async function seedDatabase() {
         total_reviews: 2450,
 
         description: "Câu chuyện xoay quanh bà Hai, một người mẹ tảo tần nuôi dạy 5 người con khôn lớn. Khi bà gặp tai nạn, những góc khuất và xung đột trong gia đình bắt đầu lộ diện, đặt ra câu hỏi nhức nhối về trách nhiệm phụng dưỡng cha mẹ ở xã hội hiện đại.",
-        // Thêm các trường chi tiết nếu model của bạn có hỗ trợ (hoặc tự động lưu vào mongo)
         director: "Lý Hải",
         cast: ["Thanh Hiền", "Trương Minh Cường", "Đinh Y Nhung", "Quách Ngọc Tuyên"],
         language: "Tiếng Việt (Có phụ đề tiếng Anh)",
-        banner_url: "https://image.tmdb.org/t/p/w780/1K7pHhCZprfDXB7LkCquIK62yCb.jpg"
       },
       {
         title: "Avatar: Fire and Ash",
@@ -90,7 +84,6 @@ async function seedDatabase() {
         director: "James Cameron",
         cast: ["Sam Worthington", "Zoe Saldana", "Sigourney Weaver", "Oona Chaplin"],
         language: "Tiếng Anh (Phụ đề tiếng Việt)",
-        banner_url: "https://image.tmdb.org/t/p/w780/u8DU5fkLoM5tTRukzPC31oGPxaQ.jpg"
       }
     ]);
     console.log("🎬 [Seed]: Đã nạp xong 2 phim siêu chi tiết.");
@@ -125,21 +118,21 @@ async function seedDatabase() {
     };
     const sampleShowtimes = [
       {
-        movieId: latMatPhim._id,
+        movie: latMatPhim._id,
         roomName: "Phòng Chiếu 01 (IMAX)",
         startTime: makeDate(2, 18, 30),
         price: 90000,
         availableSeats: generateDefaultSeats()
       },
       {
-        movieId: latMatPhim._id,
+        movie: latMatPhim._id,
         roomName: "Phòng Chiếu 03 (2D Standard)",
         startTime: makeDate(3, 21, 0),
         price: 75000,
         availableSeats: generateDefaultSeats()
       },
       {
-        movieId: avatarPhim._id,
+        movie: avatarPhim._id,
         roomName: "Phòng Chiếu 02 (3D VIP)",
         startTime: makeDate(4, 19, 45),
         price: 120000,

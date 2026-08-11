@@ -389,7 +389,7 @@ export default function MovieDetailScreen() {
               <View key={review._id} style={{ backgroundColor: "#1A1A1A", borderRadius: 12, padding: 14, marginBottom: 12 }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
                   <Text style={{ color: "#E2A43B", fontWeight: "600", fontSize: 14 }}>
-                    {review.user?.name || "Người dùng"}
+                    {review.user?.fullName || "Người dùng"}
                   </Text>
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
                     {[1, 2, 3, 4, 5].map((star) => (

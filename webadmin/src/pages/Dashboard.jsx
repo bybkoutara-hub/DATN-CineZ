@@ -265,14 +265,14 @@ const Dashboard = () => {
               )}
               {recentBookings.slice(0, 5).map((booking) => {
                 const id = booking._id?.slice(-6).toUpperCase() || booking.invoiceNumber || 'N/A';
-                const user = booking.user || booking.userId;
-                const showtime = booking.showtime || booking.showtimeId;
-                const customer = user?.fullName || user?.username || user?.name || 'Khách';
-                const movie = showtime?.movieId?.title || 'N/A';
+                const user = booking.user || {};
+                const showtime = booking.showtime || {};
+                const customer = user?.fullName || user?.username || 'Khách';
+                const movie = showtime?.movie?.title || 'N/A';
                 const showtimeText = showtime?.startTime
                   ? `${new Date(showtime.startTime).toLocaleDateString('vi-VN')} ${new Date(showtime.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
                   : 'N/A';
-                const total = booking.totalAmount || booking.total || 0;
+                const total = booking.totalPrice || booking.total || 0;
                 const isPaid = booking.paymentStatus === 'paid' || booking.paymentStatus === 'completed' || booking.status === 'paid';
                 const time = booking.createdAt
                   ? new Date(booking.createdAt).toLocaleString('vi-VN')

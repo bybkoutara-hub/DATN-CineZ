@@ -4,7 +4,7 @@ import Promotion from "../models/promotionModel";
 export const getPromotions = async (_req: Request, res: Response): Promise<void> => {
   try {
     const now = new Date();
-    const promos = await Promotion.find({ expiryDate: { $gte: now } });
+    const promos = await Promotion.find({ endDate: { $gte: now }, active: true });
     res.status(200).json({ success: true, data: promos });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });

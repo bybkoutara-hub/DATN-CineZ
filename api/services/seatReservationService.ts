@@ -95,7 +95,7 @@ export const holdSeatsAtomic = async (showtimeId: string, seatIds: string[]): Pr
     { _id: showtimeId, status: "active", availableSeats: { $all: seatIds } },
     { $pullAll: { availableSeats: seatIds } }
   );
-  return result.modifiedCount === 1;
+  return result.modifiedCount === 1; // =1 giành được ghế, =0 là ghế đã bị lấy
 };
 
 /** Nhả ghế (đã được giữ/hold) trở lại AVAILABLE. */
@@ -129,7 +129,7 @@ export const sweepExpiredHolds = async (): Promise<number> => {
       status: "pending",
       paymentStatus: "pending",
       holdExpiresAt: { $ne: null, $lte: now },
-    }).select("_id showtimeId seats holdExpiresAt");
+    }).select("_id showtime seats holdExpiresAt");
 
     let released = 0;
     for (const booking of expired) {
@@ -138,7 +138,7 @@ export const sweepExpiredHolds = async (): Promise<number> => {
         { status: "cancelled", paymentStatus: "cancelled" }
       );
       if (claimed.modifiedCount === 1) {
-        await releaseSeats(booking.showtimeId || booking.showtime, booking.seats || []);
+        await releaseSeats(booking.showtime, booking.seats || []);
         console.log(`[SeatHold][Sweep]: Booking ${booking._id} hết hạn giữ ghế (${booking.holdExpiresAt}) -> nhả ${(booking.seats || []).length} ghế.`);
         released++;
       }

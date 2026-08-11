@@ -93,7 +93,7 @@ export default function ProfileScreen() {
             style={styles.avatar}
           />
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user?.name || "Khách"}</Text>
+            <Text style={styles.userName}>{user?.fullName || "Khách"}</Text>
 
             <View style={styles.contactRow}>
               <Ionicons

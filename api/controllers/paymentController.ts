@@ -47,7 +47,7 @@ export const createVnpayUrl = async (req: any, res: Response): Promise<void> => 
       return;
     }
 
-    const uid = String(booking.user || booking.userId || "");
+    const uid = String(booking.user || "");
     if (uid && uid !== String(req.user?.id)) {
       res.status(403).json({ success: false, message: "Bạn không có quyền thanh toán đơn này." });
       return;
@@ -63,7 +63,7 @@ export const createVnpayUrl = async (req: any, res: Response): Promise<void> => 
       "127.0.0.1";
 
     const paymentUrl = buildVnpUrl({
-      amount: booking.totalPrice || booking.totalAmount || 0,
+      amount: booking.totalPrice || 0,
       orderId: String(booking._id),
       orderInfo: `Thanh toan ve xem phim ${booking._id}`,
       ipAddr: (String(ipAddr).split(",")[0] || "127.0.0.1").trim(),
@@ -95,7 +95,7 @@ export const vnpReturn = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const amountMatched = Number(amount) === Math.round((booking.totalPrice || booking.totalAmount || 0) * 100);
+    const amountMatched = Number(amount) === Math.round((booking.totalPrice || 0) * 100);
 
     if (responseCode === "00" && amountMatched) {
       const updated = await Booking.findOneAndUpdate(
@@ -114,7 +114,7 @@ export const vnpReturn = async (req: Request, res: Response): Promise<void> => {
         { new: true }
       );
       if (cancelled) {
-        await releaseSeats(cancelled.showtimeId || cancelled.showtime, cancelled.seats || []);
+        await releaseSeats(cancelled.showtime, cancelled.seats || []);
       }
       redirectToApp(res, "failed", txnRef);
     }
@@ -138,7 +138,7 @@ export const vnpIpn = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    if (Number(amount) !== Math.round((booking.totalPrice || booking.totalAmount || 0) * 100)) {
+    if (Number(amount) !== Math.round((booking.totalPrice || 0) * 100)) {
       res.status(200).json({ RspCode: "04", Message: "Invalid amount" });
       return;
     }
@@ -161,7 +161,7 @@ export const vnpIpn = async (req: Request, res: Response): Promise<void> => {
         { status: "cancelled", paymentStatus: "cancelled" },
         { new: true }
       );
-      if (cancelled) await releaseSeats(cancelled.showtimeId || cancelled.showtime, cancelled.seats || []);
+      if (cancelled) await releaseSeats(cancelled.showtime, cancelled.seats || []);
     }
     res.status(200).json({ RspCode: "00", Message: "Confirm Success" });
   } catch (error: any) {
@@ -232,7 +232,7 @@ export const confirmVnpayPayment = async (req: Request, res: Response): Promise<
         { status: "cancelled", paymentStatus: "cancelled" },
         { new: true }
       );
-      await releaseSeats(booking.showtimeId || booking.showtime, booking.seats || []);
+      await releaseSeats(booking.showtime, booking.seats || []);
       res.status(200).json({ success: true, status: "failed" });
     }
   } catch (error: any) {
@@ -302,17 +302,16 @@ export const paymentWebhook = async (req: Request, res: Response): Promise<void>
           {
             status: "refunded",
             paymentStatus: "cancelled",
-            refunded: true,
             refundNote: "Thanh toán đến sau khi hết hạn giữ ghế (15 phút) — tự động hoàn tiền",
             ...meta,
           },
           { new: true }
         );
         if (claimed) {
-          await releaseSeats(claimed.showtimeId || claimed.showtime, claimed.seats || []);
+          await releaseSeats(claimed.showtime, claimed.seats || []);
           console.log(
             `[Webhook][Auto-Refund] Booking ${bookingId} (${provider || "unknown"}): thanh toán trễ, hết hạn giữ ghế lúc ${booking.holdExpiresAt}. ` +
-            `Hoàn tiền ${booking.totalAmount || booking.totalPrice || 0} VNĐ cho khách. Ghế đã nhả để người khác đặt.`
+            `Hoàn tiền ${booking.totalPrice || 0} VNĐ cho khách. Ghế đã nhả để người khác đặt.`
           );
         }
         res.status(200).json({
@@ -340,7 +339,7 @@ export const paymentWebhook = async (req: Request, res: Response): Promise<void>
       { status: "cancelled", paymentStatus: "cancelled", ...meta },
       { new: true }
     );
-    if (cancelled) await releaseSeats(cancelled.showtimeId || cancelled.showtime, cancelled.seats || []);
+    if (cancelled) await releaseSeats(cancelled.showtime, cancelled.seats || []);
     res.status(200).json({ success: true, status: "cancelled", message: "Thanh toán thất bại — đã hủy và nhả ghế" });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });

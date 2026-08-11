@@ -139,7 +139,7 @@ export default function ComboScreen() {
                 )}
                 <View style={styles.itemDetailsRow}>
                   <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemDesc}>{item.description || (item.items || []).join(" + ")}</Text>
+                  <Text style={styles.itemDesc}>{item.description}</Text>
                   <Text style={styles.itemPriceYellow}>{item.price.toLocaleString("vi-VN")} đ</Text>
                 </View>
                 {renderStepper(item._id, quantities[item._id] || 0)}
@@ -155,7 +155,7 @@ export default function ComboScreen() {
               {snackItems.map((item) => (
                 <View key={item._id} style={styles.gridCard}>
                   {item.image ? (
-                    <Image source={{ uri: item.image }} style={[styles.imagePlaceholder, { width: "100%", height: 120 }]} resizeMode="cover" />
+                    <Image source={{ uri: item.image }} style={[styles.imagePlaceholder, { width: "100%", height: 120 }]} contentFit="cover" />
                   ) : (
                     <View style={styles.imagePlaceholder}>
                       <MaterialCommunityIcons name="bottle-soda-classic-outline" size={48} color="#FCC434" />

@@ -15,6 +15,7 @@ export interface IRoomLayout {
 }
 
 export interface IRoom extends Document {
+  cinema: mongoose.Types.ObjectId; // FK -> Cinema
   name: string;
   type: "2D" | "3D" | "IMAX" | "4DX" | "VIP";
   rows_count: number;
@@ -27,6 +28,7 @@ export interface IRoom extends Document {
 
 const RoomSchema: Schema = new Schema(
   {
+    cinema: { type: Schema.Types.ObjectId, ref: "Cinema", default: null },
     name: { type: String, required: true },
     type: { type: String, enum: ["2D", "3D", "IMAX", "4DX", "VIP"], default: "2D" },
     rows_count: { type: Number, default: 8 },
@@ -45,5 +47,8 @@ const RoomSchema: Schema = new Schema(
   },
   { timestamps: true }
 );
+
+RoomSchema.index({ cinema: 1 });
+RoomSchema.index({ name: 1 }, { unique: true });
 
 export default mongoose.model<IRoom>("Room", RoomSchema);

@@ -36,7 +36,7 @@ export const getReviews = async (req: Request, res: Response): Promise<void> => 
     const skip = (pageNum - 1) * limitNum;
 
     const [reviews, total] = await Promise.all([
-      Review.find(filter).populate("user", "name").sort({ createdAt: -1 }).skip(skip).limit(limitNum),
+      Review.find(filter).populate("user", "fullName").sort({ createdAt: -1 }).skip(skip).limit(limitNum),
       Review.countDocuments(filter),
     ]);
 
@@ -74,15 +74,15 @@ export const addReview = async (req: Request, res: Response): Promise<void> => {
     }
 
     const bookings = await Booking.find({
-      $or: [{ user: req.user?.id }, { userId: req.user?.id }],
+      user: req.user?.id,
       status: { $in: ["paid", "completed"] },
       paymentStatus: "completed",
-    }).select("showtime showtimeId");
+    }).select("showtime");
     const showtimeIds = Array.from(
-      new Set(bookings.flatMap(b => [b.showtime, b.showtimeId]).filter(Boolean).map(id => String(id)))
+      new Set(bookings.map(b => b.showtime).filter(Boolean).map(id => String(id)))
     );
     const hasTicket = showtimeIds.length > 0
-      ? await Showtime.exists({ _id: { $in: showtimeIds }, movieId: String(movie) })
+      ? await Showtime.exists({ _id: { $in: showtimeIds }, movie: String(movie) })
       : false;
     if (!hasTicket) {
       res.status(403).json({ success: false, message: "Bạn chỉ có thể đánh giá phim đã đặt vé xem" });
@@ -104,7 +104,7 @@ export const addReview = async (req: Request, res: Response): Promise<void> => {
 
     await updateMovieStats(review.movie);
 
-    const populated = await Review.findById(review._id).populate("user", "name");
+    const populated = await Review.findById(review._id).populate("user", "fullName");
     res.status(201).json({ success: true, data: populated });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -133,7 +133,7 @@ export const updateReview = async (req: Request, res: Response): Promise<void> =
 
     await updateMovieStats(review.movie);
 
-    const populated = await Review.findById(review._id).populate("user", "name");
+    const populated = await Review.findById(review._id).populate("user", "fullName");
     res.status(200).json({ success: true, data: populated });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });

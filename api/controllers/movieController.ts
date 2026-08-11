@@ -56,7 +56,7 @@ export const getMovieDetailWithShowtimes = async (req: Request, res: Response): 
 
     // 2. Tìm tất cả các suất chiếu của bộ phim đó lớn hơn hoặc bằng thời gian hiện tại
     const showtimes = await Showtime.find({
-      movieId: id as string, 
+      movie: id as string, 
       startTime: { $gte: new Date() } 
     }).sort({ startTime: 1 }); 
 
@@ -81,7 +81,8 @@ export const getMovieDetailWithShowtimes = async (req: Request, res: Response): 
 
 export const addShowtime = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { movieId, roomName, startTime, price } = req.body;
+    const { movie, movieId, roomName, startTime, price } = req.body;
+    const movieIdResolved = movie || movieId; // movie là chuẩn; movieId giữ để tương thích client cũ
     
     const availableSeats = [];
     for (let row of ["A", "B"]) {
@@ -91,7 +92,7 @@ export const addShowtime = async (req: Request, res: Response): Promise<void> =>
     }
 
     const newShowtime = new Showtime({ 
-      movieId, 
+      movie: movieIdResolved, 
       roomName, 
       startTime, 
       price, 
@@ -118,9 +119,9 @@ export const getShowtimeDetail = async (req: Request, res: Response): Promise<vo
     // Danh sách ghế đang bảo trì/hỏng (đồng bộ theo trạng thái ghế trên web admin)
     const data: any = showtime.toObject();
     let maintenanceSeats: string[] = [];
-    if (data.roomId) {
+    if (data.room) {
       const disabled = await Seat.find({
-        room: data.roomId,
+        room: data.room,
         status: { $in: ["maintenance", "broken"] },
       });
       maintenanceSeats = disabled.map((s: any) => s.label);

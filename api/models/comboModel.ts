@@ -4,7 +4,6 @@ export interface ICombo extends Document {
   name: string;
   price: number;
   image: string;
-  items: string[];
   description: string;
   status: "active" | "inactive";
 }
@@ -14,7 +13,6 @@ const ComboSchema: Schema = new Schema(
     name: { type: String, required: true },
     price: { type: Number, required: true },
     image: { type: String, default: "" },
-    items: { type: [String], default: [] },
     description: { type: String, default: "" },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
   },

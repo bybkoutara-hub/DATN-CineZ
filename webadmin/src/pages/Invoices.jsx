@@ -41,7 +41,7 @@ const mapBookingToInvoice = (b) => {
   const seatsArr = Array.isArray(b.seats) ? b.seats : [];
   const comboArr = Array.isArray(b.combo) ? b.combo : [];
   const comboTotal = comboArr.reduce((s, c) => s + (c.price || 0), 0);
-  const seatTotal = (b.totalAmount || 0) - comboTotal;
+  const seatTotal = (b.totalPrice || 0) - comboTotal;
   const seatPrice = seatsArr.length > 0 ? Math.round(Math.max(0, seatTotal) / seatsArr.length) : 0;
 
   const tickets = seatsArr.map((seatId) => ({
@@ -51,18 +51,18 @@ const mapBookingToInvoice = (b) => {
     surcharge: 0,
   }));
 
-  // Đọc liên kết Populate đúng tên field backend trả về (user/userId, showtime/showtimeId)
-  const user = b.user || b.userId;
-  const showtime = b.showtime || b.showtimeId;
+  // Backend populate sẵn: booking.user (User) và booking.showtime -> showtime.movie (Movie)
+  const user = b.user || {};
+  const showtime = b.showtime || {};
 
   return {
     _id: b._id,
     invoiceNumber: b.invoiceNumber || (b._id ? `HD${String(b._id).slice(-6).toUpperCase()}` : 'N/A'),
     customerId: user?._id || '',
-    customerName: user?.fullName || user?.username || user?.name || (b.user || b.userId ? 'Khách đã xóa' : 'N/A'),
+    customerName: user?.fullName || user?.username || 'Khách đã xóa',
     customerPhone: user?.phone || '',
-    movieTitle: showtime?.movieId?.title || 'N/A',
-    roomName: showtime?.roomName || showtime?.roomId?.name || 'N/A',
+    movieTitle: showtime?.movie?.title || 'N/A',
+    roomName: showtime?.roomName || 'N/A',
     showDate: showtime?.startTime ? new Date(showtime.startTime).toISOString().slice(0, 10) : '',
     showTime: showtime?.startTime ? formatDateTime(showtime.startTime) : '',
     tickets,
@@ -72,9 +72,9 @@ const mapBookingToInvoice = (b) => {
       price: c.price || 0,
     })),
     seats: seatsArr.join(', '),
-    subtotal: b.totalAmount || 0,
+    subtotal: b.totalPrice || 0,
     discount: b.discount || 0,
-    total: b.totalAmount || 0,
+    total: b.totalPrice || 0,
     paymentMethod: b.paymentMethod || 'cash',
     paymentStatus: b.paymentStatus || b.status || 'pending',
     createdAt: b.createdAt || '',

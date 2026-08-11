@@ -145,10 +145,10 @@ export const sendBookingConfirmationEmail = async (bookingId: string): Promise<b
     const resend = new Resend(apiKey);
 
     const booking: any = await Booking.findById(bookingId)
-      .populate("user", "name email")
+      .populate("user", "fullName email")
       .populate({
-        path: "showtimeId",
-        populate: { path: "movieId", select: "title poster_url duration" },
+        path: "showtime",
+        populate: { path: "movie", select: "title poster_url duration" },
       });
 
     if (!booking) {
@@ -162,8 +162,8 @@ export const sendBookingConfirmationEmail = async (bookingId: string): Promise<b
       return false;
     }
 
-    const showtime = booking.showtimeId || {};
-    const movie = showtime.movieId || {};
+    const showtime = booking.showtime || {};
+    const movie = showtime.movie || {};
     const showtimeText = formatShowtime(showtime.startTime);
 
     const qrBuffer = await generateTicketQr({
@@ -180,7 +180,7 @@ export const sendBookingConfirmationEmail = async (bookingId: string): Promise<b
     }
 
     const html = buildEmailHtml({
-      customerName: user.name || "Quý khách",
+      customerName: user.fullName || "Quý khách",
       movieTitle: movie.title || "Vé xem phim",
       poster: movie.poster_url || "",
       roomName: showtime.roomName || "Phòng chiếu CineZ",

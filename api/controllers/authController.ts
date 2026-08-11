@@ -7,9 +7,10 @@ const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
 
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, email, password, phone } = req.body;
-    if (!name || !email || !password) {
-      res.status(400).json({ success: false, message: "Vui lòng nhập đầy đủ Name, Email và Password" });
+    const { fullName, name, email, password, phone } = req.body;
+    const displayName = fullName || name || "";
+    if (!displayName || !email || !password) {
+      res.status(400).json({ success: false, message: "Vui lòng nhập đầy đủ Họ tên, Email và Password" });
       return;
     }
     const exists = await User.findOne({ email });
@@ -18,8 +19,18 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return;
     }
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashed, phone: phone || "", role: "user" });
-    res.status(201).json({ success: true, message: "Đăng ký tài khoản thành công!", data: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    const user = await User.create({
+      fullName: displayName,
+      email,
+      password: hashed,
+      phone: phone || "",
+      role: "customer",
+    });
+    res.status(201).json({
+      success: true,
+      message: "Đăng ký tài khoản thành công!",
+      data: { id: user._id, fullName: user.fullName, email: user.email, role: user.role },
+    });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -46,7 +57,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json({
       success: true,
       token,
-      data: { id: user._id, name: user.name, email: user.email, role: user.role, loyaltyPoints: user.loyaltyPoints },
+      data: { id: user._id, fullName: user.fullName, email: user.email, role: user.role, loyaltyPoints: user.loyaltyPoints },
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -87,7 +98,7 @@ export const adminLogin = async (req: Request, res: Response): Promise<void> => 
     res.status(200).json({
       success: true,
       message: "Đăng nhập Web Admin thành công!",
-      data: { user: { username: user.username, fullName: user.fullName, name: user.name, email: user.email, role: user.role }, token }
+      data: { user: { username: user.username, fullName: user.fullName, email: user.email, role: user.role }, token }
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: "Lỗi hệ thống đăng nhập", error: error.message });

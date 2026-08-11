@@ -191,7 +191,7 @@ export const updateAdminMovie = async (req: Request, res: Response): Promise<voi
 
 export const deleteAdminMovie = async (req: Request, res: Response): Promise<void> => {
   try {
-    const hasShowtime = await Showtime.exists({ movieId: req.params.id });
+    const hasShowtime = await Showtime.exists({ movie: req.params.id });
     if (hasShowtime) {
       res.status(400).json({
         success: false,
@@ -322,13 +322,11 @@ export const updateRoomLayout = async (req: Request, res: Response): Promise<voi
         (s: any) => s.label
       )
     );
-    const showtimes = await Showtime.find({ roomId: room._id });
+    const showtimes = await Showtime.find({ room: room._id });
     for (const st of showtimes) {
       const bookings = await Booking.find({
-        $or: [
-          { showtime: st._id, status: "paid" },
-          { showtimeId: st._id, paymentStatus: "completed" },
-        ],
+        showtime: st._id,
+        status: "paid",
       });
       const booked = new Set<string>();
       bookings.forEach((b: any) => (b.seats || []).forEach((s: string) => booked.add(s)));
@@ -370,9 +368,9 @@ export const getRoomSeats = async (req: Request, res: Response): Promise<void> =
 
 export const getAdminShowtimes = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { movie_id, roomName, date } = req.query;
+    const { movie, movieId, movie_id, roomName, date } = req.query;
     let filter: Record<string, any> = {};
-    if (movie_id) filter.movieId = movie_id;
+    if (movie || movieId || movie_id) filter.movie = movie || movieId || movie_id;
     if (roomName) filter.roomName = roomName;
     if (date) {
       const start = new Date(date as string);
@@ -382,8 +380,8 @@ export const getAdminShowtimes = async (req: Request, res: Response): Promise<vo
       filter.startTime = { $gte: start, $lte: end };
     }
     const showtimes = await Showtime.find(filter)
-      .populate("movieId", "title poster_url duration")
-      .populate("roomId", "name type")
+      .populate("movie", "title poster_url duration")
+      .populate("room", "name type")
       .sort({ startTime: 1 });
     res.status(200).json(showtimes);
   } catch (error: any) {
@@ -394,7 +392,7 @@ export const getAdminShowtimes = async (req: Request, res: Response): Promise<vo
 export const getAdminShowtimeById = async (req: Request, res: Response): Promise<void> => {
   try {
     const showtime = await Showtime.findById(req.params.id)
-      .populate("movieId", "title poster_url duration genres");
+      .populate("movie", "title poster_url duration genres");
     if (!showtime) {
       res.status(404).json({ success: false, message: "Không tìm thấy suất chiếu" });
       return;
@@ -419,15 +417,15 @@ const findTimeConflict = async (
   dayEnd.setHours(23, 59, 59, 999);
 
   const sameDay = await Showtime.find({
-    roomId,
+    room: roomId,
     _id: { $ne: excludeShowtimeId },
     startTime: { $gte: dayStart, $lte: dayEnd },
     status: { $ne: "cancelled" },
-  }).populate("movieId", "title duration");
+  }).populate("movie", "title duration");
 
   for (const st of sameDay) {
     const stStart = new Date(st.startTime);
-    const stDuration = (st as any).movieId?.duration || 120;
+    const stDuration = (st as any).movie?.duration || 120;
     const stEnd = new Date(stStart.getTime() + stDuration * 60000);
     if (stStart < endTime && startTime < stEnd) {
       return st;
@@ -438,13 +436,15 @@ const findTimeConflict = async (
 
 export const createAdminShowtime = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { movieId, roomId, roomName: roomNameBody, date, startTime, basePrice, price: priceBody, status } = req.body;
+    const { movie, movieId, room: roomBody, roomId, roomName: roomNameBody, date, startTime, basePrice, price: priceBody, status } = req.body;
+    const movieIdResolved = movie || movieId;  // movie là chuẩn; movieId giữ để tương thích client cũ
+    const roomIdResolved = roomBody || roomId;  // roomBody là chuẩn; roomId giữ để tương thích client cũ
 
-    if (!movieId) {
+    if (!movieIdResolved) {
       res.status(400).json({ success: false, message: "Thiếu thông tin phim" });
       return;
     }
-    if (!roomId) {
+    if (!roomIdResolved) {
       res.status(400).json({ success: false, message: "Thiếu thông tin phòng chiếu" });
       return;
     }
@@ -453,13 +453,13 @@ export const createAdminShowtime = async (req: Request, res: Response): Promise<
       return;
     }
 
-    const movie = await Movie.findById(movieId);
-    if (!movie) {
+    const movieDoc = await Movie.findById(movieIdResolved);
+    if (!movieDoc) {
       res.status(404).json({ success: false, message: "Không tìm thấy phim" });
       return;
     }
 
-    const room = await Room.findById(roomId);
+    const room = await Room.findById(roomIdResolved);
     if (!room) {
       res.status(404).json({ success: false, message: "Không tìm thấy phòng chiếu" });
       return;
@@ -491,12 +491,12 @@ export const createAdminShowtime = async (req: Request, res: Response): Promise<
     }
 
     // Chặn trùng giờ chiếu trong cùng phòng
-    const conflict = await findTimeConflict(String(roomId), startDate, movie.duration);
+    const conflict = await findTimeConflict(String(roomIdResolved), startDate, movieDoc.duration);
     if (conflict) {
       const cStart = new Date(conflict.startTime);
       res.status(400).json({
         success: false,
-        message: `Phòng này đã có suất chiếu "${(conflict as any).movieId?.title || "phim khác"}` +
+        message: `Phòng này đã có suất chiếu "${(conflict as any).movie?.title || "phim khác"}` +
           `" lúc ${cStart.getHours()}:${String(cStart.getMinutes()).padStart(2, "0")} cùng ngày. Vui lòng chọn giờ khác.`,
       });
       return;
@@ -514,8 +514,8 @@ export const createAdminShowtime = async (req: Request, res: Response): Promise<
     const availableSeats = seatLabels.filter((label) => !disabledLabels.has(label));
 
     const showtimeData = {
-      movieId,
-      roomId,
+      movie: movieIdResolved,
+      room: roomIdResolved,
       roomName: room.name,
       startTime: startDate,
       price,
@@ -534,30 +534,30 @@ export const createAdminShowtime = async (req: Request, res: Response): Promise<
 
 export const updateAdminShowtime = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { roomId, date, startTime, basePrice, price: priceBody, ...rest } = req.body;
+    const { room, roomId, date, startTime, basePrice, price: priceBody, ...rest } = req.body;
     const existing = await Showtime.findById(req.params.id);
     if (!existing) {
       res.status(404).json({ success: false, message: "Không tìm thấy suất chiếu" });
       return;
     }
-
+    const roomIdResolved = room || roomId;
     const updateData: Record<string, any> = { ...rest };
-    let effectiveRoomId = existing.roomId ? String(existing.roomId) : "";
+    let effectiveRoomId = existing.room ? String(existing.room) : "";
     let effectiveStart = new Date(existing.startTime);
     let durationMin = 120;
 
-    const movie = await Movie.findById(rest.movieId || existing.movieId);
-    if (movie?.duration) durationMin = movie.duration;
+    const movieDoc = await Movie.findById(rest.movie || existing.movie);
+    if (movieDoc?.duration) durationMin = movieDoc.duration;
 
-    if (roomId) {
-      const room = await Room.findById(roomId);
+    if (roomIdResolved) {
+      const room = await Room.findById(roomIdResolved);
       if (!room) {
         res.status(404).json({ success: false, message: "Không tìm thấy phòng chiếu" });
         return;
       }
       effectiveRoomId = String(room._id);
       updateData.roomName = room.name;
-      updateData.roomId = room._id;
+      updateData.room = room._id;
       const layout = getLayout(room);
       updateData.layout = layout;
       updateData.availableSeats = getSeatLabels(layout);
@@ -583,13 +583,13 @@ export const updateAdminShowtime = async (req: Request, res: Response): Promise<
       return;
     }
 
-    if (roomId || date || startTime) {
+    if (roomIdResolved || date || startTime) {
       const conflict = await findTimeConflict(effectiveRoomId, effectiveStart, durationMin, String(req.params.id));
       if (conflict) {
         const cStart = new Date(conflict.startTime);
         res.status(400).json({
           success: false,
-          message: `Phòng này đã có suất chiếu "${(conflict as any).movieId?.title || "phim khác"}"` +
+          message: `Phòng này đã có suất chiếu "${(conflict as any).movie?.title || "phim khác"}"` +
             ` lúc ${cStart.getHours()}:${String(cStart.getMinutes()).padStart(2, "0")} cùng ngày. Vui lòng chọn giờ khác.`,
         });
         return;
@@ -630,10 +630,8 @@ export const deleteAdminShowtime = async (req: Request, res: Response): Promise<
 export const getBookedSeats = async (req: Request, res: Response): Promise<void> => {
   try {
     const bookings = await Booking.find({
-      $or: [
-        { showtime: req.params.id, status: "paid" },
-        { showtimeId: req.params.id, paymentStatus: "completed" },
-      ],
+      showtime: req.params.id,
+      status: { $in: ["paid", "completed"] },
     });
     const bookedSeats: string[] = [];
     bookings.forEach((b) => bookedSeats.push(...b.seats));
@@ -822,7 +820,7 @@ export const validatePromotion = async (req: Request, res: Response): Promise<vo
 export const getMembers = async (req: Request, res: Response): Promise<void> => {
   try {
     const { search, status } = req.query;
-    let filter: Record<string, any> = { role: { $in: ["user", "customer"] } };
+    let filter: Record<string, any> = { role: "customer" };
     if (search) {
       filter.$or = [
         { fullName: { $regex: search, $options: "i" } },
@@ -871,11 +869,8 @@ export const updateMember = async (req: Request, res: Response): Promise<void> =
 
 export const getMemberBookings = async (req: Request, res: Response): Promise<void> => {
   try {
-    const bookings = await Booking.find({
-      $or: [{ user: req.params.id }, { userId: req.params.id }],
-    })
-      .populate({ path: "showtime", populate: { path: "movieId", select: "title poster_url" } })
-      .populate({ path: "showtimeId", populate: { path: "movieId", select: "title poster_url" } })
+    const bookings = await Booking.find({ user: req.params.id })
+      .populate({ path: "showtime", populate: { path: "movie", select: "title poster_url" } })
       .sort({ createdAt: -1 });
     res.status(200).json(bookings);
   } catch (error: any) {
@@ -1140,13 +1135,11 @@ export const bulkCreateSeats = async (req: Request, res: Response): Promise<void
       ).map((s: any) => s.label)
     );
     const allLabels = getSeatLabels(layout);
-    const showtimes = await Showtime.find({ roomId });
+    const showtimes = await Showtime.find({ room: roomId });
     for (const st of showtimes) {
       const bookings = await Booking.find({
-        $or: [
-          { showtime: st._id, status: "paid" },
-          { showtimeId: st._id, paymentStatus: "completed" },
-        ],
+        showtime: st._id,
+        status: "paid",
       });
       const booked = new Set<string>();
       bookings.forEach((b: any) => (b.seats || []).forEach((s: string) => booked.add(s)));
@@ -1199,11 +1192,8 @@ export const getAdminBookings = async (req: Request, res: Response): Promise<voi
       if (to) filter.createdAt.$lte = new Date(to as string);
     }
     const bookings = await Booking.find(filter)
-      .populate("user", "username fullName name email phone")
-      .populate("userId", "username fullName name email phone")
-      .populate({ path: "showtime", populate: { path: "movieId", select: "title poster_url duration" } })
-      .populate({ path: "showtimeId", populate: { path: "movieId", select: "title poster_url duration" } })
-      .populate("combo", "name price")
+      .populate("user", "username fullName email phone")
+      .populate({ path: "showtime", populate: { path: "movie", select: "title poster_url duration" } })
       .sort({ createdAt: -1 });
     res.status(200).json(bookings);
   } catch (error: any) {
@@ -1214,11 +1204,8 @@ export const getAdminBookings = async (req: Request, res: Response): Promise<voi
 export const getAdminBookingById = async (req: Request, res: Response): Promise<void> => {
   try {
     const booking = await Booking.findById(req.params.id)
-      .populate("user", "username fullName name email phone")
-      .populate("userId", "username fullName name email phone")
-      .populate({ path: "showtime", populate: { path: "movieId", select: "title poster_url duration genres" } })
-      .populate({ path: "showtimeId", populate: { path: "movieId", select: "title poster_url duration genres" } })
-      .populate("combo", "name price items");
+      .populate("user", "username fullName email phone")
+      .populate({ path: "showtime", populate: { path: "movie", select: "title poster_url duration genres" } });
     if (!booking) {
       res.status(404).json({ success: false, message: "Không tìm thấy đặt vé" });
       return;
@@ -1281,9 +1268,7 @@ export const getInvoices = async (req: Request, res: Response): Promise<void> =>
         path: "booking",
         populate: [
           { path: "user", select: "username fullName" },
-          { path: "userId", select: "username fullName" },
-          { path: "showtime", populate: { path: "movieId", select: "title" } },
-          { path: "showtimeId", populate: { path: "movieId", select: "title" } },
+          { path: "showtime", populate: { path: "movie", select: "title" } },
         ],
       })
       .sort({ issuedAt: -1 });
@@ -1300,10 +1285,7 @@ export const getInvoiceById = async (req: Request, res: Response): Promise<void>
         path: "booking",
         populate: [
           { path: "user", select: "username fullName email phone" },
-          { path: "userId", select: "username fullName email phone" },
-          { path: "showtime", populate: { path: "movieId", select: "title poster_url duration genres" } },
-          { path: "showtimeId", populate: { path: "movieId", select: "title poster_url duration genres" } },
-          { path: "combo", select: "name price items" },
+          { path: "showtime", populate: { path: "movie", select: "title poster_url duration genres" } },
         ],
       });
     if (!invoice) {
@@ -1323,9 +1305,7 @@ export const getInvoiceByBooking = async (req: Request, res: Response): Promise<
         path: "booking",
         populate: [
           { path: "user", select: "username fullName email phone" },
-          { path: "userId", select: "username fullName email phone" },
-          { path: "showtime", populate: { path: "movieId", select: "title poster_url duration" } },
-          { path: "showtimeId", populate: { path: "movieId", select: "title poster_url duration" } },
+          { path: "showtime", populate: { path: "movie", select: "title poster_url duration" } },
         ],
       });
     if (!invoice) {
@@ -1357,7 +1337,7 @@ export const createInvoice = async (req: Request, res: Response): Promise<void> 
     }
     const newInvoice = new Invoice({
       booking: bookingId,
-      amount: booking.totalPrice || booking.totalAmount,
+      amount: booking.totalPrice,
       method: method || "cash",
       status: status || "paid",
       transactionId: transactionId || "",
@@ -1395,11 +1375,11 @@ export const updateInvoice = async (req: Request, res: Response): Promise<void> 
 export const getDashboardStats = async (_req: Request, res: Response): Promise<void> => {
   try {
     const bookings = await Booking.find({
-      $or: [{ status: "paid" }, { paymentStatus: "completed" }],
+      status: { $in: ["paid", "completed"] },
     });
-    const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalPrice || b.totalAmount || 0), 0);
+    const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
     const totalTickets = bookings.reduce((sum, b) => sum + b.seats.length, 0);
-    const totalMembers = await User.countDocuments({ role: { $in: ["user", "customer"] } });
+    const totalMembers = await User.countDocuments({ role: "customer" });
     const totalMovies = await Movie.countDocuments();
     const totalShowtimes = await Showtime.countDocuments({ status: "active" });
     const totalBookings = await Booking.countDocuments();
@@ -1407,10 +1387,10 @@ export const getDashboardStats = async (_req: Request, res: Response): Promise<v
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const todayBookings = await Booking.find({
-      $or: [{ status: "paid" }, { paymentStatus: "completed" }],
+      status: { $in: ["paid", "completed"] },
       createdAt: { $gte: todayStart },
     });
-    const todayRevenue = todayBookings.reduce((sum, b) => sum + (b.totalPrice || b.totalAmount || 0), 0);
+    const todayRevenue = todayBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
     const todayTickets = todayBookings.reduce((sum, b) => sum + b.seats.length, 0);
 
     res.status(200).json({
@@ -1426,7 +1406,7 @@ export const getDashboardRevenue = async (req: Request, res: Response): Promise<
   try {
     const { from, to } = req.query;
     let filter: Record<string, any> = {
-      $or: [{ status: "paid" }, { paymentStatus: "completed" }],
+      status: { $in: ["paid", "completed"] },
     };
     if (from || to) {
       filter.createdAt = {};
@@ -1439,7 +1419,7 @@ export const getDashboardRevenue = async (req: Request, res: Response): Promise<
     bookings.forEach((b: any) => {
       const dateKey = b.createdAt.toISOString().slice(0, 10);
       if (!revenueByDate[dateKey]) revenueByDate[dateKey] = { date: dateKey, revenue: 0, tickets: 0 };
-      revenueByDate[dateKey].revenue += b.totalPrice || b.totalAmount || 0;
+      revenueByDate[dateKey].revenue += b.totalPrice || 0;
       revenueByDate[dateKey].tickets += b.seats.length;
     });
 
@@ -1452,16 +1432,15 @@ export const getDashboardRevenue = async (req: Request, res: Response): Promise<
 export const getDashboardRevenueByMovie = async (_req: Request, res: Response): Promise<void> => {
   try {
     const bookings = await Booking.find({
-      $or: [{ status: "paid" }, { paymentStatus: "completed" }],
+      status: { $in: ["paid", "completed"] },
     })
-      .populate({ path: "showtime", select: "movieId", populate: { path: "movieId", select: "title" } })
-      .populate({ path: "showtimeId", select: "movieId", populate: { path: "movieId", select: "title" } });
+      .populate({ path: "showtime", select: "movie", populate: { path: "movie", select: "title" } });
 
     const revenueByMovie: Record<string, { title: string; revenue: number; tickets: number }> = {};
     bookings.forEach((b) => {
-      const movieTitle = (b as any).showtime?.movieId?.title || (b as any).showtimeId?.movieId?.title || "Unknown";
+      const movieTitle = (b as any).showtime?.movie?.title || "Unknown";
       if (!revenueByMovie[movieTitle]) revenueByMovie[movieTitle] = { title: movieTitle, revenue: 0, tickets: 0 };
-      revenueByMovie[movieTitle].revenue += b.totalPrice || b.totalAmount || 0;
+      revenueByMovie[movieTitle].revenue += b.totalPrice || 0;
       revenueByMovie[movieTitle].tickets += b.seats.length;
     });
 
@@ -1475,18 +1454,17 @@ export const getDashboardTopMovies = async (req: Request, res: Response): Promis
   try {
     const limit = parseInt(req.query.limit as string) || 5;
     const bookings = await Booking.find({
-      $or: [{ status: "paid" }, { paymentStatus: "completed" }],
+      status: { $in: ["paid", "completed"] },
     })
-      .populate({ path: "showtime", select: "movieId", populate: { path: "movieId", select: "title poster_url" } })
-      .populate({ path: "showtimeId", select: "movieId", populate: { path: "movieId", select: "title poster_url" } });
+      .populate({ path: "showtime", select: "movie", populate: { path: "movie", select: "title poster_url" } });
 
     const movieStats: Record<string, any> = {};
     bookings.forEach((b) => {
-      const movie = (b as any).showtime?.movieId || (b as any).showtimeId?.movieId;
+      const movie = (b as any).showtime?.movie;
       if (!movie) return;
       const id = movie._id.toString();
       if (!movieStats[id]) movieStats[id] = { _id: id, title: movie.title, poster_url: movie.poster_url, revenue: 0, tickets: 0 };
-      movieStats[id].revenue += b.totalPrice || b.totalAmount || 0;
+      movieStats[id].revenue += b.totalPrice || 0;
       movieStats[id].tickets += b.seats.length;
     });
 
@@ -1629,7 +1607,7 @@ export const getAdminReviews = async (req: Request, res: Response): Promise<void
     const [reviews, total] = await Promise.all([
       Review.find(filter)
         .populate("movie", "title poster_url")
-        .populate("user", "fullName name email")
+        .populate("user", "fullName email")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limitNum),
@@ -1650,7 +1628,7 @@ export const getAdminReviewById = async (req: Request, res: Response): Promise<v
   try {
     const review = await Review.findById(req.params.id)
       .populate("movie", "title poster_url")
-      .populate("user", "fullName name email");
+      .populate("user", "fullName email");
     if (!review) {
       res.status(404).json({ success: false, message: "Không tìm thấy bình luận" });
       return;

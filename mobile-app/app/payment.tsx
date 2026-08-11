@@ -101,7 +101,7 @@ export default function PaymentScreen() {
   // Đặt vé tiền mặt: tạo vé hoàn tất ngay rồi sang tab vé
   const handleCashBooking = async () => {
     await createBooking({
-      showtimeId,
+      showtime: showtimeId,
       seats,
       combos,
       totalPrice: finalTotal,
@@ -115,7 +115,7 @@ export default function PaymentScreen() {
   // Đặt vé VNPay: tạo vé pending -> lấy URL thanh toán -> mở WebView
   const handleVnpayBooking = async () => {
     const res = await createBooking({
-      showtimeId,
+      showtime: showtimeId,
       seats,
       combos,
       totalPrice: finalTotal,

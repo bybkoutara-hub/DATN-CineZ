@@ -47,8 +47,8 @@ const mapMember = (m) => ({
 });
 
 const mapBooking = (b) => {
-  const showtime = b.showtime_id || {};
-  const movie = showtime.movieId || {};
+  const showtime = b.showtime || {};
+  const movie = showtime.movie || {};
   const startTime = showtime.startTime ? new Date(showtime.startTime) : null;
   return {
     id: b._id,
@@ -56,7 +56,7 @@ const mapBooking = (b) => {
     date: startTime ? startTime.toLocaleDateString('vi-VN') : (b.createdAt ? new Date(b.createdAt).toLocaleDateString('vi-VN') : ''),
     time: startTime ? startTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
     seats: Array.isArray(b.seats) ? b.seats.join(', ') : (b.seats || ''),
-    total: b.total ?? 0,
+    total: b.totalPrice ?? b.total ?? 0,
   };
 };
 

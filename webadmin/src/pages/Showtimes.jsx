@@ -54,7 +54,7 @@ const Showtimes = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({
-    movieId: '', roomId: '', date: '', startTime: '', endTime: '', basePrice: '', status: 'active',
+    movie: '', room: '', date: '', startTime: '', endTime: '', basePrice: '', status: 'active',
   });
 
   const showNotification = (message, type = 'success') => {
@@ -86,13 +86,13 @@ const Showtimes = () => {
   }, []);
 
   useEffect(() => {
-    if (form.movieId && form.startTime) {
-      const movie = movies.find((m) => m._id === form.movieId);
+    if (form.movie && form.startTime) {
+      const movie = movies.find((m) => m._id === form.movie);
       if (movie) {
         setForm((prev) => ({ ...prev, endTime: calcEndTime(prev.startTime, movie.duration) }));
       }
     }
-  }, [form.movieId, form.startTime, movies]);
+  }, [form.movie, form.startTime, movies]);
 
   const filtered = useMemo(() => {
     let data = [...showtimes];
@@ -100,15 +100,15 @@ const Showtimes = () => {
       const q = search.toLowerCase();
       data = data.filter(
         (s) =>
-          (s.movieId?.title || '').toLowerCase().includes(q) ||
-          (s.roomId?.name || s.roomName || '').toLowerCase().includes(q),
+          (s.movie?.title || '').toLowerCase().includes(q) ||
+          (s.room?.name || s.roomName || '').toLowerCase().includes(q),
       );
     }
     if (filterDate) {
       data = data.filter((s) => toDateInput(s.startTime) === filterDate);
     }
-    if (filterMovie) data = data.filter((s) => (s.movieId?._id || s.movieId) === filterMovie);
-    if (filterRoom) data = data.filter((s) => (s.roomId?._id || s.roomId) === filterRoom);
+    if (filterMovie) data = data.filter((s) => (s.movie?._id || s.movie) === filterMovie);
+    if (filterRoom) data = data.filter((s) => (s.room?._id || s.room) === filterRoom);
     return data;
   }, [showtimes, search, filterDate, filterMovie, filterRoom]);
 
@@ -119,15 +119,15 @@ const Showtimes = () => {
 
   const openCreate = () => {
     setEditingId(null);
-    setForm({ movieId: '', roomId: '', date: '', startTime: '', endTime: '', basePrice: '', status: 'active' });
+    setForm({ movie: '', room: '', date: '', startTime: '', endTime: '', basePrice: '', status: 'active' });
     setModalOpen(true);
   };
 
   const openEdit = (item) => {
     setEditingId(item._id);
     setForm({
-      movieId: item.movieId?._id || item.movieId || '',
-      roomId: item.roomId?._id || item.roomId || '',
+      movie: item.movie?._id || item.movie || '',
+      room: item.room?._id || item.room || '',
       date: toDateInput(item.startTime),
       startTime: toTimeInput(item.startTime),
       endTime: toTimeInput(item.endTime),
@@ -138,16 +138,16 @@ const Showtimes = () => {
   };
 
   const handleSave = async () => {
-    const movie = movies.find((m) => m._id === form.movieId);
-    const room = rooms.find((r) => r._id === form.roomId);
+    const movie = movies.find((m) => m._id === form.movie);
+    const room = rooms.find((r) => r._id === form.room);
     if (!movie || !room || !form.date || !form.startTime || !form.basePrice) {
       showNotification('Vui lòng điền đầy đủ thông tin bắt buộc', 'error');
       return;
     }
 
     const payload = {
-      movieId: form.movieId,
-      roomId: form.roomId,
+      movie: form.movie,
+      room: form.room,
       date: form.date,
       startTime: form.startTime,
       basePrice: Number(form.basePrice),
@@ -292,11 +292,11 @@ const Showtimes = () => {
               paginated.map((s, idx) => (
                 <tr key={s._id}>
                   <td>{(page - 1) * ITEMS_PER_PAGE + idx + 1}</td>
-                  <td className="st-movie-cell">{s.movieId?.title || ''}</td>
-                  <td>{s.roomId?.name || s.roomName || ''}</td>
+                  <td className="st-movie-cell">{s.movie?.title || ''}</td>
+                  <td>{s.room?.name || s.roomName || ''}</td>
                   <td>{new Date(s.startTime).toLocaleDateString('vi-VN')}</td>
                   <td>{toTimeInput(s.startTime)}</td>
-                  <td>{s.endTime ? toTimeInput(s.endTime) : calcEndTime(toTimeInput(s.startTime), s.movieId?.duration)}</td>
+                  <td>{s.endTime ? toTimeInput(s.endTime) : calcEndTime(toTimeInput(s.startTime), s.movie?.duration)}</td>
                   <td className="st-price">{formatCurrency(s.price ?? s.basePrice)}</td>
                   <td>
                     <span className={`st-badge ${s.status === 'active' ? 'st-badge-active' : 'st-badge-cancelled'}`}>
@@ -357,7 +357,7 @@ const Showtimes = () => {
               <div className="st-form-row">
                 <div className="st-form-group">
                   <label className="st-label">Phim <span className="st-required">*</span></label>
-                  <select className="st-input" name="movieId" value={form.movieId} onChange={handleChange}>
+                  <select className="st-input" name="movie" value={form.movie} onChange={handleChange}>
                     <option value="">-- Chọn phim --</option>
                     {movies.map((m) => (
                       <option key={m._id} value={m._id}>{m.title} ({m.duration} phút)</option>
@@ -366,7 +366,7 @@ const Showtimes = () => {
                 </div>
                 <div className="st-form-group">
                   <label className="st-label">Phòng chiếu <span className="st-required">*</span></label>
-                  <select className="st-input" name="roomId" value={form.roomId} onChange={handleChange}>
+                  <select className="st-input" name="room" value={form.room} onChange={handleChange}>
                     <option value="">-- Chọn phòng --</option>
                     {rooms.map((r) => (
                       <option key={r._id} value={r._id}>{r.name} ({r.type})</option>

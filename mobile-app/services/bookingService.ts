@@ -12,8 +12,9 @@ export const getShowtimeDetail = async (showtimeId: string) => {
 };
 
 // Tạo đơn đặt vé mới (gọi API có sẵn POST /bookings, yêu cầu token đăng nhập).
+// Payload chuẩn của backend dùng trường `showtime` (chứa id suất chiếu).
 export const createBooking = async (payload: {
-  showtimeId: string;
+  showtime: string;
   seats: string[];
   combos?: { name: string; quantity: number; price: number }[];
   totalPrice: number;

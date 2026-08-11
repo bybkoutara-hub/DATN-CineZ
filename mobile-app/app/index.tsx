@@ -68,7 +68,7 @@ export default function WelcomeScreen() {
           <Image
             source={require("../assets/images/infinity_war.png")} // Đảm bảo đúng file ảnh của bạn
             style={styles.posterImage}
-            resizeMode="cover"
+            contentFit="cover"
           />
         </View>
       </View>

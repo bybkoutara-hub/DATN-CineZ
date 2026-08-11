@@ -216,7 +216,6 @@ const Movies = () => {
       trailer_url: newMovie.trailer_url,
       description: newMovie.description,
       genres: selectedGenres.length > 0 ? selectedGenres : fallbackGenres,
-      categoryIds: newMovie.categoryIds.map(id => String(id)),
       duration: parseInt(newMovie.duration) || 0,
       release_date: newMovie.releaseDate,
       status: newMovie.status,

@@ -79,8 +79,8 @@ export default function TicketListScreen() {
   );
 
   const renderTicketItem = ({ item }: { item: any }) => {
-    const movie = item?.showtime?.movieId || item?.showtimeId?.movieId || {};
-    const showtime = item?.showtime || item?.showtimeId || {};
+    const movie = item?.showtime?.movie || {};
+    const showtime = item?.showtime || {};
     const posterUrl = movie.poster_url || item.moviePoster || "https://via.placeholder.com/95x120";
     return (
       <TouchableOpacity

@@ -136,6 +136,7 @@ async function seedDatabase() {
         storyline: "Bà Hai, một người mẹ tảo tần nuôi dạy 5 người con khôn lớn. Khi bà gặp tai nạn, những góc khuất và xung đột trong gia đình bắt đầu lộ diện, buộc các con phải đối diện với sự thật.",
         language: "Tiếng Việt",
         rated: "P",
+        formats: ["2D"],
       },
       {
         title: "Avatar: Fire and Ash",
@@ -150,6 +151,7 @@ async function seedDatabase() {
         storyline: "Jake Sully và Neytiri phải đối mặt với bộ tộc người Na'vi của nguyên tố Lửa và Tro tàn, đe dọa sự sống còn của toàn bộ gia tộc.",
         language: "Tiếng Anh (Phụ đề Việt)",
         rated: "C13",
+        formats: ["2D", "3D", "IMAX", "4DX", "ScreenX"],
       },
       {
         title: "Deadpool & Wolverine",
@@ -164,6 +166,7 @@ async function seedDatabase() {
         storyline: "Deadpool hợp tác với Wolverine trong một cuộc phiêu lưu xuyên vũ trụ đầy hỗn loạn và hài hước.",
         language: "Tiếng Anh (Phụ đề Việt)",
         rated: "C18",
+        formats: ["2D", "3D", "IMAX", "4DX"],
       },
       {
         title: "Inside Out 2",
@@ -178,6 +181,7 @@ async function seedDatabase() {
         storyline: "Riley bước vào tuổi dậy thì và các cảm xúc mới xuất hiện: Lo âu, Ghen tị, Buồn chán và Xấu hổ.",
         language: "Tiếng Anh (Phụ đề Việt)",
         rated: "P",
+        formats: ["2D", "3D", "IMAX"],
       },
       {
         title: "Godzilla x Kong: The New Empire",
@@ -192,6 +196,7 @@ async function seedDatabase() {
         storyline: "Godzilla và Kong phải hợp tác để đối mặt với một mối đe dọa chưa từng có ẩn giấu trong lòng Trái Đất.",
         language: "Tiếng Anh (Phụ đề Việt)",
         rated: "C13",
+        formats: ["2D", "3D", "IMAX", "4DX"],
       },
       {
         title: "Mai",
@@ -206,6 +211,7 @@ async function seedDatabase() {
         storyline: "Mai là câu chuyện về người phụ nữ tuổi trung niên với quá khứ đầy sóng gió và hành trình tìm kiếm hạnh phúc.",
         language: "Tiếng Việt",
         rated: "C16",
+        formats: ["2D"],
       },
       {
         title: "Kong: Đảo Đầu Lâu",
@@ -220,6 +226,7 @@ async function seedDatabase() {
         storyline: "Một nhóm thám hiểm đặt chân đến hòn đảo bí ẩn nơi Kong ngự trị và phải chiến đấu để sinh tồn.",
         language: "Tiếng Anh (Phụ đề Việt)",
         rated: "C13",
+        formats: ["2D", "3D", "IMAX"],
       },
       {
         title: "Quỷ Nhập Tràng 2",
@@ -234,6 +241,7 @@ async function seedDatabase() {
         storyline: "Những sự kiện siêu nhiên kỳ bí tiếp tục xảy ra tại ngôi làng nhỏ, đe dọa cuộc sống của người dân.",
         language: "Tiếng Việt",
         rated: "C18",
+        formats: ["2D"],
       },
       {
         title: "Dune: Part Three",
@@ -250,6 +258,7 @@ async function seedDatabase() {
         storyline: "Phần cuối cùng trong hành trình của Paul Atreides trên hành tinh sa mạc Arrakis.",
         language: "Tiếng Anh (Phụ đề Việt)",
         rated: "C13",
+        formats: ["2D", "3D", "IMAX", "4DX"],
       },
       {
         title: "Siêu Trộm 2",
@@ -266,6 +275,7 @@ async function seedDatabase() {
         storyline: "Nhóm siêu trộm trở lại với phi vụ táo bạo nhất từ trước đến nay.",
         language: "Tiếng Việt",
         rated: "C16",
+        formats: ["2D", "3D"],
       },
       {
         title: "Biệt Đội Săn Ma",
@@ -282,6 +292,7 @@ async function seedDatabase() {
         storyline: "Biệt đội săn ma quốc tế được triệu tập để đối phó với một thế lực siêu nhiên khổng lồ.",
         language: "Tiếng Anh (Phụ đề Việt)",
         rated: "P",
+        formats: ["2D", "3D"],
       },
       {
         title: "Vòng Xoay Tội Lỗi",
@@ -298,6 +309,7 @@ async function seedDatabase() {
         storyline: "Một vụ án mạng bí ẩn đưa vị thám tử vào vòng xoáy tội lỗi và những âm mưu đen tối.",
         language: "Tiếng Hàn (Phụ đề Việt)",
         rated: "C18",
+        formats: ["2D"],
       },
     ]);
     console.log(`🎬 [Seed]: Đã tạo ${movies.length} phim (${movies.filter(m => m.status === "now_playing").length} đang chiếu, ${movies.filter(m => m.status === "coming_soon").length} sắp chiếu).`);
@@ -310,11 +322,11 @@ async function seedDatabase() {
       { username: "admin", password: adminPassword, fullName: "Quản trị viên", email: "admin@cinez.com", phone: "0901234567", role: "admin", active: true },
       { username: "staff01", password: adminPassword, fullName: "Nhân viên 01", email: "staff1@cinez.com", phone: "0901234568", role: "staff", active: true },
       { username: "staff02", password: adminPassword, fullName: "Nhân viên 02", email: "staff2@cinez.com", phone: "0901234569", role: "staff", active: true },
-      { username: "user01", password: userPassword, fullName: "Nguyễn Văn An", email: "user01@example.com", phone: "0912345671", role: "user", active: true, loyaltyPoints: 1200 },
-      { username: "user02", password: userPassword, fullName: "Trần Thị Bình", email: "user02@example.com", phone: "0912345672", role: "user", active: true, loyaltyPoints: 800 },
-      { username: "user03", password: userPassword, fullName: "Lê Hoàng Cường", email: "user03@example.com", phone: "0912345673", role: "user", active: true, loyaltyPoints: 450 },
-      { username: "user04", password: userPassword, fullName: "Phạm Minh Dung", email: "user04@example.com", phone: "0912345674", role: "user", active: true, loyaltyPoints: 200 },
-      { username: "user05", password: userPassword, fullName: "Hoàng Thị Em", email: "user05@example.com", phone: "0912345675", role: "user", active: false, loyaltyPoints: 50 },
+      { username: "user01", password: userPassword, fullName: "Nguyễn Văn An", email: "user01@example.com", phone: "0912345671", role: "customer", active: true, loyaltyPoints: 1200 },
+      { username: "user02", password: userPassword, fullName: "Trần Thị Bình", email: "user02@example.com", phone: "0912345672", role: "customer", active: true, loyaltyPoints: 800 },
+      { username: "user03", password: userPassword, fullName: "Lê Hoàng Cường", email: "user03@example.com", phone: "0912345673", role: "customer", active: true, loyaltyPoints: 450 },
+      { username: "user04", password: userPassword, fullName: "Phạm Minh Dung", email: "user04@example.com", phone: "0912345674", role: "customer", active: true, loyaltyPoints: 200 },
+      { username: "user05", password: userPassword, fullName: "Hoàng Thị Em", email: "user05@example.com", phone: "0912345675", role: "customer", active: false, loyaltyPoints: 50 },
     ]);
     console.log(`👤 [Seed]: Đã tạo ${users.length} tài khoản (admin/staff/customer).`);
 
@@ -334,11 +346,11 @@ async function seedDatabase() {
     const p05Layout = buildDefaultLayout(6, 10);
 
     const rooms = await Room.insertMany([
-      { name: "Phòng Chiếu 01 (IMAX)", type: "IMAX", rows_count: 8, seats_per_row: 15, totalSeats: getSeatLabels(p01Layout).length, status: "active", description: "Phòng IMAX cao cấp", layout: p01Layout },
-      { name: "Phòng Chiếu 02 (3D VIP)", type: "3D", rows_count: 8, seats_per_row: 14, totalSeats: getSeatLabels(p02Layout).length, status: "active", description: "Phòng 3D VIP sang trọng", layout: p02Layout },
-      { name: "Phòng Chiếu 03 (2D Standard)", type: "2D", rows_count: 10, seats_per_row: 16, totalSeats: getSeatLabels(p03Layout).length, status: "active", description: "Phòng chiếu tiêu chuẩn", layout: p03Layout },
-      { name: "Phòng Chiếu 04 (4DX)", type: "4DX", rows_count: 8, seats_per_row: 12, totalSeats: getSeatLabels(p04Layout).length, status: "active", description: "Phòng 4DX hiệu ứng chuyển động", layout: p04Layout },
-      { name: "Phòng Chiếu 05 (VIP)", type: "VIP", rows_count: 6, seats_per_row: 10, totalSeats: getSeatLabels(p05Layout).length, status: "active", description: "Phòng VIP ghế ngồi rộng", layout: p05Layout },
+      { cinema: cinemas[0]!._id, name: "Phòng Chiếu 01 (IMAX)", type: "IMAX", rows_count: 8, seats_per_row: 15, totalSeats: getSeatLabels(p01Layout).length, status: "active", description: "Phòng IMAX cao cấp", layout: p01Layout },
+      { cinema: cinemas[0]!._id, name: "Phòng Chiếu 02 (3D VIP)", type: "3D", rows_count: 8, seats_per_row: 14, totalSeats: getSeatLabels(p02Layout).length, status: "active", description: "Phòng 3D VIP sang trọng", layout: p02Layout },
+      { cinema: cinemas[0]!._id, name: "Phòng Chiếu 03 (2D Standard)", type: "2D", rows_count: 10, seats_per_row: 16, totalSeats: getSeatLabels(p03Layout).length, status: "active", description: "Phòng chiếu tiêu chuẩn", layout: p03Layout },
+      { cinema: cinemas[1]!._id, name: "Phòng Chiếu 04 (4DX)", type: "4DX", rows_count: 8, seats_per_row: 12, totalSeats: getSeatLabels(p04Layout).length, status: "active", description: "Phòng 4DX hiệu ứng chuyển động", layout: p04Layout },
+      { cinema: cinemas[1]!._id, name: "Phòng Chiếu 05 (VIP)", type: "VIP", rows_count: 6, seats_per_row: 10, totalSeats: getSeatLabels(p05Layout).length, status: "active", description: "Phòng VIP ghế ngồi rộng", layout: p05Layout },
     ]);
     console.log(`🎦 [Seed]: Đã tạo ${rooms.length} phòng chiếu.`);
 
@@ -397,24 +409,24 @@ async function seedDatabase() {
       for (const date of showDates) {
         const count = Math.floor(Math.random() * 3) + 2;
         for (let i = 0; i < count; i++) {
-          const hours = [8, 10, 13, 15, 18, 20, 22][Math.floor(Math.random() * 7)];
-          const minutes = [0, 15, 30, 45][Math.floor(Math.random() * 4)];
+          const hours = [8, 10, 13, 15, 18, 20, 22][Math.floor(Math.random() * 7)] ?? 18;
+          const minutes = [0, 15, 30, 45][Math.floor(Math.random() * 4)] ?? 0;
           const startTime = new Date(date);
           startTime.setHours(hours, minutes, 0, 0);
 
           if (startTime <= now) continue;
 
-          const roomName = roomNames[Math.floor(Math.random() * roomNames.length)];
-          const room = rooms.find(r => r.name === roomName);
+          const roomName = roomNames[Math.floor(Math.random() * roomNames.length)] ?? roomNames[0]!;
+          const room = rooms.find(r => r.name === roomName) ?? null;
           const price = room ? (room.type === "IMAX" ? 120000 : room.type === "4DX" ? 130000 : room.type === "3D" ? 90000 : room.type === "VIP" ? 150000 : 75000) : 90000;
           const allLabels = seatLabelsByRoomName[roomName] || [];
 
           showtimeDocs.push({
-            movieId: movie._id,
-            roomId: room ? room._id : null,
+            movie: movie._id,
+            room: room ? room._id : null,
             roomName,
             startTime,
-            price: price + Math.floor(Math.random() * 20000),
+            price: price + Math.floor(Math.random() * 20) * 1000,
             availableSeats: [...allLabels],
             layout: room ? getLayout(room) : null,
             status: "active",
@@ -427,11 +439,11 @@ async function seedDatabase() {
 
     // ===================== TẠO COMBO =====================
     const combos = await Combo.insertMany([
-      { name: "Combo Solo", price: 65000, image: "https://picsum.photos/seed/combo-solo/300/300", items: ["Bắp ngọt lớn", "Nước ngọt 32oz"], description: "1 Bắp ngọt lớn + 1 Nước ngọt ly lớn", status: "active" },
-      { name: "Combo Couple", price: 95000, image: "https://picsum.photos/seed/combo-couple/300/300", items: ["Bắp ngọt lớn", "Nước ngọt 32oz x2"], description: "1 Bắp lớn + 2 Nước ngọt ly lớn", status: "active" },
-      { name: "Combo Family", price: 159000, image: "https://picsum.photos/seed/combo-family/300/300", items: ["Bắp ngọt lớn x2", "Nước ngọt 32oz x3"], description: "2 Bắp lớn + 3 Nước ngọt ly lớn", status: "active" },
-      { name: "Combo Student", price: 49000, image: "https://picsum.photos/seed/combo-student/300/300", items: ["Bắp ngọt nhỏ", "Nước ngọt 22oz"], description: "1 Bắp nhỏ + 1 Nước ngọt nhỏ", status: "active" },
-      { name: "Burger Meal", price: 79000, image: "", items: ["Burger gà", "Khoai tây chiên", "Nước ngọt 32oz"], description: "Burger gà + Khoai tây chiên + Nước ngọt", status: "active" },
+      { name: "Combo Solo", price: 65000, image: "https://picsum.photos/seed/combo-solo/300/300", description: "1 Bắp ngọt lớn + 1 Nước ngọt ly lớn", status: "active" },
+      { name: "Combo Couple", price: 95000, image: "https://picsum.photos/seed/combo-couple/300/300", description: "1 Bắp lớn + 2 Nước ngọt ly lớn", status: "active" },
+      { name: "Combo Family", price: 159000, image: "https://picsum.photos/seed/combo-family/300/300", description: "2 Bắp lớn + 3 Nước ngọt ly lớn", status: "active" },
+      { name: "Combo Student", price: 49000, image: "https://picsum.photos/seed/combo-student/300/300", description: "1 Bắp nhỏ + 1 Nước ngọt nhỏ", status: "active" },
+      { name: "Burger Meal", price: 79000, image: "", description: "Burger gà + Khoai tây chiên + Nước ngọt", status: "active" },
     ]);
     console.log(`🍿 [Seed]: Đã tạo ${combos.length} combo.`);
 
@@ -447,28 +459,28 @@ async function seedDatabase() {
 
     // ===================== TẠO SLIDER =====================
     const sliders = await Slider.insertMany([
-      { title: "Lật Mặt 7: Một Điều Ước", imageUrl: "https://picsum.photos/seed/slider-latmat7/800/400", image: "https://picsum.photos/seed/slider-latmat7/800/400", linkUrl: "", link: "", description: "Phim gia đình cảm động nhất năm", order: 1, active: true },
-      { title: "Avatar: Fire and Ash", imageUrl: "https://picsum.photos/seed/slider-avatar3/800/400", image: "https://picsum.photos/seed/slider-avatar3/800/400", linkUrl: "", link: "", description: "Hành trình trở lại Pandora", order: 2, active: true },
-      { title: "Deadpool & Wolverine", imageUrl: "https://picsum.photos/seed/slider-deadpool/800/400", image: "https://picsum.photos/seed/slider-deadpool/800/400", linkUrl: "", link: "", description: "Bộ đôi lầy lội nhất vũ trụ", order: 3, active: true },
-      { title: "Inside Out 2", imageUrl: "https://picsum.photos/seed/slider-insideout2/800/400", image: "https://picsum.photos/seed/slider-insideout2/800/400", linkUrl: "", link: "", description: "Cảm xúc mới, cuộc phiêu lưu mới", order: 4, active: true },
+      { title: "Lật Mặt 7: Một Điều Ước", imageUrl: "https://picsum.photos/seed/slider-latmat7/800/400", linkUrl: "", description: "Phim gia đình cảm động nhất năm", order: 1, active: true },
+      { title: "Avatar: Fire and Ash", imageUrl: "https://picsum.photos/seed/slider-avatar3/800/400", linkUrl: "", description: "Hành trình trở lại Pandora", order: 2, active: true },
+      { title: "Deadpool & Wolverine", imageUrl: "https://picsum.photos/seed/slider-deadpool/800/400", linkUrl: "", description: "Bộ đôi lầy lội nhất vũ trụ", order: 3, active: true },
+      { title: "Inside Out 2", imageUrl: "https://picsum.photos/seed/slider-insideout2/800/400", linkUrl: "", description: "Cảm xúc mới, cuộc phiêu lưu mới", order: 4, active: true },
     ]);
     console.log(`📺 [Seed]: Đã tạo ${sliders.length} slider.`);
 
     // ===================== TẠO BOOKING & INVOICE =====================
-    const testUsers = users.filter(u => u.role === "user");
+    const testUsers = users.filter(u => u.role === "customer");
     const activeShowtimes = nowPlayingMovies
       .map(movie => {
-        const movieShowtimes = insertedShowtimes.filter(s => String(s.movieId) === String(movie._id));
+        const movieShowtimes = insertedShowtimes.filter(s => String(s.movie) === String(movie._id));
         return movieShowtimes[Math.floor(movieShowtimes.length / 2)];
       })
-      .filter(Boolean);
+      .filter((s): s is NonNullable<typeof s> => !!s);
 
     const bookingDocs: any[] = [];
     const invoiceDocs: any[] = [];
 
     for (let i = 0; i < 8 && i < activeShowtimes.length; i++) {
-      const showtimeRef = activeShowtimes[i];
-      const userRef = testUsers[i % testUsers.length];
+      const showtimeRef = activeShowtimes[i]!;
+      const userRef = testUsers[i % testUsers.length]!;
 
       // Pick real seats from the showtime's availableSeats
       const allLabels = seatLabelsByRoomName[showtimeRef.roomName] || [];
@@ -482,20 +494,19 @@ async function seedDatabase() {
         if (idx !== -1) showtimeRef.availableSeats.splice(idx, 1);
       }
 
-      const totalPrice = showtimeRef.price * seatCount;
+      const comboItems = [{ name: combos[i % combos.length]!.name, quantity: (i % 2) + 1, price: combos[i % combos.length]!.price }];
+      const comboSum = comboItems.reduce((s, c) => s + c.price * c.quantity, 0);
+      const totalPrice = showtimeRef.price * seatCount + comboSum;
 
       const booking = await Booking.create({
         user: userRef._id,
         showtime: showtimeRef._id,
-        showtimeId: showtimeRef._id,
-        userId: userRef._id,
         seats: seatNames,
-        combo: combos[i % combos.length]._id,
-        comboQuantity: Math.floor(Math.random() * 2) + 1,
+        combos: comboItems,
         totalPrice,
-        totalAmount: totalPrice,
         status: "paid",
         paymentStatus: "completed",
+        paymentMethod: ["momo", "zalopay", "vnpay", "cash"][i % 4],
       });
 
       // Update showtime in DB with reduced availableSeats
@@ -504,7 +515,7 @@ async function seedDatabase() {
       const invoice = await Invoice.create({
         booking: booking._id,
         amount: totalPrice,
-        method: ["momo", "zalopay", "vnpay", "credit_card", "cash"][i % 5],
+        method: ["momo", "zalopay", "vnpay", "credit_card", "cash"][i % 5] as "momo" | "zalopay" | "vnpay" | "credit_card" | "cash",
         status: "paid",
         transactionId: `TXN${Date.now()}${i}`,
       });
@@ -552,8 +563,8 @@ async function seedDatabase() {
 
     const reviewDocs: any[] = [];
     for (let i = 0; i < 30; i++) {
-      const movie = reviewMovies[i % reviewMovies.length];
-      const user = testUsers[(i + Math.floor(i / reviewMovies.length)) % testUsers.length];
+      const movie = reviewMovies[i % reviewMovies.length]!;
+      const user = testUsers[(i + Math.floor(i / reviewMovies.length)) % testUsers.length]!;
       reviewDocs.push({
         movie: movie._id,
         user: user._id,
@@ -586,7 +597,7 @@ async function seedDatabase() {
     console.log(`   - ${actors.length} diễn viên`);
     console.log(`   - ${directors.length} đạo diễn`);
     console.log(`   - ${movies.length} phim`);
-    console.log(`   - ${users.length} tài khoản (1 admin, 2 staff, 5 user)`);
+    console.log(`   - ${users.length} tài khoản (1 admin, 2 staff, 5 khách hàng)`);
     console.log(`   - ${cinemas.length} cụm rạp`);
     console.log(`   - ${rooms.length} phòng chiếu`);
     console.log(`   - ${seatDocs.length} ghế`);

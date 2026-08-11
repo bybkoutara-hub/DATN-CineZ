@@ -1,30 +1,31 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IUser extends Document {
-  name: string;
+  username: string;
+  fullName: string;
   email: string;
   password: string;
   phone: string;
-  role: "user" | "admin" | "staff" | "customer";
+  role: "customer" | "admin" | "staff";
   loyaltyPoints: number;
-  username: string;
-  fullName: string;
   active: boolean;
 }
 
 const UserSchema: Schema = new Schema(
   {
-    name: { type: String, default: "" },
-    email: { type: String, default: "", lowercase: true },
-    password: { type: String, required: true },
+    username: { type: String, default: null },       // tài khoản đăng nhập (admin/staff) — khách hàng đăng ký bằng email
+    fullName: { type: String, default: "" },         // tên hiển thị
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    password: { type: String, required: true },      // luôn bcrypt hash
     phone: { type: String, default: "" },
-    role: { type: String, enum: ["user", "admin", "staff", "customer"], default: "user" },
+    role: { type: String, enum: ["customer", "admin", "staff"], default: "customer" },
     loyaltyPoints: { type: Number, default: 0 },
-    username: { type: String, default: null },
-    fullName: { type: String, default: "" },
     active: { type: Boolean, default: true },
   },
-  { timestamps: true }
+  { timestamps: true } // tự động createdAt, updatedAt
 );
+
+// username chỉ bắt buộc với admin/staff → index sparse để vẫn cho phép khách không có username
+UserSchema.index({ username: 1 }, { unique: true, sparse: true });
 
 export default mongoose.model<IUser>("User", UserSchema);

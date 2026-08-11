@@ -34,7 +34,7 @@ router.get("/movies", async (req, res) => {
 
 router.post("/bookings", protect, async (req, res) => {
   try {
-    const { showtime, seats, combo, totalPrice } = req.body;
+    const { showtime, seats, combos, totalPrice } = req.body;
     const st = await Showtime.findById(showtime);
     if (!st) {
       res.status(404).json({ success: false, message: "Không tìm thấy suất chiếu" });
@@ -44,9 +44,11 @@ router.post("/bookings", protect, async (req, res) => {
       user: req.user?.id,
       showtime,
       seats,
-      combo,
+      combos: combos || [],
       totalPrice,
       status: "paid",
+      paymentStatus: "completed",
+      paymentMethod: "cash",
     });
     res.status(201).json({ success: true, message: "Đặt vé xem phim thành công!", data: booking });
   } catch (error: any) {

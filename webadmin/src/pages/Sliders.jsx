@@ -8,7 +8,7 @@ const Sliders = () => {
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSlider, setEditingSlider] = useState(null);
-  const [formData, setFormData] = useState({ title: '', image: '', link: '', order: 1, status: 'active' });
+  const [formData, setFormData] = useState({ title: '', imageUrl: '', linkUrl: '', order: 1, status: 'active' });
 
   const fetchSliders = async () => {
     setLoading(true);
@@ -33,14 +33,14 @@ const Sliders = () => {
       setEditingSlider(slider);
       setFormData({
         title: slider.title,
-        image: slider.image,
-        link: slider.link || '',
+        imageUrl: slider.imageUrl || slider.image,
+        linkUrl: slider.linkUrl || slider.link || '',
         order: slider.order,
         status: slider.active ? 'active' : 'inactive',
       });
     } else {
       setEditingSlider(null);
-      setFormData({ title: '', image: '', link: '', order: sliders.length + 1, status: 'active' });
+      setFormData({ title: '', imageUrl: '', linkUrl: '', order: sliders.length + 1, status: 'active' });
     }
     setIsModalOpen(true);
   };
@@ -87,7 +87,7 @@ const Sliders = () => {
           {sliders.map((slider) => (
             <div key={slider._id} className="card glass slider-card p-0 overflow-hidden">
               <div className="slider-img-wrap relative">
-                <img src={slider.image} alt={slider.title} className="w-full" style={{aspectRatio: '3/1', objectFit: 'cover'}} />
+                <img src={slider.imageUrl || slider.image} alt={slider.title} className="w-full" style={{aspectRatio: '3/1', objectFit: 'cover'}} />
                 <div className="absolute top-2 right-2">
                   <span className={`badge ${slider.active ? 'badge-success' : 'badge-secondary'}`}>
                     {slider.active ? 'Hiển thị' : 'Ẩn'}
@@ -100,7 +100,7 @@ const Sliders = () => {
               <div className="p-md flex justify-between items-center">
                 <div>
                   <h3 className="font-bold text-lg">{slider.title}</h3>
-                  <div className="text-muted text-sm">{slider.link || 'Không có link'}</div>
+                  <div className="text-muted text-sm">{slider.linkUrl || 'Không có link'}</div>
                 </div>
                 <div className="flex gap-sm">
                   <button className="btn-icon text-warning" onClick={() => openModal(slider)}><FiEdit2 /></button>
@@ -123,12 +123,12 @@ const Sliders = () => {
               </div>
               <div className="form-group mb-md">
                 <label className="form-label">URL Hình ảnh</label>
-                <input type="url" className="form-input" required value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} />
-                {formData.image && <img src={formData.image} alt="preview" className="mt-sm rounded" style={{maxHeight: 150, objectFit: 'cover'}} />}
+                <input type="url" className="form-input" required value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} />
+                {formData.imageUrl && <img src={formData.imageUrl} alt="preview" className="mt-sm rounded" style={{maxHeight: 150, objectFit: 'cover'}} />}
               </div>
               <div className="form-group mb-md">
                 <label className="form-label">Link chuyển hướng (không bắt buộc)</label>
-                <input type="text" className="form-input" value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} />
+                <input type="text" className="form-input" value={formData.linkUrl} onChange={e => setFormData({...formData, linkUrl: e.target.value})} />
               </div>
               <div className="grid grid-2 gap-md mb-md">
                 <div className="form-group">

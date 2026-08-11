@@ -72,7 +72,6 @@ export interface Combo {
   name: string;
   price: number;
   image: string;
-  items: string[];
 }
 
 export interface Booking {

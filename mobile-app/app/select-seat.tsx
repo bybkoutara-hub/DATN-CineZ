@@ -28,7 +28,7 @@ const TEXT_MUTED = "#8E8E93";
 
 // Màu chuẩn layout (đồng bộ web + app):
 const STANDARD_SEAT = "#6B21A8";
-const VIP_SEAT = "#DC2626";
+const VIP_SEAT = "#e8f712";
 const COUPLE_SEAT = "#EC4899";
 const RESERVED_COLOR = "#374151";
 const MAINTENANCE_SEAT = "#1F2937";

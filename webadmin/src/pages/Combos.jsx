@@ -9,7 +9,7 @@ const Combos = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCombo, setEditingCombo] = useState(null);
-  const [formData, setFormData] = useState({ name: '', image: '', description: '', price: 0, items: '', status: 'active' });
+  const [formData, setFormData] = useState({ name: '', image: '', description: '', price: 0, status: 'active' });
   const [imgErrors, setImgErrors] = useState({});
 
   useEffect(() => {
@@ -38,7 +38,7 @@ const Combos = () => {
       setFormData({ ...combo });
     } else {
       setEditingCombo(null);
-      setFormData({ name: '', image: '', description: '', price: 0, items: '', status: 'active' });
+      setFormData({ name: '', image: '', description: '', price: 0, status: 'active' });
     }
     setIsModalOpen(true);
   };
@@ -120,7 +120,6 @@ const Combos = () => {
               <div className="text-xl font-bold text-accent mb-md">{formatCurrency(combo.price)}</div>
               
               <div className="flex justify-between items-center border-t pt-sm" style={{borderColor: 'var(--border)'}}>
-                <span className="text-xs text-muted truncate max-w-[150px]" title={combo.items}>{combo.items}</span>
                 <div className="flex gap-xs">
                   <button className="btn-icon text-warning" onClick={() => openModal(combo)}><FiEdit2 size={16}/></button>
                   <button className="btn-icon text-danger" onClick={() => handleDelete(combo._id)}><FiTrash2 size={16}/></button>
@@ -158,11 +157,6 @@ const Combos = () => {
               <div className="form-group mb-md">
                 <label className="form-label">Mô tả ngắn</label>
                 <input type="text" className="form-input" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
-              </div>
-
-              <div className="form-group mb-md">
-                <label className="form-label">Các món gồm có (cách nhau bởi dấu phẩy)</label>
-                <input type="text" className="form-input" value={formData.items} placeholder="VD: Bắp lớn, Coca x2" onChange={e => setFormData({...formData, items: e.target.value})} />
               </div>
 
               <div className="form-group mb-md">

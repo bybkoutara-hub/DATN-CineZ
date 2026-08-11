@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import Booking from "../models/bookingModel";
 import Showtime from "../models/showtimeModel";
-import Combo from "../models/comboModel";
 import Promotion from "../models/promotionModel";
 import {
   acquireShowtimeLock,
@@ -40,14 +39,15 @@ const validateSeatRequest = (seats: unknown, availableCount: number): string | n
 
 /**
  * API 1 — Giữ ghế tạm thời (15 phút):
- * POST /api/bookings/hold { showtimeId, seats }
+ * POST /api/bookings/hold { showtime, seats }
  * - Redis Lock (SET NX EX 900) tuần tự hóa: 1 thời điểm chỉ 1 user xử lý 1 suất.
  * - Atomic conditional update: chỉ giữ khi TẤT CẢ ghế vẫn AVAILABLE -> chống 2 người chọn trùng.
  */
 export const holdBooking = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { showtimeId, seats } = req.body;
-    if (!showtimeId) {
+    const { showtime, showtimeId, seats } = req.body;
+    const showtimeIdStr = showtime || showtimeId; // showtime là chuẩn; showtimeId giữ để tương thích client cũ
+    if (!showtimeIdStr) {
       res.status(400).json({ success: false, message: "Thiếu thông tin suất chiếu" });
       return;
     }
@@ -55,7 +55,7 @@ export const holdBooking = async (req: Request, res: Response): Promise<void> =>
       res.status(400).json({ success: false, message: "Chưa chọn ghế để giữ" });
       return;
     }
-    const st = await Showtime.findById(showtimeId);
+    const st = await Showtime.findById(showtimeIdStr);
     if (!st) {
       res.status(404).json({ success: false, message: "Không tìm thấy suất chiếu" });
       return;
@@ -66,9 +66,9 @@ export const holdBooking = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    await acquireShowtimeLock(String(showtimeId));
-    const grabbed = await holdSeatsAtomic(String(showtimeId), seats);
-    await releaseShowtimeLock(String(showtimeId));
+    await acquireShowtimeLock(String(showtimeIdStr));
+    const grabbed = await holdSeatsAtomic(String(showtimeIdStr), seats);
+    await releaseShowtimeLock(String(showtimeIdStr));
 
     if (!grabbed) {
       res.status(409).json({
@@ -82,12 +82,9 @@ export const holdBooking = async (req: Request, res: Response): Promise<void> =>
     const holdExpiresAt = nowPlusHold();
     const booking = await Booking.create({
       user: req.user?.id,
-      userId: req.user?.id,
-      showtime: showtimeId,
-      showtimeId,
+      showtime: showtimeIdStr,
       seats,
       totalPrice: st.price * seats.length,
-      totalAmount: st.price * seats.length,
       status: "pending",
       paymentStatus: "pending",
       paymentMethod: "hold",
@@ -108,8 +105,8 @@ export const holdBooking = async (req: Request, res: Response): Promise<void> =>
 
 export const createBooking = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { showtimeId, showtime: showtimeAlt, seats, combos, combo, totalPrice, paymentMethod, promoCode } = req.body;
-    const showtimeIdStr = showtimeId || showtimeAlt;
+    const { showtime, showtimeId, seats, combos, totalPrice, paymentMethod, promoCode } = req.body;
+    const showtimeIdStr = showtime || showtimeId;
     if (!showtimeIdStr) {
       res.status(400).json({ success: false, message: "Thiếu thông tin suất chiếu" });
       return;
@@ -140,20 +137,15 @@ export const createBooking = async (req: Request, res: Response): Promise<void> 
       }
     }
 
-    // Calculate price
+    // Tính giá: tiền ghế + tiền combo (đã chọn từ màn hình bắp nước)
     const seatPrice = st.price * (seats?.length ?? 0);
-    let comboId = combo;
-    let comboPrice = 0;
-    if (combos && Array.isArray(combos) && combos.length > 0) {
-      comboPrice = combos.reduce((sum: number, c: any) => sum + (c.price || 0) * (c.quantity || 1), 0);
-    } else if (combo) {
-      const found = await Combo.findById(combo);
-      if (found) comboPrice = found.price;
-    }
+    const comboPrice = Array.isArray(combos)
+      ? combos.reduce((sum: number, c: any) => sum + (c.price || 0) * (c.quantity || 1), 0)
+      : 0;
 
     const rawTotal = seatPrice + comboPrice;
 
-    // Apply promo code if provided
+    // Áp dụng mã giảm giá nếu có
     let discount = 0;
     let appliedPromotionId: mongoose.Types.ObjectId | undefined = undefined;
     let finalPromoCode = "";
@@ -166,7 +158,7 @@ export const createBooking = async (req: Request, res: Response): Promise<void> 
           if (promo.usageLimit === 0 || promo.usedCount < promo.usageLimit) {
             if (rawTotal >= promo.minOrderValue) {
               if (promo.discountType === "percent") {
-                discount = Math.round(rawTotal * promo.discountValue / 100);
+                discount = Math.round((rawTotal * promo.discountValue) / 100);
                 if (promo.maxDiscount > 0 && discount > promo.maxDiscount) {
                   discount = promo.maxDiscount;
                 }
@@ -187,18 +179,13 @@ export const createBooking = async (req: Request, res: Response): Promise<void> 
 
     const booking = await Booking.create({
       user: req.user?.id,
-      userId: req.user?.id,
       showtime: showtimeIdStr,
-      showtimeId: showtimeIdStr,
       seats,
-      combo: comboId,
-      comboQuantity: combos?.length || 0,
+      combos: combos || [],
       totalPrice: finalTotal,
-      totalAmount: finalTotal,
       status: isPaidImmediately ? "paid" : "pending",
       paymentStatus: isPaidImmediately ? "completed" : "pending",
       paymentMethod: paymentMethod || "cash",
-      combos: combos || [],
       promoCode: finalPromoCode,
       discount,
       appliedPromotion: appliedPromotionId,
@@ -235,12 +222,12 @@ export const getMyBookingHistory = async (req: Request, res: Response): Promise<
     const history = await Booking.find({ user: userId })
       .populate({
         path: "showtime",
-        populate: { path: "movieId", select: "title poster_url duration" },
+        populate: { path: "movie", select: "title poster_url duration" },
       })
       .sort({ createdAt: -1 });
     const data = history.map((b) => {
-      const obj = b.toObject();
-      const movie = obj.showtime?.movieId || obj.showtimeId?.movieId || {};
+      const obj: any = b.toObject();
+      const movie = obj.showtime?.movie || {};
       if (movie.poster_url) {
         movie.poster_url = fixPosterUrl(movie.poster_url);
       }
@@ -273,7 +260,7 @@ export const cancelBooking = async (req: Request, res: Response): Promise<void> 
     }
     // Hoàn ghế
     if (booking.seats && booking.seats.length > 0) {
-      await Showtime.findByIdAndUpdate(booking.showtimeId, {
+      await Showtime.findByIdAndUpdate(booking.showtime, {
         $addToSet: { availableSeats: { $each: booking.seats } },
       });
     }
@@ -288,7 +275,9 @@ export const cancelBooking = async (req: Request, res: Response): Promise<void> 
 
 export const getBookingById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const booking = await Booking.findById(req.params.id).populate("showtime").populate("combo");
+    const booking = await Booking.findById(req.params.id)
+      .populate("showtime")
+      .populate("user", "fullName email phone");
     if (!booking) {
       res.status(404).json({ success: false, message: "Không tìm thấy đơn vé" });
       return;
@@ -298,5 +287,3 @@ export const getBookingById = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ success: false, message: error.message });
   }
 };
-
-
