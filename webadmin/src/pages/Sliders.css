@@ -1,0 +1,25 @@
+.sliders-page {
+  padding-bottom: var(--space-xl);
+}
+
+.slider-card {
+  transition: all var(--transition-base);
+}
+
+.slider-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--accent);
+  box-shadow: var(--shadow-glow);
+}
+
+.slider-img-wrap {
+  position: relative;
+}
+
+.slider-img-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+  pointer-events: none;
+}
