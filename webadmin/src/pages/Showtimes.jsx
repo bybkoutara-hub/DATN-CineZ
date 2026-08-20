@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   FiPlus, FiEdit2, FiTrash2, FiSearch, FiX, FiClock,
-  FiCalendar, FiChevronLeft, FiChevronRight, FiFilm, FiMonitor
+  FiCalendar, FiChevronLeft, FiChevronRight
 } from 'react-icons/fi';
 import { showtimeAPI, movieAPI, roomAPI } from '../api/apiService';
 import './Showtimes.css';
@@ -46,9 +46,9 @@ const Showtimes = () => {
   const [error, setError] = useState('');
   const [notification, setNotification] = useState(null);
   const [search, setSearch] = useState('');
-  const [filterDate, setFilterDate] = useState('');
-  const [filterMovie, setFilterMovie] = useState('');
-  const [filterRoom, setFilterRoom] = useState('');
+  const [filterDateFrom, setFilterDateFrom] = useState('');
+  const [filterDateTo, setFilterDateTo] = useState('');
+  const [showPast, setShowPast] = useState(false);
   const [page, setPage] = useState(1);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -67,7 +67,11 @@ const Showtimes = () => {
     setError('');
     try {
       const [showtimesRes, moviesRes, roomsRes] = await Promise.all([
-        showtimeAPI.getAll(),
+        showtimeAPI.getAll({
+          showAll: showPast ? 'true' : undefined,
+          dateFrom: filterDateFrom || undefined,
+          dateTo: filterDateTo || undefined,
+        }),
         movieAPI.getAll(),
         roomAPI.getAll(),
       ]);
@@ -84,6 +88,10 @@ const Showtimes = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [showPast, filterDateFrom, filterDateTo]);
 
   useEffect(() => {
     if (form.movie && form.startTime) {
@@ -104,18 +112,13 @@ const Showtimes = () => {
           (s.room?.name || s.roomName || '').toLowerCase().includes(q),
       );
     }
-    if (filterDate) {
-      data = data.filter((s) => toDateInput(s.startTime) === filterDate);
-    }
-    if (filterMovie) data = data.filter((s) => (s.movie?._id || s.movie) === filterMovie);
-    if (filterRoom) data = data.filter((s) => (s.room?._id || s.room) === filterRoom);
     return data;
-  }, [showtimes, search, filterDate, filterMovie, filterRoom]);
+  }, [showtimes, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  useEffect(() => { setPage(1); }, [search, filterDate, filterMovie, filterRoom]);
+  useEffect(() => { setPage(1); }, [search, filterDateFrom, filterDateTo, showPast]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -177,7 +180,8 @@ const Showtimes = () => {
         showNotification('Xoá suất chiếu thành công');
         fetchData();
       } catch (err) {
-        showNotification(err.message || 'Xoá thất bại', 'error');
+        const serverMsg = err.response?.data?.message || err.response?.data?.error || err.message;
+        showNotification(serverMsg || 'Xoá thất bại', 'error');
       }
     }
   };
@@ -239,32 +243,41 @@ const Showtimes = () => {
 
         <div className="st-filter-group">
           <div className="st-filter-item">
-            <FiCalendar />
+            <FiCalendar className="st-filter-icon" />
+            <div className="st-filter-field">
+              <span className="st-filter-label">Từ ngày</span>
+              <input
+                type="date"
+                className="st-filter-input"
+                value={filterDateFrom}
+                onChange={(e) => setFilterDateFrom(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="st-filter-item">
+            <FiCalendar className="st-filter-icon" />
+            <div className="st-filter-field">
+              <span className="st-filter-label">Đến ngày</span>
+              <input
+                type="date"
+                className="st-filter-input"
+                value={filterDateTo}
+                min={filterDateFrom || undefined}
+                onChange={(e) => setFilterDateTo(e.target.value)}
+              />
+            </div>
+          </div>
+          <label className="st-show-past">
             <input
-              type="date"
-              className="st-filter-input"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
+              type="checkbox"
+              checked={showPast}
+              onChange={(e) => setShowPast(e.target.checked)}
             />
-          </div>
-          <div className="st-filter-item">
-            <FiFilm />
-            <select className="st-filter-select" value={filterMovie} onChange={(e) => setFilterMovie(e.target.value)}>
-              <option value="">Tất cả phim</option>
-              {movies.map((m) => (
-                <option key={m._id} value={m._id}>{m.title}</option>
-              ))}
-            </select>
-          </div>
-          <div className="st-filter-item">
-            <FiMonitor />
-            <select className="st-filter-select" value={filterRoom} onChange={(e) => setFilterRoom(e.target.value)}>
-              <option value="">Tất cả phòng</option>
-              {rooms.map((r) => (
-                <option key={r._id} value={r._id}>{r.name} ({r.type})</option>
-              ))}
-            </select>
-          </div>
+            <span className="st-show-past-track">
+              <span className="st-show-past-thumb" />
+            </span>
+            <span className="st-show-past-text">Hiện suất đã qua</span>
+          </label>
         </div>
       </div>
 

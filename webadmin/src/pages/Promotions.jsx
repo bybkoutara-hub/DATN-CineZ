@@ -47,14 +47,14 @@ export default function Promotions() {
   const mapPromotion = (p) => ({
     ...p,
     name: p.name || p.code || '',
-    status: p.status || (p.active !== undefined ? (p.active ? 'active' : 'paused') : 'active'),
+    status: p.status || 'active',
   });
 
   const fetchPromotions = async () => {
     setLoading(true);
     try {
       const params = {};
-      if (filterStatus !== 'all') params.active = filterStatus === 'active';
+      if (filterStatus !== 'all') params.status = filterStatus;
       if (searchTerm) params.search = searchTerm;
       const result = await promotionAPI.getAll(params);
       setPromotions((result.data || []).map(mapPromotion));
@@ -104,7 +104,7 @@ export default function Promotions() {
       startDate: typeof promo.startDate === 'string' ? promo.startDate.split('T')[0] : promo.startDate,
       endDate: typeof promo.endDate === 'string' ? promo.endDate.split('T')[0] : promo.endDate,
       usageLimit: promo.usageLimit,
-      status: promo.active !== undefined ? (promo.active ? 'active' : 'paused') : promo.status,
+      status: promo.status || 'active',
     });
     setShowModal(true);
   };
@@ -122,7 +122,7 @@ export default function Promotions() {
       usageLimit: Number(formData.usageLimit),
       startDate: formData.startDate,
       endDate: formData.endDate,
-      active: formData.status === 'active',
+      status: formData.status,
     };
     try {
       if (editingId) {

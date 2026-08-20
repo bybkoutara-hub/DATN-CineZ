@@ -1,8 +1,30 @@
-import { Stack } from "expo-router";
+import { Stack, useRootNavigationState, useRouter, useSegments } from "expo-router";
+import React, { useEffect } from "react";
 import { ToastProvider } from "../components/Toast";
 import { ConfirmProvider } from "../components/ConfirmModal";
+import { isLoggedIn } from "../services/authService";
 
 export default function RootLayout() {
+  const segments = useSegments();
+  const router = useRouter();
+  const navigationState = useRootNavigationState();
+
+  // Chặn khách (chưa đăng nhập) vào các tab: luôn đưa về trang chào (welcome)
+  useEffect(() => {
+    if (!navigationState?.key) return;
+    if (segments[0] !== "(tabs)") return;
+    let active = true;
+    (async () => {
+      const authed = await isLoggedIn();
+      if (active && !authed) {
+        router.replace("/");
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [navigationState?.key, segments, router]);
+
   return (
     <ToastProvider>
       <ConfirmProvider>

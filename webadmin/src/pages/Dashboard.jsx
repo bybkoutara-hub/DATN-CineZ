@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Chart as ChartJS, 
   CategoryScale, 
@@ -15,6 +15,7 @@ import {
 import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiTag, FiFilm, FiUsers, FiDownload } from 'react-icons/fi';
 import { dashboardAPI, bookingAPI } from '../api/apiService';
+import { useToast } from '../contexts/ToastContext';
 import StatCard from '../components/StatCard';
 import './Dashboard.css';
 
@@ -41,19 +42,31 @@ const Dashboard = () => {
   const [recentBookings, setRecentBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState({ fromDate: '', toDate: '' });
+  const toast = useToast();
+  const firstLoad = useRef(true);
 
   useEffect(() => {
+    firstLoad.current = true;
     fetchDashboardData();
+    return () => {
+      firstLoad.current = true;
+    };
   }, []);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (override = null) => {
     try {
       setLoading(true);
+      const isInitial = firstLoad.current;
+      firstLoad.current = false;
+      const { fromDate, toDate } = override || dateRange;
+      const params = {};
+      if (fromDate) params.from = fromDate;
+      if (toDate) params.to = toDate;
       const [statsRes, revenueRes, topMoviesRes, bookingsRes] = await Promise.all([
-        dashboardAPI.getStats(),
-        dashboardAPI.getRevenue(),
-        dashboardAPI.getTopMovies(5),
-        bookingAPI.getAll(),
+        dashboardAPI.getStats(params),
+        dashboardAPI.getRevenue(params),
+        dashboardAPI.getTopMovies(5, params),
+        bookingAPI.getAll(params),
       ]);
 
       if (statsRes?.success) {
@@ -70,7 +83,7 @@ const Dashboard = () => {
       }
 
       if (revenueRes?.data && Array.isArray(revenueRes.data)) {
-        setRevenueChart(revenueRes.data);
+        setRevenueChart(fillDateRange(revenueRes.data, fromDate, toDate));
       }
       if (topMoviesRes?.data && Array.isArray(topMoviesRes.data)) {
         setTopMovies(topMoviesRes.data);
@@ -78,8 +91,18 @@ const Dashboard = () => {
       if (bookingsRes?.data && Array.isArray(bookingsRes.data)) {
         setRecentBookings(bookingsRes.data.slice(0, 5));
       }
+      const rangeText = fromDate || toDate
+        ? ` từ ${fromDate || 'đầu'} đến ${toDate || 'nay'}`
+        : '';
+      if (isInitial) return;
+      if ((fromDate || toDate) && statsRes?.data && statsRes.data.totalBookings === 0) {
+        toast.warning(`Không có đơn đặt vé trong khoảng ${fromDate || 'đầu'} → ${toDate || 'nay'}`);
+      } else {
+        toast.success(`Đã lọc dữ liệu${rangeText}`);
+      }
     } catch (err) {
       console.error('Lỗi tải dữ liệu dashboard:', err);
+      toast.error(err.response?.data?.message || err.message || 'Lỗi tải dữ liệu dashboard');
     } finally {
       setLoading(false);
     }
@@ -87,6 +110,33 @@ const Dashboard = () => {
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat('vi-VN').format(value || 0) + ' VNĐ';
+  };
+
+  const fillDateRange = (data, from, to) => {
+    if (!from || !to || !data || data.length === 0) return data || [];
+    const map = new Map(data.map((d) => [d.date, d]));
+    const result = [];
+    const start = new Date(`${from}T00:00:00Z`);
+    const end = new Date(`${to}T00:00:00Z`);
+    for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+      const key = d.toISOString().slice(0, 10);
+      result.push(map.get(key) || { date: key, revenue: 0, tickets: 0 });
+    }
+    return result;
+  };
+
+  const setPresetRange = (days) => {
+    const fmt = (d) => {
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${d.getFullYear()}-${m}-${day}`;
+    };
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - (days - 1));
+    const range = { fromDate: fmt(from), toDate: fmt(to) };
+    setDateRange(range);
+    fetchDashboardData(range);
   };
 
   const chartOptions = {
@@ -143,6 +193,12 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-page animate-fade-in">
+      {loading && (
+        <div className="dashboard-loading-overlay">
+          <div className="dashboard-spinner" />
+          <span>Đang tải dữ liệu...</span>
+        </div>
+      )}
       <div className="page-header">
         <h1 className="page-title">
           <FiTrendingUp />
@@ -180,7 +236,20 @@ const Dashboard = () => {
       <div className="dashboard-filter card glass mb-lg">
         <div className="filter-header flex justify-between items-center mb-md">
           <h3 className="font-semibold text-lg">Lọc doanh thu</h3>
-          <button className="btn btn-success btn-sm">
+          <button
+            className="btn btn-success btn-sm"
+            onClick={() => {
+              const rangeText = dateRange.fromDate || dateRange.toDate
+                ? ` (${dateRange.fromDate || 'đầu'} → ${dateRange.toDate || 'nay'})`
+                : '';
+              alert(
+                `Báo cáo tổng kết doanh thu${rangeText}\n` +
+                `- Tổng doanh thu: ${formatCurrency(stats.totalRevenue)}\n` +
+                `- Tổng vé đã bán: ${stats.totalTickets.toLocaleString('vi-VN')}\n` +
+                `- Tổng đơn đặt vé: ${stats.totalBookings}`
+              );
+            }}
+          >
             <FiDownload /> Xuất PDF
           </button>
         </div>
@@ -203,7 +272,18 @@ const Dashboard = () => {
               onChange={(e) => setDateRange({...dateRange, toDate: e.target.value})}
             />
           </div>
-          <button className="btn btn-primary">Lọc dữ liệu</button>
+          <button className="btn btn-primary" onClick={fetchDashboardData} disabled={loading}>Lọc dữ liệu</button>
+          <button className="btn btn-secondary" onClick={() => setPresetRange(7)} disabled={loading}>7 ngày qua</button>
+          <button className="btn btn-secondary" onClick={() => setPresetRange(30)} disabled={loading}>30 ngày qua</button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => {
+              setDateRange({ fromDate: '', toDate: '' });
+              fetchDashboardData({ fromDate: '', toDate: '' });
+            }}
+          >
+            Xóa bộ lọc
+          </button>
         </div>
         
         <div className="filter-summary grid grid-2 gap-md mt-lg">
@@ -215,6 +295,11 @@ const Dashboard = () => {
             <div className="text-muted text-sm mb-sm">Vé bán ra kỳ này</div>
             <div className="text-2xl font-bold text-success">{stats.totalTickets.toLocaleString('vi-VN')}</div>
           </div>
+        </div>
+        <div className="text-muted text-sm" style={{ marginTop: 12, textAlign: 'center' }}>
+          {dateRange.fromDate || dateRange.toDate
+            ? `Đang xem dữ liệu từ ${dateRange.fromDate || 'đầu'} đến ${dateRange.toDate || 'nay'}`
+            : 'Đang xem toàn bộ dữ liệu'}
         </div>
       </div>
 

@@ -9,6 +9,7 @@ export const getShowtimes = async (req: Request, res: Response): Promise<void> =
     if (movie) filter.movie = movie;
     else if (movieId) filter.movie = movieId;
     filter.startTime = { $gte: new Date() }; // chỉ lấy suất sắp chiếu
+    filter.status = "active";
     const showtimes = await Showtime.find(filter).sort({ startTime: 1 });
     res.status(200).json({ success: true, data: showtimes });
   } catch (error: any) {

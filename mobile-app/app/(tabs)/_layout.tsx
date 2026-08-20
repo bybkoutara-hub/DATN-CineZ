@@ -31,7 +31,7 @@ export default function TabsLayout() {
     >
       {/* 1. TAB HOME */}
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
           title: "Trang chủ",
           tabBarIcon: ({ color, focused }) => (

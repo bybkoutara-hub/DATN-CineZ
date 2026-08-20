@@ -17,8 +17,11 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import api from "../services/api";
+import { useToast } from "../components/Toast";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+
+const MAX_SEATS_PER_BOOKING = 8;
 
 const BACKGROUND_BLACK = "#000000";
 const SURFACE_DARK = "#121212";
@@ -128,6 +131,7 @@ function getSeatColor(
 export default function SelectSeatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const toast = useToast();
   const { showtimeId, movieTitle, moviePoster } = useLocalSearchParams();
 
   const [showtimeData, setShowtimeData] = useState<any>(null);
@@ -197,11 +201,16 @@ export default function SelectSeatScreen() {
 
   const toggleSeat = (seat: string) => {
     if (!availableSeats.has(seat) || maintenanceSeats.has(seat)) return;
-    setSelectedSeats((prev) =>
-      prev.includes(seat)
-        ? prev.filter((s) => s !== seat)
-        : [...prev, seat]
-    );
+    setSelectedSeats((prev) => {
+      if (prev.includes(seat)) {
+        return prev.filter((s) => s !== seat);
+      }
+      if (prev.length >= MAX_SEATS_PER_BOOKING) {
+        toast.warning(`Mỗi lần đặt tối đa ${MAX_SEATS_PER_BOOKING} ghế`);
+        return prev;
+      }
+      return [...prev, seat];
+    });
   };
 
   const toggleCoupleSeat = (row: string, pair: [number, number]) => {
@@ -214,6 +223,11 @@ export default function SelectSeatScreen() {
       setSelectedSeats((prev) => prev.filter((s) => !pairIds.includes(s)));
     } else {
       setSelectedSeats((prev) => {
+        const currentlySelected = prev.filter((s) => !pairIds.includes(s)).length;
+        if (currentlySelected + pairIds.length > MAX_SEATS_PER_BOOKING) {
+          toast.warning(`Mỗi lần đặt tối đa ${MAX_SEATS_PER_BOOKING} ghế`);
+          return prev;
+        }
         const next = new Set(prev);
         pairIds.forEach((s) => next.add(s));
         return Array.from(next);
@@ -451,7 +465,7 @@ export default function SelectSeatScreen() {
         <View style={styles.tooltipRow}>
           <Ionicons name="information-circle-outline" size={14} color={TEXT_MUTED} />
           <Text style={styles.tooltipText}>
-            Chạm vào ghế để chọn hoặc bỏ chọn
+            Chạm vào ghế để chọn hoặc bỏ chọn (tối đa {MAX_SEATS_PER_BOOKING} ghế/lần đặt)
           </Text>
         </View>
 
@@ -466,7 +480,7 @@ export default function SelectSeatScreen() {
       >
         <View style={styles.priceContainer}>
           <Text style={styles.totalLabel}>
-            Tổng {selectedSeats.length > 0 ? `(${selectedSeats.length} ghế)` : ""}
+            Tổng {selectedSeats.length > 0 ? `(${selectedSeats.length}/${MAX_SEATS_PER_BOOKING} ghế)` : ""}
           </Text>
           <Text style={styles.totalValue}>
             {total.toLocaleString("vi-VN")} đ

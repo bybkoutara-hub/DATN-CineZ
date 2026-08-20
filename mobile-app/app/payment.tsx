@@ -141,7 +141,7 @@ export default function PaymentScreen() {
     if (!queryString) return;
 
     const params: Record<string, string> = {};
-    queryString.split("&").forEach((pair) => {
+    queryString.split("&").forEach((pair: string) => {
       const eqIdx = pair.indexOf("=");
       if (eqIdx === -1) {
         params[decodeURIComponent(pair)] = "";
@@ -244,6 +244,13 @@ export default function PaymentScreen() {
         <StatusBar style="light" />
         <WebView
           source={{ uri: paymentUrl }}
+          onShouldStartLoadWithRequest={(request) => {
+            if (request.url.includes(VNPAY_RETURN_URL)) {
+              handleVnpayNavigation({ url: request.url });
+              return false;
+            }
+            return true;
+          }}
           onNavigationStateChange={handleVnpayNavigation}
           originWhitelist={["*"]}
           javaScriptEnabled={true}

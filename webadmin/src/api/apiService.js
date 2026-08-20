@@ -348,44 +348,21 @@ export const bookingAPI = {
   },
 };
 
-export const invoiceAPI = {
-  getAll: async (params) => {
-    const response = await apiClient.get('/invoices', { params });
-    return formatResponse(response.data);
-  },
-  getById: async (id) => {
-    const response = await apiClient.get(`/invoices/${id}`);
-    return formatResponse(response.data);
-  },
-  create: async (data) => {
-    const response = await apiClient.post('/invoices', data);
-    return formatResponse(response.data.data || response.data, response.data.message);
-  },
-  update: async (id, data) => {
-    const response = await apiClient.put(`/invoices/${id}`, data);
-    return formatResponse(response.data.data || response.data, response.data.message);
-  },
-  getByBooking: async (bookingId) => {
-    const response = await apiClient.get(`/invoices/booking/${bookingId}`);
-    return formatResponse(response.data);
-  },
-};
-
 export const dashboardAPI = {
-  getStats: async () => {
-    const response = await apiClient.get('/dashboard/stats');
+  getStats: async (params) => {
+    const response = await apiClient.get('/dashboard/stats', { params });
     return response.data;
   },
   getRevenue: async (params) => {
     const response = await apiClient.get('/dashboard/revenue', { params });
     return formatResponse(response.data);
   },
-  getRevenueByMovie: async () => {
-    const response = await apiClient.get('/dashboard/revenue-by-movie');
+  getRevenueByMovie: async (params) => {
+    const response = await apiClient.get('/dashboard/revenue-by-movie', { params });
     return formatResponse(response.data);
   },
-  getTopMovies: async (limit) => {
-    const response = await apiClient.get('/dashboard/top-movies', { params: { limit } });
+  getTopMovies: async (limit, params) => {
+    const response = await apiClient.get('/dashboard/top-movies', { params: { limit, ...params } });
     return formatResponse(response.data);
   },
 };

@@ -14,7 +14,6 @@ import {
   getSliders, getSliderById, createSlider, updateSlider, deleteSlider, reorderSliders,
   getSeats, getSeatsByRoom, bulkCreateSeats, updateSeat, deleteSeat,
   getAdminBookings, getAdminBookingById, updateBookingStatus, cancelBooking,
-  getInvoices, getInvoiceById, getInvoiceByBooking, createInvoice, updateInvoice,
   getDashboardStats, getDashboardRevenue, getDashboardRevenueByMovie, getDashboardTopMovies,
   getAdminActors, getAdminActorById, createActor, updateActor, deleteActor,
   getAdminDirectors, getAdminDirectorById, createDirector, updateDirector, deleteDirector,
@@ -95,9 +94,9 @@ router.delete("/staff/:id", protect, requireRole("admin"), deleteStaff);
 router.get("/sliders", protect, requireRole("admin", "staff"), getSliders);
 router.get("/sliders/:id", protect, requireRole("admin", "staff"), getSliderById);
 router.post("/sliders", protect, requireRole("admin"), createSlider);
+router.put("/sliders/reorder", protect, requireRole("admin"), reorderSliders);
 router.put("/sliders/:id", protect, requireRole("admin"), updateSlider);
 router.delete("/sliders/:id", protect, requireRole("admin"), deleteSlider);
-router.put("/sliders/reorder", protect, requireRole("admin"), reorderSliders);
 
 // Seats
 router.get("/seats", protect, requireRole("admin", "staff"), getSeats);
@@ -106,18 +105,11 @@ router.post("/seats/bulk", protect, requireRole("admin"), bulkCreateSeats);
 router.put("/seats/:id", protect, requireRole("admin"), updateSeat);
 router.delete("/seats/:id", protect, requireRole("admin"), deleteSeat);
 
-// Bookings
+// Bookings (hóa đơn được nhúng trong booking, không còn collection invoices riêng)
 router.get("/bookings", protect, requireRole("admin", "staff"), getAdminBookings);
 router.get("/bookings/:id", protect, requireRole("admin", "staff"), getAdminBookingById);
 router.put("/bookings/:id", protect, requireRole("admin", "staff"), updateBookingStatus);
 router.put("/bookings/:id/cancel", protect, requireRole("admin"), cancelBooking);
-
-// Invoices
-router.get("/invoices", protect, requireRole("admin", "staff"), getInvoices);
-router.get("/invoices/:id", protect, requireRole("admin", "staff"), getInvoiceById);
-router.get("/invoices/booking/:bookingId", protect, requireRole("admin", "staff"), getInvoiceByBooking);
-router.post("/invoices", protect, requireRole("admin"), createInvoice);
-router.put("/invoices/:id", protect, requireRole("admin"), updateInvoice);
 
 // Dashboard
 router.get("/dashboard/stats", protect, requireRole("admin", "staff"), getDashboardStats);

@@ -11,8 +11,7 @@ import Combo from "../models/comboModel.js";
 import Promotion from "../models/promotionModel.js";
 import Slider from "../models/sliderModel.js";
 import Cinema from "../models/cinemaModel.js";
-import Booking from "../models/bookingModel.js";
-import Invoice from "../models/invoiceModel.js";
+import Booking, { generateInvoiceNumber } from "../models/bookingModel.js";
 import Review from "../models/reviewModel.js";
 import Actor from "../models/actorModel.js";
 import Director from "../models/directorModel.js";
@@ -42,7 +41,7 @@ async function seedDatabase() {
     await Promise.all([
       Movie.deleteMany({}),
       Showtime.deleteMany({}),
-      User.deleteMany({ $or: [{ username: { $in: DEMO_USERNAMES } }, { role: { $in: ["admin", "staff"] } }] }),
+      User.deleteMany({ username: { $in: DEMO_USERNAMES } }),
       Genre.deleteMany({}),
       Room.deleteMany({}),
       Seat.deleteMany({}),
@@ -51,7 +50,6 @@ async function seedDatabase() {
       Slider.deleteMany({}),
       Cinema.deleteMany({}),
       Booking.deleteMany({}),
-      Invoice.deleteMany({}),
       Review.deleteMany({}),
       Actor.deleteMany({}),
       Director.deleteMany({}),
@@ -250,8 +248,6 @@ async function seedDatabase() {
         genres: ["Khoa học viễn tưởng", "Phiêu lưu", "Kịch tính"],
         status: "coming_soon",
         release_date: "2026-10-17",
-        rating: 0,
-        total_reviews: 0,
         description: "Phần cuối cùng trong hành trình của Paul Atreides trên hành tinh sa mạc Arrakis.",
         director: "Denis Villeneuve",
         cast: ["Timothée Chalamet", "Zendaya", "Rebecca Ferguson"],
@@ -267,8 +263,6 @@ async function seedDatabase() {
         genres: ["Hành động", "Hài hước", "Tội phạm"],
         status: "coming_soon",
         release_date: "2026-09-05",
-        rating: 0,
-        total_reviews: 0,
         description: "Nhóm siêu trộm trở lại với phi vụ táo bạo nhất từ trước đến nay.",
         director: "Lê Văn",
         cast: ["Trấn Thành", "Kiều Minh Tuấn", "Hari Won"],
@@ -284,8 +278,6 @@ async function seedDatabase() {
         genres: ["Hài hước", "Kinh dị", "Gia đình"],
         status: "coming_soon",
         release_date: "2026-12-25",
-        rating: 0,
-        total_reviews: 0,
         description: "Biệt đội săn ma quốc tế được triệu tập để đối phó với một thế lực siêu nhiên khổng lồ.",
         director: "Gil Kenan",
         cast: ["Paul Rudd", "Carrie Coon", "Finn Wolfhard"],
@@ -301,8 +293,6 @@ async function seedDatabase() {
         genres: ["Tội phạm", "Tâm lý", "Kịch tính"],
         status: "coming_soon",
         release_date: "2026-11-20",
-        rating: 0,
-        total_reviews: 0,
         description: "Một vụ án mạng bí ẩn đưa vị thám tử vào vòng xoáy tội lỗi và những âm mưu đen tối.",
         director: "Park Chan-wook",
         cast: ["Song Kang-ho", "Lee Byung-hun", "Jeon Do-yeon"],
@@ -319,14 +309,14 @@ async function seedDatabase() {
     const userPassword = await bcrypt.hash("user123", 10);
 
     const users = await User.insertMany([
-      { username: "admin", password: adminPassword, fullName: "Quản trị viên", email: "admin@cinez.com", phone: "0901234567", role: "admin", active: true },
-      { username: "staff01", password: adminPassword, fullName: "Nhân viên 01", email: "staff1@cinez.com", phone: "0901234568", role: "staff", active: true },
-      { username: "staff02", password: adminPassword, fullName: "Nhân viên 02", email: "staff2@cinez.com", phone: "0901234569", role: "staff", active: true },
-      { username: "user01", password: userPassword, fullName: "Nguyễn Văn An", email: "user01@example.com", phone: "0912345671", role: "customer", active: true, loyaltyPoints: 1200 },
-      { username: "user02", password: userPassword, fullName: "Trần Thị Bình", email: "user02@example.com", phone: "0912345672", role: "customer", active: true, loyaltyPoints: 800 },
-      { username: "user03", password: userPassword, fullName: "Lê Hoàng Cường", email: "user03@example.com", phone: "0912345673", role: "customer", active: true, loyaltyPoints: 450 },
-      { username: "user04", password: userPassword, fullName: "Phạm Minh Dung", email: "user04@example.com", phone: "0912345674", role: "customer", active: true, loyaltyPoints: 200 },
-      { username: "user05", password: userPassword, fullName: "Hoàng Thị Em", email: "user05@example.com", phone: "0912345675", role: "customer", active: false, loyaltyPoints: 50 },
+      { username: "admin", password: adminPassword, fullName: "Quản trị viên", email: "admin@cinez.com", phone: "0901234567", role: "admin", status: "active" },
+      { username: "staff01", password: adminPassword, fullName: "Nhân viên 01", email: "staff1@cinez.com", phone: "0901234568", role: "staff", status: "active" },
+      { username: "staff02", password: adminPassword, fullName: "Nhân viên 02", email: "staff2@cinez.com", phone: "0901234569", role: "staff", status: "active" },
+      { username: "user01", password: userPassword, fullName: "Nguyễn Văn An", email: "user01@example.com", phone: "0912345671", role: "customer", status: "active" },
+      { username: "user02", password: userPassword, fullName: "Trần Thị Bình", email: "user02@example.com", phone: "0912345672", role: "customer", status: "active" },
+      { username: "user03", password: userPassword, fullName: "Lê Hoàng Cường", email: "user03@example.com", phone: "0912345673", role: "customer", status: "active" },
+      { username: "user04", password: userPassword, fullName: "Phạm Minh Dung", email: "user04@example.com", phone: "0912345674", role: "customer", status: "active" },
+      { username: "user05", password: userPassword, fullName: "Hoàng Thị Em", email: "user05@example.com", phone: "0912345675", role: "customer", status: "inactive" },
     ]);
     console.log(`👤 [Seed]: Đã tạo ${users.length} tài khoản (admin/staff/customer).`);
 
@@ -389,6 +379,13 @@ async function seedDatabase() {
     // ===================== TẠO SUẤT CHIẾU =====================
     const nowPlayingMovies = movies.filter(m => m.status === "now_playing");
 
+    // Helper: chuẩn hoá giờ Việt Nam (+07:00) — đồng bộ với adminController
+    const pad2 = (n: number): string => String(n).padStart(2, "0");
+    const toVNDateStr = (d: Date): string => {
+      const vn = new Date(d.getTime() + 7 * 3600 * 1000);
+      return `${vn.getUTCFullYear()}-${pad2(vn.getUTCMonth() + 1)}-${pad2(vn.getUTCDate())}`;
+    };
+
     // Build roomName → all seat labels map
     const seatLabelsByRoomName: Record<string, string[]> = {};
     for (const room of rooms) {
@@ -400,25 +397,25 @@ async function seedDatabase() {
     const roomNames = rooms.map(r => r.name);
 
     for (const movie of nowPlayingMovies) {
+      // Suất chiếu trong 7 ngày tới (theo giờ VN) để app luôn hiển thị suất tương lai
       const showDates = [2, 3, 4, 5, 6, 7].map(d => {
         const date = new Date(now);
         date.setDate(date.getDate() + d);
-        return date;
+        return toVNDateStr(date);
       });
 
-      for (const date of showDates) {
+      for (const dateStr of showDates) {
         const count = Math.floor(Math.random() * 3) + 2;
         for (let i = 0; i < count; i++) {
           const hours = [8, 10, 13, 15, 18, 20, 22][Math.floor(Math.random() * 7)] ?? 18;
           const minutes = [0, 15, 30, 45][Math.floor(Math.random() * 4)] ?? 0;
-          const startTime = new Date(date);
-          startTime.setHours(hours, minutes, 0, 0);
+          const startTime = new Date(`${dateStr}T${pad2(hours)}:${pad2(minutes)}:00+07:00`);
 
           if (startTime <= now) continue;
 
           const roomName = roomNames[Math.floor(Math.random() * roomNames.length)] ?? roomNames[0]!;
           const room = rooms.find(r => r.name === roomName) ?? null;
-          const price = room ? (room.type === "IMAX" ? 120000 : room.type === "4DX" ? 130000 : room.type === "3D" ? 90000 : room.type === "VIP" ? 150000 : 75000) : 90000;
+          const price = room ? basePrices[room.type] ?? 90000 : 90000;
           const allLabels = seatLabelsByRoomName[roomName] || [];
 
           showtimeDocs.push({
@@ -435,7 +432,7 @@ async function seedDatabase() {
       }
     }
     const insertedShowtimes = await Showtime.insertMany(showtimeDocs);
-    console.log(`🕐 [Seed]: Đã tạo ${insertedShowtimes.length} suất chiếu.`);
+    console.log(`🕐 [Seed]: Đã tạo ${insertedShowtimes.length} suất chiếu (giờ VN +07:00, 7 ngày tới).`);
 
     // ===================== TẠO COMBO =====================
     const combos = await Combo.insertMany([
@@ -449,20 +446,20 @@ async function seedDatabase() {
 
     // ===================== TẠO KHUYẾN MÃI =====================
     const promos = await Promotion.insertMany([
-      { code: "WELCOME10", title: "Giảm 10%", description: "Giảm 10% cho đơn hàng đầu tiên", discountType: "percent", discountValue: 10, minOrderValue: 100000, maxDiscount: 50000, usageLimit: 1000, usedCount: 0, startDate: new Date("2026-01-01"), endDate: new Date("2026-12-31"), active: true },
-      { code: "T5GIAM50", title: "Thứ 5 giảm 50k", description: "Giảm 50.000đ cho vé xem phim vào thứ 5 hàng tuần", discountType: "amount", discountValue: 50000, minOrderValue: 100000, maxDiscount: 50000, usageLimit: 500, usedCount: 15, startDate: new Date("2026-01-01"), endDate: new Date("2026-12-31"), active: true },
-      { code: "SINHNHAT", title: "Quà sinh nhật", description: "Giảm 30% vé xem phim nhân dịp sinh nhật (tối đa 100k)", discountType: "percent", discountValue: 30, minOrderValue: 0, maxDiscount: 100000, usageLimit: 1, usedCount: 0, startDate: new Date("2026-01-01"), endDate: new Date("2026-12-31"), active: true },
-      { code: "COMBO20", title: "Giảm combo 20%", description: "Giảm 20% khi mua combo bắp nước", discountType: "percent", discountValue: 20, minOrderValue: 50000, maxDiscount: 30000, usageLimit: 200, usedCount: 8, startDate: new Date("2026-01-01"), endDate: new Date("2026-12-31"), active: true },
-      { code: "THU7VIP", title: "Thứ 7 VIP", description: "Giảm 30k cho vé VIP vào thứ 7", discountType: "amount", discountValue: 30000, minOrderValue: 150000, maxDiscount: 30000, usageLimit: 100, usedCount: 3, startDate: new Date("2026-01-01"), endDate: new Date("2026-06-30"), active: true },
+      { code: "WELCOME10", title: "Giảm 10%", description: "Giảm 10% cho đơn hàng đầu tiên", discountType: "percent", discountValue: 10, minOrderValue: 100000, maxDiscount: 50000, usageLimit: 1000, usedCount: 0, startDate: new Date("2026-01-01"), endDate: new Date("2026-12-31"), status: "active" },
+      { code: "T5GIAM50", title: "Thứ 5 giảm 50k", description: "Giảm 50.000đ cho vé xem phim vào thứ 5 hàng tuần", discountType: "amount", discountValue: 50000, minOrderValue: 100000, maxDiscount: 50000, usageLimit: 500, usedCount: 15, startDate: new Date("2026-01-01"), endDate: new Date("2026-12-31"), status: "active" },
+      { code: "SINHNHAT", title: "Quà sinh nhật", description: "Giảm 30% vé xem phim nhân dịp sinh nhật (tối đa 100k)", discountType: "percent", discountValue: 30, minOrderValue: 0, maxDiscount: 100000, usageLimit: 1, usedCount: 0, startDate: new Date("2026-01-01"), endDate: new Date("2026-12-31"), status: "active" },
+      { code: "COMBO20", title: "Giảm combo 20%", description: "Giảm 20% khi mua combo bắp nước", discountType: "percent", discountValue: 20, minOrderValue: 50000, maxDiscount: 30000, usageLimit: 200, usedCount: 8, startDate: new Date("2026-01-01"), endDate: new Date("2026-12-31"), status: "active" },
+      { code: "THU7VIP", title: "Thứ 7 VIP", description: "Giảm 30k cho vé VIP vào thứ 7", discountType: "amount", discountValue: 30000, minOrderValue: 150000, maxDiscount: 30000, usageLimit: 100, usedCount: 3, startDate: new Date("2026-01-01"), endDate: new Date("2026-06-30"), status: "active" },
     ]);
     console.log(`🏷️ [Seed]: Đã tạo ${promos.length} khuyến mãi.`);
 
     // ===================== TẠO SLIDER =====================
     const sliders = await Slider.insertMany([
-      { title: "Lật Mặt 7: Một Điều Ước", imageUrl: "https://picsum.photos/seed/slider-latmat7/800/400", linkUrl: "", description: "Phim gia đình cảm động nhất năm", order: 1, active: true },
-      { title: "Avatar: Fire and Ash", imageUrl: "https://picsum.photos/seed/slider-avatar3/800/400", linkUrl: "", description: "Hành trình trở lại Pandora", order: 2, active: true },
-      { title: "Deadpool & Wolverine", imageUrl: "https://picsum.photos/seed/slider-deadpool/800/400", linkUrl: "", description: "Bộ đôi lầy lội nhất vũ trụ", order: 3, active: true },
-      { title: "Inside Out 2", imageUrl: "https://picsum.photos/seed/slider-insideout2/800/400", linkUrl: "", description: "Cảm xúc mới, cuộc phiêu lưu mới", order: 4, active: true },
+      { title: "Lật Mặt 7: Một Điều Ước", imageUrl: "https://picsum.photos/seed/slider-latmat7/800/400", linkUrl: "", description: "Phim gia đình cảm động nhất năm", order: 1, status: "active" },
+      { title: "Avatar: Fire and Ash", imageUrl: "https://picsum.photos/seed/slider-avatar3/800/400", linkUrl: "", description: "Hành trình trở lại Pandora", order: 2, status: "active" },
+      { title: "Deadpool & Wolverine", imageUrl: "https://picsum.photos/seed/slider-deadpool/800/400", linkUrl: "", description: "Bộ đôi lầy lội nhất vũ trụ", order: 3, status: "active" },
+      { title: "Inside Out 2", imageUrl: "https://picsum.photos/seed/slider-insideout2/800/400", linkUrl: "", description: "Cảm xúc mới, cuộc phiêu lưu mới", order: 4, status: "active" },
     ]);
     console.log(`📺 [Seed]: Đã tạo ${sliders.length} slider.`);
 
@@ -476,27 +473,52 @@ async function seedDatabase() {
       .filter((s): s is NonNullable<typeof s> => !!s);
 
     const bookingDocs: any[] = [];
-    const invoiceDocs: any[] = [];
 
-    for (let i = 0; i < 8 && i < activeShowtimes.length; i++) {
-      const showtimeRef = activeShowtimes[i]!;
+    // Trạng thái đa dạng để test đủ luồng: 7 đơn thanh toán (tính doanh thu),
+    // 1 pending, 1 cancelled, 1 refunded; createdAt trải 7 ngày cho bộ lọc Dashboard/Invoices
+    const bookingFlows: Array<{
+      status: "paid" | "completed" | "pending" | "cancelled" | "refunded";
+      paymentStatus: "completed" | "pending" | "cancelled";
+      invoiceStatus: "paid" | "pending" | "cancelled";
+      daysAgo: number;
+    }> = [
+      { status: "paid", paymentStatus: "completed", invoiceStatus: "paid", daysAgo: 0 },
+      { status: "paid", paymentStatus: "completed", invoiceStatus: "paid", daysAgo: 0 },
+      { status: "paid", paymentStatus: "completed", invoiceStatus: "paid", daysAgo: 1 },
+      { status: "paid", paymentStatus: "completed", invoiceStatus: "paid", daysAgo: 2 },
+      { status: "completed", paymentStatus: "completed", invoiceStatus: "paid", daysAgo: 3 },
+      { status: "completed", paymentStatus: "completed", invoiceStatus: "paid", daysAgo: 4 },
+      { status: "paid", paymentStatus: "completed", invoiceStatus: "paid", daysAgo: 5 },
+      { status: "pending", paymentStatus: "pending", invoiceStatus: "pending", daysAgo: 1 },
+      { status: "cancelled", paymentStatus: "cancelled", invoiceStatus: "cancelled", daysAgo: 2 },
+      { status: "refunded", paymentStatus: "completed", invoiceStatus: "cancelled", daysAgo: 6 },
+    ];
+
+    for (let i = 0; i < bookingFlows.length; i++) {
+      const flow = bookingFlows[i]!;
+      const showtimeRef = activeShowtimes[i % activeShowtimes.length]!;
       const userRef = testUsers[i % testUsers.length]!;
 
-      // Pick real seats from the showtime's availableSeats
+      // Pick real seats from the showtime's availableSeats (đã trừ các đơn trước cùng suất)
       const allLabels = seatLabelsByRoomName[showtimeRef.roomName] || [];
       const seatCount = Math.min(Math.floor(Math.random() * 3) + 1, Math.floor(allLabels.length / 2));
-      const shuffled = [...allLabels].sort(() => Math.random() - 0.5);
+      const shuffled = [...showtimeRef.availableSeats].sort(() => Math.random() - 0.5);
       const seatNames = shuffled.slice(0, seatCount);
 
-      // Remove booked seats from availableSeats
-      for (const label of seatNames) {
-        const idx = showtimeRef.availableSeats.indexOf(label);
-        if (idx !== -1) showtimeRef.availableSeats.splice(idx, 1);
+      // Chỉ đơn thanh toán (paid/completed/refunded) mới trừ ghế khỏi suất chiếu
+      const deductSeats = flow.status !== "pending" && flow.status !== "cancelled";
+      if (deductSeats) {
+        for (const label of seatNames) {
+          const idx = showtimeRef.availableSeats.indexOf(label);
+          if (idx !== -1) showtimeRef.availableSeats.splice(idx, 1);
+        }
       }
 
       const comboItems = [{ name: combos[i % combos.length]!.name, quantity: (i % 2) + 1, price: combos[i % combos.length]!.price }];
       const comboSum = comboItems.reduce((s, c) => s + c.price * c.quantity, 0);
       const totalPrice = showtimeRef.price * seatCount + comboSum;
+
+      const createdAt = new Date(Date.now() - flow.daysAgo * 24 * 3600 * 1000);
 
       const booking = await Booking.create({
         user: userRef._id,
@@ -504,29 +526,34 @@ async function seedDatabase() {
         seats: seatNames,
         combos: comboItems,
         totalPrice,
-        status: "paid",
-        paymentStatus: "completed",
+        discount: 0,
+        status: flow.status,
+        paymentStatus: flow.paymentStatus,
         paymentMethod: ["momo", "zalopay", "vnpay", "cash"][i % 4],
-      });
+        invoiceNumber: generateInvoiceNumber(),
+        invoiceStatus: flow.invoiceStatus,
+        transactionId: `TXN${Date.now()}${i}`,
+        issuedAt: createdAt,
+        createdAt,
+      } as any);
 
       // Update showtime in DB with reduced availableSeats
-      await Showtime.findByIdAndUpdate(showtimeRef._id, { availableSeats: showtimeRef.availableSeats });
+      if (deductSeats) {
+        await Showtime.findByIdAndUpdate(showtimeRef._id, { availableSeats: showtimeRef.availableSeats });
+      }
 
-      const invoice = await Invoice.create({
-        booking: booking._id,
-        amount: totalPrice,
-        method: ["momo", "zalopay", "vnpay", "credit_card", "cash"][i % 5] as "momo" | "zalopay" | "vnpay" | "credit_card" | "cash",
-        status: "paid",
-        transactionId: `TXN${Date.now()}${i}`,
-      });
+      // Đơn hoàn tiền: ghế được trả lại suất chiếu (giống cancelBooking admin)
+      if (flow.status === "refunded") {
+        await Showtime.findByIdAndUpdate(showtimeRef._id, {
+          $addToSet: { availableSeats: { $each: seatNames } },
+        });
+      }
 
       bookingDocs.push(booking);
-      invoiceDocs.push(invoice);
     }
-    console.log(`🎫 [Seed]: Đã tạo ${bookingDocs.length} đơn đặt vé và hóa đơn (ghế đã được trừ khỏi suất chiếu).`);
+    console.log(`🎫 [Seed]: Đã tạo ${bookingDocs.length} đơn đặt vé + hóa đơn nhúng (ghế đã được trừ khỏi suất chiếu).`);
 
     // ===================== TẠO REVIEW =====================
-    const reviewMovies = movies.slice(0, 8);
     const reviewComments = [
       "Phim rất hay và cảm động, diễn xuất tuyệt vời!",
       "Xúc động từ đầu đến cuối, không thể rời mắt.",
@@ -562,19 +589,26 @@ async function seedDatabase() {
     const ratingDistribution = [5, 5, 5, 4, 5, 5, 4, 5, 4, 5, 5, 4, 4, 3, 5, 5, 5, 4, 4, 5, 3, 5, 4, 5, 5, 4, 5, 4, 5, 3];
 
     const reviewDocs: any[] = [];
-    for (let i = 0; i < 30; i++) {
-      const movie = reviewMovies[i % reviewMovies.length]!;
-      const user = testUsers[(i + Math.floor(i / reviewMovies.length)) % testUsers.length]!;
-      reviewDocs.push({
-        movie: movie._id,
-        user: user._id,
-        rating: ratingDistribution[i % ratingDistribution.length],
-        comment: reviewComments[i % reviewComments.length],
-      });
+    // KHÔNG trùng cặp (movie, user) — reviewModel có unique index { movie: 1, user: 1 }
+    // 6 phim × 5 user = 30 review, mỗi user chỉ 1 đánh giá/phim
+    const reviewMoviesForUsers = movies.slice(0, 6);
+    for (let mi = 0; mi < reviewMoviesForUsers.length; mi++) {
+      for (let ui = 0; ui < testUsers.length; ui++) {
+        const idx = mi * testUsers.length + ui;
+        const movie = reviewMoviesForUsers[mi]!;
+        const user = testUsers[ui]!;
+        reviewDocs.push({
+          movie: movie._id,
+          user: user._id,
+          rating: ratingDistribution[idx % ratingDistribution.length],
+          comment: reviewComments[idx % reviewComments.length],
+          createdAt: new Date(Date.now() - (idx % 7) * 24 * 3600 * 1000),
+        });
+      }
     }
     await Review.insertMany(reviewDocs);
     await Review.syncIndexes();
-    console.log(`⭐ [Seed]: Đã tạo ${reviewDocs.length} đánh giá phim.`);
+    console.log(`⭐ [Seed]: Đã tạo ${reviewDocs.length} đánh giá phim (không trùng user/phim).`);
 
     // Tính điểm phim từ đánh giá thực tế (giống công thức API: avg sao x 2 -> thang 10)
     const movieStats = await Review.aggregate([
@@ -605,7 +639,7 @@ async function seedDatabase() {
     console.log(`   - ${combos.length} combo`);
     console.log(`   - ${promos.length} khuyến mãi`);
     console.log(`   - ${sliders.length} slider`);
-    console.log(`   - ${bookingDocs.length} đơn đặt vé + hóa đơn`);
+    console.log(`   - ${bookingDocs.length} đơn đặt vé + hóa đơn (${bookingFlows.filter(f => f.status === "paid" || f.status === "completed").length} thanh toán, 1 pending, 1 cancelled, 1 refunded)`);
     console.log(`   - ${reviewDocs.length} đánh giá phim`);
     console.log("========================================");
     console.log("👤 Admin: admin / admin123");

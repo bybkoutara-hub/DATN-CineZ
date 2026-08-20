@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiPlus, FiEdit2, FiTrash2, FiImage, FiLoader } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiImage, FiLoader, FiX } from 'react-icons/fi';
 import { sliderAPI } from '../api/apiService';
 import './Sliders.css';
 
@@ -36,7 +36,7 @@ const Sliders = () => {
         imageUrl: slider.imageUrl || slider.image,
         linkUrl: slider.linkUrl || slider.link || '',
         order: slider.order,
-        status: slider.active ? 'active' : 'inactive',
+        status: slider.status || 'active',
       });
     } else {
       setEditingSlider(null);
@@ -48,8 +48,7 @@ const Sliders = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const payload = { ...formData, active: formData.status === 'active' };
-      delete payload.status;
+      const payload = { ...formData };
       if (editingSlider) {
         await sliderAPI.update(editingSlider._id, payload);
       } else {
@@ -81,16 +80,24 @@ const Sliders = () => {
       </div>
 
       {loading ? (
-        <div className="loading-container"><FiLoader className="spin" /> Đang tải...</div>
+        <div className="table-loading">
+          <FiLoader size={28} />
+          <span>Đang tải dữ liệu...</span>
+        </div>
+      ) : sliders.length === 0 ? (
+        <div className="card glass text-center py-2xl">
+          <FiImage size={40} className="text-muted mb-md" />
+          <p className="text-muted text-lg">Chưa có slider nào. Hãy thêm slider mới!</p>
+        </div>
       ) : (
         <div className="slider-grid grid grid-2 gap-lg">
           {sliders.map((slider) => (
             <div key={slider._id} className="card glass slider-card p-0 overflow-hidden">
-              <div className="slider-img-wrap relative">
-                <img src={slider.imageUrl || slider.image} alt={slider.title} className="w-full" style={{aspectRatio: '3/1', objectFit: 'cover'}} />
+              <div className="slider-img-wrap">
+                <img src={slider.imageUrl || slider.image} alt={slider.title} className="slider-card__img" />
                 <div className="absolute top-2 right-2">
-                  <span className={`badge ${slider.active ? 'badge-success' : 'badge-secondary'}`}>
-                    {slider.active ? 'Hiển thị' : 'Ẩn'}
+                  <span className={`badge ${slider.status === 'active' ? 'badge-success' : 'badge-secondary'}`}>
+                    {slider.status === 'active' ? 'Hiển thị' : 'Ẩn'}
                   </span>
                 </div>
                 <div className="absolute top-2 left-2 badge badge-info">
@@ -115,7 +122,10 @@ const Sliders = () => {
       {isModalOpen && (
         <div className="modal-backdrop">
           <div className="modal-content card glass animate-scale-in" style={{maxWidth: 600}}>
-            <h2 className="text-xl font-bold mb-lg">{editingSlider ? 'Sửa Slider' : 'Thêm Slider'}</h2>
+            <div className="modal-header flex justify-between items-center mb-lg">
+              <h2 className="text-xl font-semibold"><FiImage /> {editingSlider ? 'Sửa Slider' : 'Thêm Slider'}</h2>
+              <button className="btn-icon" onClick={() => setIsModalOpen(false)}><FiX /></button>
+            </div>
             <form onSubmit={handleSubmit}>
               <div className="form-group mb-md">
                 <label className="form-label">Tiêu đề</label>

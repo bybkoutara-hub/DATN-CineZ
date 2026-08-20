@@ -57,7 +57,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json({
       success: true,
       token,
-      data: { id: user._id, fullName: user.fullName, email: user.email, role: user.role, loyaltyPoints: user.loyaltyPoints },
+      data: { id: user._id, fullName: user.fullName, email: user.email, role: user.role },
     });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });

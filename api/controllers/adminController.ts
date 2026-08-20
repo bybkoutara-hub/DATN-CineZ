@@ -8,8 +8,7 @@ import Combo from "../models/comboModel";
 import Promotion from "../models/promotionModel";
 import Slider from "../models/sliderModel";
 import Seat from "../models/seatModel";
-import Booking from "../models/bookingModel";
-import Invoice from "../models/invoiceModel";
+import Booking, { generateInvoiceNumber } from "../models/bookingModel";
 import User from "../models/userModel";
 import Actor from "../models/actorModel";
 import Director from "../models/directorModel";
@@ -366,18 +365,46 @@ export const getRoomSeats = async (req: Request, res: Response): Promise<void> =
 
 // ==================== SHOWTIMES ====================
 
+// Chuẩn hoá giờ chiếu theo múi giờ Việt Nam (+07:00) để hiển thị chính xác
+// bất kể múi giờ của server hay trình duyệt/điện thoại
+const VIETNAM_TZ_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+const pad2 = (n: number): string => String(n).padStart(2, "0");
+
+// "2026-08-15T18:30:00+07:00" -> Date đúng giờ Việt Nam
+const parseVietnamTime = (date: string, time: string): Date =>
+  new Date(`${date}T${time}:00+07:00`);
+
+// Lấy ngày (YYYY-MM-DD) theo giờ Việt Nam từ một Date bất kỳ
+const toVietnamDateStr = (d: Date): string => {
+  const vn = new Date(d.getTime() + VIETNAM_TZ_OFFSET_MS);
+  return `${vn.getUTCFullYear()}-${pad2(vn.getUTCMonth() + 1)}-${pad2(vn.getUTCDate())}`;
+};
+
+// Lấy giờ (HH:mm) theo giờ Việt Nam từ một Date bất kỳ
+const toVietnamTimeStr = (d: Date): string => {
+  const vn = new Date(d.getTime() + VIETNAM_TZ_OFFSET_MS);
+  return `${pad2(vn.getUTCHours())}:${pad2(vn.getUTCMinutes())}`;
+};
+
+// Đầu/ cuối ngày theo giờ Việt Nam
+const vietnamDayStart = (dateStr: string): Date => new Date(`${dateStr}T00:00:00+07:00`);
+const vietnamDayEnd = (dateStr: string): Date => new Date(`${dateStr}T23:59:59.999+07:00`);
+
 export const getAdminShowtimes = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { movie, movieId, movie_id, roomName, date } = req.query;
+    const { movie, movieId, movie_id, roomName, date, dateFrom, dateTo, showAll } = req.query;
     let filter: Record<string, any> = {};
     if (movie || movieId || movie_id) filter.movie = movie || movieId || movie_id;
     if (roomName) filter.roomName = roomName;
     if (date) {
-      const start = new Date(date as string);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(date as string);
-      end.setHours(23, 59, 59, 999);
+      filter.startTime = { $gte: vietnamDayStart(date as string), $lte: vietnamDayEnd(date as string) };
+    } else if (dateFrom || dateTo) {
+      const start = dateFrom ? vietnamDayStart(dateFrom as string) : new Date("1970-01-01T00:00:00+07:00");
+      const end = dateTo ? vietnamDayEnd(dateTo as string) : new Date("9999-12-31T23:59:59.999+07:00");
       filter.startTime = { $gte: start, $lte: end };
+    } else if (showAll !== "true") {
+      filter.startTime = { $gte: new Date() };
     }
     const showtimes = await Showtime.find(filter)
       .populate("movie", "title poster_url duration")
@@ -411,15 +438,14 @@ const findTimeConflict = async (
   excludeShowtimeId?: string
 ): Promise<any> => {
   const endTime = new Date(startTime.getTime() + durationMin * 60000);
-  const dayStart = new Date(startTime);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(startTime);
-  dayEnd.setHours(23, 59, 59, 999);
+  const dayStart = vietnamDayStart(toVietnamDateStr(startTime));
 
   const sameDay = await Showtime.find({
     room: roomId,
     _id: { $ne: excludeShowtimeId },
-    startTime: { $gte: dayStart, $lte: dayEnd },
+    // Lấy mọi suất có thể đè giờ: bắt đầu trước khi suất mới kết thúc,
+    // và bắt đầu từ đêm hôm trước (suất qua nửa đêm) để không sót xung đột.
+    startTime: { $gte: new Date(dayStart.getTime() - 24 * 3600 * 1000), $lt: endTime },
     status: { $ne: "cancelled" },
   }).populate("movie", "title duration");
 
@@ -483,7 +509,12 @@ export const createAdminShowtime = async (req: Request, res: Response): Promise<
       res.status(400).json({ success: false, message: "Giờ chiếu không hợp lệ" });
       return;
     }
-    const startDate = new Date(yy, mm - 1, dd, hh, mmin, 0, 0);
+    const startDate = parseVietnamTime(date as string, startTime as string);
+
+    if (isNaN(startDate.getTime())) {
+      res.status(400).json({ success: false, message: "Ngày hoặc giờ chiếu không hợp lệ" });
+      return;
+    }
 
     if (startDate.getTime() < Date.now() - 5 * 60000) {
       res.status(400).json({ success: false, message: "Không thể tạo suất chiếu trong quá khứ" });
@@ -497,7 +528,7 @@ export const createAdminShowtime = async (req: Request, res: Response): Promise<
       res.status(400).json({
         success: false,
         message: `Phòng này đã có suất chiếu "${(conflict as any).movie?.title || "phim khác"}` +
-          `" lúc ${cStart.getHours()}:${String(cStart.getMinutes()).padStart(2, "0")} cùng ngày. Vui lòng chọn giờ khác.`,
+          `" lúc ${toVietnamTimeStr(cStart)} cùng ngày. Vui lòng chọn giờ khác.`,
       });
       return;
     }
@@ -563,19 +594,21 @@ export const updateAdminShowtime = async (req: Request, res: Response): Promise<
       updateData.availableSeats = getSeatLabels(layout);
     }
 
-    if (date) {
-      const [y, m, d] = (date as string).split("-").map(Number);
-      if (y && m && d) effectiveStart.setFullYear(y, m - 1, d);
-    }
-    if (startTime) {
-      const parts = (startTime as string).split(":");
+    if (date || startTime) {
+      const effectiveDateStr = date as string || toVietnamDateStr(effectiveStart);
+      const effectiveTimeStr = startTime as string || toVietnamTimeStr(effectiveStart);
+      const parts = (startTime as string | undefined)?.split(":") || [];
       const hours = Number(parts[0]);
       const minutes = Number(parts[1]);
-      if (isNaN(hours) || isNaN(minutes)) {
+      if (startTime && (isNaN(hours) || isNaN(minutes))) {
         res.status(400).json({ success: false, message: "Giờ chiếu không hợp lệ" });
         return;
       }
-      effectiveStart.setHours(hours, minutes, 0, 0);
+      effectiveStart = parseVietnamTime(effectiveDateStr, effectiveTimeStr);
+      if (isNaN(effectiveStart.getTime())) {
+        res.status(400).json({ success: false, message: "Ngày hoặc giờ chiếu không hợp lệ" });
+        return;
+      }
     }
 
     if (effectiveStart.getTime() < Date.now() - 5 * 60000) {
@@ -590,7 +623,7 @@ export const updateAdminShowtime = async (req: Request, res: Response): Promise<
         res.status(400).json({
           success: false,
           message: `Phòng này đã có suất chiếu "${(conflict as any).movie?.title || "phim khác"}"` +
-            ` lúc ${cStart.getHours()}:${String(cStart.getMinutes()).padStart(2, "0")} cùng ngày. Vui lòng chọn giờ khác.`,
+            ` lúc ${toVietnamTimeStr(cStart)} cùng ngày. Vui lòng chọn giờ khác.`,
         });
         return;
       }
@@ -616,6 +649,17 @@ export const updateAdminShowtime = async (req: Request, res: Response): Promise<
 
 export const deleteAdminShowtime = async (req: Request, res: Response): Promise<void> => {
   try {
+    const hasBookings = await Booking.exists({
+      showtime: req.params.id,
+      status: { $in: ["paid", "completed", "pending"] },
+    });
+    if (hasBookings) {
+      res.status(400).json({
+        success: false,
+        message: "Suất chiếu này đã có đơn đặt vé, không thể xóa. Hãy chuyển trạng thái sang 'Đã huỷ'.",
+      });
+      return;
+    }
     const deleted = await Showtime.findByIdAndDelete(req.params.id);
     if (!deleted) {
       res.status(404).json({ success: false, message: "Không tìm thấy suất chiếu" });
@@ -707,9 +751,9 @@ export const deleteCombo = async (req: Request, res: Response): Promise<void> =>
 
 export const getPromotions = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { active, search } = req.query;
+    const { status, search } = req.query;
     let filter: Record<string, any> = {};
-    if (active !== undefined) filter.active = active === "true";
+    if (status !== undefined) filter.status = status;
     if (search) filter.code = { $regex: search, $options: "i" };
     const promotions = await Promotion.find(filter).sort({ createdAt: -1 });
     res.status(200).json(promotions);
@@ -770,7 +814,7 @@ export const deletePromotion = async (req: Request, res: Response): Promise<void
 export const validatePromotion = async (req: Request, res: Response): Promise<void> => {
   try {
     const { code, orderValue } = req.body;
-    const promotion = await Promotion.findOne({ code: (code as string).toUpperCase(), active: true });
+    const promotion = await Promotion.findOne({ code: (code as string).toUpperCase(), status: "active" });
     if (!promotion) {
       res.status(404).json({ success: false, message: "Mã khuyến mãi không hợp lệ!" });
       return;
@@ -828,7 +872,7 @@ export const getMembers = async (req: Request, res: Response): Promise<void> => 
         { email: { $regex: search, $options: "i" } },
       ];
     }
-    if (status !== undefined) filter.active = status === "active";
+    if (status !== undefined) filter.status = status;
     const users = await User.find(filter).select("-password").sort({ createdAt: -1 });
     res.status(200).json(users);
   } catch (error: any) {
@@ -851,10 +895,10 @@ export const getMemberById = async (req: Request, res: Response): Promise<void> 
 
 export const updateMember = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { fullName, email, phone, active } = req.body;
+    const { fullName, email, phone, status } = req.body;
     const updated = await User.findByIdAndUpdate(
       req.params.id,
-      { fullName, email, phone, active },
+      { fullName, email, phone, status },
       { new: true }
     ).select("-password");
     if (!updated) {
@@ -882,10 +926,10 @@ export const getMemberBookings = async (req: Request, res: Response): Promise<vo
 
 export const getStaffs = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { search, role, active } = req.query;
+    const { search, role, status } = req.query;
     let filter: Record<string, any> = {};
     if (role) filter.role = role;
-    if (active !== undefined) filter.active = active === "true";
+    if (status !== undefined) filter.status = status;
     if (search) {
       filter.$or = [
         { fullName: { $regex: search, $options: "i" } },
@@ -928,8 +972,8 @@ export const createStaff = async (req: Request, res: Response): Promise<void> =>
       return;
     }
     const newStaff = new User({
-      username, password, fullName, email, phone,
-      role: role || "staff", active: true,
+      username, password: await bcrypt.hash(password, 10), fullName, email, phone,
+      role: role || "staff", status: "active",
     });
     const saved = await newStaff.save();
     res.status(201).json({
@@ -944,13 +988,13 @@ export const createStaff = async (req: Request, res: Response): Promise<void> =>
 
 export const updateStaff = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { fullName, email, phone, role, active } = req.body;
+    const { fullName, email, phone, role, status } = req.body;
     const updateData: Record<string, any> = {};
     if (fullName !== undefined) updateData.fullName = fullName;
     if (email !== undefined) updateData.email = email;
     if (phone !== undefined) updateData.phone = phone;
     if (role !== undefined) updateData.role = role;
-    if (active !== undefined) updateData.active = active;
+    if (status !== undefined) updateData.status = status;
     const updated = await User.findByIdAndUpdate(req.params.id, updateData, { new: true }).select("-password");
     if (!updated) {
       res.status(404).json({ success: false, message: "Không tìm thấy nhân viên" });
@@ -979,8 +1023,9 @@ export const deleteStaff = async (req: Request, res: Response): Promise<void> =>
 
 export const getSliders = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { active } = req.query;
-    const filter = active !== undefined ? { active: active === "true" } : {};
+    const { status } = req.query;
+    let filter: Record<string, any> = {};
+    if (status !== undefined) filter.status = status;
     const sliders = await Slider.find(filter).sort({ order: 1, createdAt: -1 });
     res.status(200).json(sliders);
   } catch (error: any) {
@@ -1188,8 +1233,8 @@ export const getAdminBookings = async (req: Request, res: Response): Promise<voi
     if (paymentStatus) filter.$or = [{ status: paymentStatus }, { paymentStatus }];
     if (from || to) {
       filter.createdAt = {};
-      if (from) filter.createdAt.$gte = new Date(from as string);
-      if (to) filter.createdAt.$lte = new Date(to as string);
+      if (from) filter.createdAt.$gte = vietnamDayStart(from as string);
+      if (to) filter.createdAt.$lte = vietnamDayEnd(to as string);
     }
     const bookings = await Booking.find(filter)
       .populate("user", "username fullName email phone")
@@ -1235,42 +1280,49 @@ export const updateBookingStatus = async (req: Request, res: Response): Promise<
 
 export const cancelBooking = async (req: Request, res: Response): Promise<void> => {
   try {
-    const updated = await Booking.findByIdAndUpdate(
-      req.params.id,
-      { status: "cancelled", paymentStatus: "cancelled" },
-      { new: true }
-    );
-    if (!updated) {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
       res.status(404).json({ success: false, message: "Không tìm thấy đặt vé" });
       return;
     }
+    if (booking.status === "cancelled") {
+      res.status(400).json({ success: false, message: "Đơn này đã bị hủy" });
+      return;
+    }
+    // Hoàn ghế về suất chiếu
+    if (booking.seats && booking.seats.length > 0) {
+      await Showtime.findByIdAndUpdate(booking.showtime, {
+        $addToSet: { availableSeats: { $each: booking.seats } },
+      });
+    }
+    // Đồng bộ hóa đơn (nhúng trong booking): hủy hóa đơn theo booking
+    const updated = await Booking.findByIdAndUpdate(
+      req.params.id,
+      { status: "cancelled", paymentStatus: "cancelled", invoiceStatus: "cancelled" },
+      { new: true }
+    );
     res.status(200).json({ success: true, message: "Hủy đặt vé thành công!", data: updated });
   } catch (error: any) {
     res.status(500).json({ success: false, message: "Lỗi hủy đặt vé", error });
   }
 };
 
-// ==================== INVOICES ====================
+// ==================== INVOICES (nhúng trong Booking) ====================
 
 export const getInvoices = async (req: Request, res: Response): Promise<void> => {
   try {
     const { status, method, from, to } = req.query;
     let filter: Record<string, any> = {};
-    if (status) filter.status = status;
-    if (method) filter.method = method;
+    if (status) filter.invoiceStatus = status;
+    if (method) filter.paymentMethod = method;
     if (from || to) {
       filter.issuedAt = {};
-      if (from) filter.issuedAt.$gte = new Date(from as string);
-      if (to) filter.issuedAt.$lte = new Date(to as string);
+      if (from) filter.issuedAt.$gte = vietnamDayStart(from as string);
+      if (to) filter.issuedAt.$lte = vietnamDayEnd(to as string);
     }
-    const invoices = await Invoice.find(filter)
-      .populate({
-        path: "booking",
-        populate: [
-          { path: "user", select: "username fullName" },
-          { path: "showtime", populate: { path: "movie", select: "title" } },
-        ],
-      })
+    const invoices = await Booking.find(filter)
+      .populate("user", "username fullName")
+      .populate({ path: "showtime", populate: { path: "movie", select: "title" } })
       .sort({ issuedAt: -1 });
     res.status(200).json(invoices);
   } catch (error: any) {
@@ -1280,14 +1332,9 @@ export const getInvoices = async (req: Request, res: Response): Promise<void> =>
 
 export const getInvoiceById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const invoice = await Invoice.findById(req.params.id)
-      .populate({
-        path: "booking",
-        populate: [
-          { path: "user", select: "username fullName email phone" },
-          { path: "showtime", populate: { path: "movie", select: "title poster_url duration genres" } },
-        ],
-      });
+    const invoice = await Booking.findById(req.params.id)
+      .populate("user", "username fullName email phone")
+      .populate({ path: "showtime", populate: { path: "movie", select: "title poster_url duration genres" } });
     if (!invoice) {
       res.status(404).json({ success: false, message: "Không tìm thấy hóa đơn" });
       return;
@@ -1300,14 +1347,9 @@ export const getInvoiceById = async (req: Request, res: Response): Promise<void>
 
 export const getInvoiceByBooking = async (req: Request, res: Response): Promise<void> => {
   try {
-    const invoice = await Invoice.findOne({ booking: req.params.bookingId })
-      .populate({
-        path: "booking",
-        populate: [
-          { path: "user", select: "username fullName email phone" },
-          { path: "showtime", populate: { path: "movie", select: "title poster_url duration" } },
-        ],
-      });
+    const invoice = await Booking.findById(req.params.bookingId)
+      .populate("user", "username fullName email phone")
+      .populate({ path: "showtime", populate: { path: "movie", select: "title poster_url duration" } });
     if (!invoice) {
       res.status(404).json({ success: false, message: "Không tìm thấy hóa đơn cho đặt vé này" });
       return;
@@ -1330,23 +1372,24 @@ export const createInvoice = async (req: Request, res: Response): Promise<void> 
       res.status(404).json({ success: false, message: "Không tìm thấy đặt vé!" });
       return;
     }
-    const existing = await Invoice.findOne({ booking: bookingId });
-    if (existing) {
+    if (booking.invoiceNumber) {
       res.status(400).json({ success: false, message: "Hóa đơn cho đặt vé này đã tồn tại!" });
       return;
     }
-    const newInvoice = new Invoice({
-      booking: bookingId,
-      amount: booking.totalPrice,
-      method: method || "cash",
-      status: status || "paid",
+    const invoiceStatus = status || "paid";
+    const updateData: Record<string, any> = {
+      invoiceNumber: generateInvoiceNumber(),
+      invoiceStatus,
+      paymentMethod: method || "cash",
       transactionId: transactionId || "",
-    });
-    const saved = await newInvoice.save();
-    if (saved.status === "paid") {
-      await Booking.findByIdAndUpdate(bookingId, { paymentStatus: "completed" });
+      issuedAt: new Date(),
+    };
+    if (invoiceStatus === "paid") {
+      updateData.paymentStatus = "completed";
+      updateData.status = "paid";
     }
-    res.status(201).json({ success: true, message: "Tạo hóa đơn thành công!", data: saved });
+    const updated = await Booking.findByIdAndUpdate(bookingId, updateData, { new: true });
+    res.status(201).json({ success: true, message: "Tạo hóa đơn thành công!", data: updated });
   } catch (error: any) {
     res.status(500).json({ success: false, message: "Lỗi tạo hóa đơn", error });
   }
@@ -1356,10 +1399,14 @@ export const updateInvoice = async (req: Request, res: Response): Promise<void> 
   try {
     const { status, method, transactionId } = req.body;
     const updateData: Record<string, any> = {};
-    if (status) updateData.status = status;
-    if (method) updateData.method = method;
+    if (status) updateData.invoiceStatus = status;
+    if (method) updateData.paymentMethod = method;
     if (transactionId !== undefined) updateData.transactionId = transactionId;
-    const updated = await Invoice.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    if (status === "paid") {
+      updateData.paymentStatus = "completed";
+      updateData.status = "paid";
+    }
+    const updated = await Booking.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!updated) {
       res.status(404).json({ success: false, message: "Không tìm thấy hóa đơn" });
       return;
@@ -1372,20 +1419,26 @@ export const updateInvoice = async (req: Request, res: Response): Promise<void> 
 
 // ==================== DASHBOARD ====================
 
-export const getDashboardStats = async (_req: Request, res: Response): Promise<void> => {
+export const getDashboardStats = async (req: Request, res: Response): Promise<void> => {
   try {
-    const bookings = await Booking.find({
-      status: { $in: ["paid", "completed"] },
-    });
+    const { from, to } = req.query;
+    let dateFilter: Record<string, any> = {};
+    if (from || to) {
+      dateFilter.createdAt = {};
+      if (from) dateFilter.createdAt.$gte = vietnamDayStart(from as string);
+      if (to) dateFilter.createdAt.$lte = vietnamDayEnd(to as string);
+    }
+    const paidFilter: Record<string, any> = { ...dateFilter, status: { $in: ["paid", "completed"] } };
+    const bookings = await Booking.find(paidFilter);
     const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
     const totalTickets = bookings.reduce((sum, b) => sum + b.seats.length, 0);
     const totalMembers = await User.countDocuments({ role: "customer" });
     const totalMovies = await Movie.countDocuments();
     const totalShowtimes = await Showtime.countDocuments({ status: "active" });
-    const totalBookings = await Booking.countDocuments();
+    const totalBookings = await Booking.countDocuments(dateFilter);
 
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStart = vietnamDayStart(toVietnamDateStr(now));
     const todayBookings = await Booking.find({
       status: { $in: ["paid", "completed"] },
       createdAt: { $gte: todayStart },
@@ -1410,14 +1463,14 @@ export const getDashboardRevenue = async (req: Request, res: Response): Promise<
     };
     if (from || to) {
       filter.createdAt = {};
-      if (from) filter.createdAt.$gte = new Date(from as string);
-      if (to) filter.createdAt.$lte = new Date(to as string);
+      if (from) filter.createdAt.$gte = vietnamDayStart(from as string);
+      if (to) filter.createdAt.$lte = vietnamDayEnd(to as string);
     }
     const bookings = await Booking.find(filter).sort({ createdAt: 1 });
 
     const revenueByDate: Record<string, { date: string; revenue: number; tickets: number }> = {};
     bookings.forEach((b: any) => {
-      const dateKey = b.createdAt.toISOString().slice(0, 10);
+      const dateKey = toVietnamDateStr(new Date(b.createdAt));
       if (!revenueByDate[dateKey]) revenueByDate[dateKey] = { date: dateKey, revenue: 0, tickets: 0 };
       revenueByDate[dateKey].revenue += b.totalPrice || 0;
       revenueByDate[dateKey].tickets += b.seats.length;
@@ -1429,11 +1482,18 @@ export const getDashboardRevenue = async (req: Request, res: Response): Promise<
   }
 };
 
-export const getDashboardRevenueByMovie = async (_req: Request, res: Response): Promise<void> => {
+export const getDashboardRevenueByMovie = async (req: Request, res: Response): Promise<void> => {
   try {
-    const bookings = await Booking.find({
+    const { from, to } = req.query;
+    const filter: Record<string, any> = {
       status: { $in: ["paid", "completed"] },
-    })
+    };
+    if (from || to) {
+      filter.createdAt = {};
+      if (from) filter.createdAt.$gte = vietnamDayStart(from as string);
+      if (to) filter.createdAt.$lte = vietnamDayEnd(to as string);
+    }
+    const bookings = await Booking.find(filter)
       .populate({ path: "showtime", select: "movie", populate: { path: "movie", select: "title" } });
 
     const revenueByMovie: Record<string, { title: string; revenue: number; tickets: number }> = {};
@@ -1453,9 +1513,16 @@ export const getDashboardRevenueByMovie = async (_req: Request, res: Response): 
 export const getDashboardTopMovies = async (req: Request, res: Response): Promise<void> => {
   try {
     const limit = parseInt(req.query.limit as string) || 5;
-    const bookings = await Booking.find({
+    const { from, to } = req.query;
+    const filter: Record<string, any> = {
       status: { $in: ["paid", "completed"] },
-    })
+    };
+    if (from || to) {
+      filter.createdAt = {};
+      if (from) filter.createdAt.$gte = vietnamDayStart(from as string);
+      if (to) filter.createdAt.$lte = vietnamDayEnd(to as string);
+    }
+    const bookings = await Booking.find(filter)
       .populate({ path: "showtime", select: "movie", populate: { path: "movie", select: "title poster_url" } });
 
     const movieStats: Record<string, any> = {};

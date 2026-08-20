@@ -339,7 +339,7 @@ const Movies = () => {
       </div>
 
       {error && (
-        <div className="card glass text-center py-xl mb-lg" style={{borderLeft: '4px solid #ef4444'}}>
+        <div className="card glass text-center py-xl mb-lg card-error">
           <p className="text-danger text-lg">{error}</p>
           <button className="btn btn-primary mt-md" onClick={fetchMovies}>Thử lại</button>
         </div>

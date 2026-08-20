@@ -57,7 +57,8 @@ export const getMovieDetailWithShowtimes = async (req: Request, res: Response): 
     // 2. Tìm tất cả các suất chiếu của bộ phim đó lớn hơn hoặc bằng thời gian hiện tại
     const showtimes = await Showtime.find({
       movie: id as string, 
-      startTime: { $gte: new Date() } 
+      startTime: { $gte: new Date() },
+      status: "active",
     }).sort({ startTime: 1 }); 
 
     // 3. ĐÓNG GÓI ĐÚNG DẠNG LỒNG NHAU THEO KỲ VỌNG CỦA FRONTEND MOVIE_SERVICE

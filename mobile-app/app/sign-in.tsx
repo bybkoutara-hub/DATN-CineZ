@@ -44,7 +44,7 @@ export default function SignInScreen() {
     try {
       await loginApi(email, password);
       // Token đã được lưu trong loginApi -> vào thẳng trang chủ
-      router.replace("/(tabs)");
+      router.replace("/(tabs)/home");
     } catch {
       toast.error("Email hoặc mật khẩu không chính xác");
     } finally {

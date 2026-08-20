@@ -12,7 +12,7 @@ export interface IPromotion extends Document {
   usedCount: number;
   startDate: Date;
   endDate: Date;
-  active: boolean;
+  status: "active" | "inactive";
 }
 
 const PromotionSchema: Schema = new Schema(
@@ -28,13 +28,13 @@ const PromotionSchema: Schema = new Schema(
     usedCount: { type: Number, default: 0 },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
-    active: { type: Boolean, default: true },
+    status: { type: String, enum: ["active", "inactive"], default: "active" },
   },
   { timestamps: true }
 );
 
 // Lọc nhanh mã còn hiệu lực theo thời gian
-PromotionSchema.index({ code: 1, active: 1 });
+PromotionSchema.index({ code: 1, status: 1 });
 PromotionSchema.index({ endDate: 1 });
 
 export default mongoose.model<IPromotion>("Promotion", PromotionSchema);

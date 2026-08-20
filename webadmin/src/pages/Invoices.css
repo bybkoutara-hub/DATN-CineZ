@@ -711,3 +711,32 @@
   }
   .invoices-pagination { flex-direction: column; gap: 12px; }
 }
+
+/* Print — Xuất PDF qua window.print() */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .invoices-table-wrapper,
+  .invoices-table-wrapper * {
+    visibility: visible;
+  }
+  .invoices-table-wrapper {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    box-shadow: none;
+    border: none;
+  }
+  .invoices-action-btn,
+  .invoices-modal-overlay {
+    display: none !important;
+  }
+  .invoices-table th {
+    background: #1a1a2e;
+    color: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

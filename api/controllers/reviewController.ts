@@ -89,12 +89,7 @@ export const addReview = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const existing = await Review.findOne({ movie: String(movie), user: req.user?.id });
-    if (existing) {
-      res.status(400).json({ success: false, message: "Bạn đã đánh giá phim này rồi, không thể đánh giá lần thứ hai" });
-      return;
-    }
-
+    // Cho phép bình luận nhiều lần: luôn tạo review mới (không cập nhật review cũ)
     const review = await Review.create({
       movie,
       user: req.user?.id,

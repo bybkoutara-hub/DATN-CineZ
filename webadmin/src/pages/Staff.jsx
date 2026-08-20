@@ -38,8 +38,7 @@ const mapStaffFromAPI = (item) => ({
   email: item.email || '',
   phone: item.phone || '',
   role: item.role || 'staff',
-  active: item.active,
-  status: item.active ? 'active' : 'inactive',
+  status: item.status || 'active',
   department: item.department || 'Chưa phân công',
   startDate: item.startDate || (item.createdAt ? item.createdAt.slice(0, 10) : '-'),
   salary: item.salary != null ? item.salary : 0,
@@ -125,7 +124,7 @@ export default function Staff() {
           email: formData.email,
           phone: formData.phone,
           role: formData.role,
-          active: formData.status === 'active',
+          status: formData.status,
         });
       } else {
         await staffAPI.create({

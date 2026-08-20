@@ -14,6 +14,20 @@
 
 .slider-img-wrap {
   position: relative;
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+}
+
+.slider-card__img {
+  width: 100%;
+  aspect-ratio: 3/1;
+  object-fit: cover;
+  transition: transform var(--transition-slow);
+  display: block;
+}
+
+.slider-card:hover .slider-card__img {
+  transform: scale(1.03);
 }
 
 .slider-img-wrap::after {

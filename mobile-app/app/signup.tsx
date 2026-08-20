@@ -51,7 +51,7 @@ export default function SignUpScreen() {
         toast.success("Đăng ký thành công!");
         try {
           await loginApi(email, password);
-          router.replace("/(tabs)");
+          router.replace("/(tabs)/home");
         } catch {
           router.replace({ pathname: "/sign-in", params: { email } });
         }

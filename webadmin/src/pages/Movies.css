@@ -2,6 +2,10 @@
   padding-bottom: var(--space-xl);
 }
 
+.card-error {
+  border-left: 4px solid var(--danger);
+}
+
 .filters-bar {
   padding: var(--space-md) var(--space-lg);
 }

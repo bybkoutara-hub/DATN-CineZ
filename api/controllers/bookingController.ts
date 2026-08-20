@@ -151,7 +151,7 @@ export const createBooking = async (req: Request, res: Response): Promise<void> 
     let finalPromoCode = "";
 
     if (promoCode) {
-      const promo = await Promotion.findOne({ code: (promoCode as string).toUpperCase(), active: true });
+      const promo = await Promotion.findOne({ code: (promoCode as string).toUpperCase(), status: "active" });
       if (promo) {
         const now = new Date();
         if (now >= promo.startDate && now <= promo.endDate) {

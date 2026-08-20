@@ -1,50 +1,222 @@
-# Welcome to your Expo app 👋
+# 🎬 CineZ — Ứng dụng đặt vé xem phim (CGV Clone)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Đồ án tốt nghiệp (DATN) — ứng dụng đặt vé xem phim mô phỏng **CGV Cinemas**: xem phim đang chiếu / sắp chiếu, chọn suất chiếu, chọn ghế (sơ đồ 18 cột có Couple/VIP), mua bắp nước (combo), thanh toán VNPay, lưu vé QR.
 
-## Get started
+Monorepo 3 thành phần:
 
-1. Install dependencies
+| Thư mục | Vai trò | Công nghệ |
+|---------|---------|-----------|
+| [`mobile-app/`](mobile-app) | App người dùng (mobile) | Expo · React Native · TypeScript · expo-router · Axios · WebView |
+| [`api/`](api) | Backend REST API | Node.js · Express 5 · TypeScript · MongoDB (Mongoose) · JWT |
+| [`webadmin/`](webadmin) | Web quản trị (admin) | React · js |
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## 📁 Cấu trúc thư mục
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+DATN-CineZ/
+├── mobile-app/
+│   ├── app/
+│   │   ├── (tabs)/
+│   │   │   ├── index.tsx         # Trang chủ
+│   │   │   ├── movie.tsx         # Danh sách phim
+│   │   │   ├── ticket.tsx        # Vé của tôi
+│   │   │   └── profile.tsx       # Tài khoản
+│   │   ├── sign-in.tsx           # Đăng nhập
+│   │   ├── signup.tsx            # Đăng ký
+│   │   ├── verification.tsx      # Xác thực
+│   │   ├── username.tsx          # Cập nhật tên
+│   │   ├── movie-detail.tsx      # Chi tiết phim + chọn suất
+│   │   ├── select-seat.tsx       # Sơ đồ ghế 18 cột (Couple/VIP/Thường)
+│   │   ├── combo.tsx             # Bắp nước
+│   │   ├── payment.tsx           # Thanh toán (VNPay WebView / Tiền mặt)
+│   │   ├── my-ticket.tsx         # Chi tiết vé (QR)
+│   │   └── movie-comments.tsx    # Bình luận phim
+│   ├── services/                 # API calls (api, auth, booking, combo, movie...)
+│   ├── constants/                # api.ts, theme.ts
+│   ├── hooks/                    # use-color-scheme, use-theme-color
+│   ├── utils/                    # format.ts (tiền, ngày giờ)
+│   └── package.json
+│
+├── api/
+│   ├── server.ts                 # Entry: Express + MongoDB + routes
+│   ├── routes/                   # auth, bookings, movies, payments, combos...
+│   ├── controllers/              # Logic: createBooking, getMyBookingHistory...
+│   ├── models/                   # Mongoose: User, Movie, Showtime, Booking...
+│   ├── middlewares/              # auth.middleware.ts (JWT protect)
+│   ├── utils/                    # vnpay.ts (sort, hash, verify) · sendBookingEmail
+│   ├── scripts/                  # seed.ts · seed-full.ts · cleanup.ts
+│   ├── types/                    # index.ts (TypeScript types)
+│   ├── .env.example
+│   └── package.json
+│
+├── webadmin/                     # React admin
+│   ├── public/
+│   ├── src/
+│   │   ├── pages/                # Dashboard, Movies, Showtimes, Seats, Combos,
+│   │   │                         #   Rooms, Users, Promotions, Reviews...
+│   │   ├── components/           # UI components
+│   │   ├── api/                  # apiService.js (có 401 interceptor)
+│   │   ├── contexts/             # AuthContext, ThemeContext
+│   │   ├── layouts/              # AdminLayout
+│   │   ├── assets/               # Images, icons
+│   │   └── ...
+│   └── package.json
+│
+└── README.md
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+## 🧱 Công nghệ
 
-To learn more about developing your project with Expo, look at the following resources:
+| Layer | Stack |
+|-------|-------|
+| Mobile | React Native (Expo) · TypeScript · expo-router · expo-image · react-native-webview |
+| API | Node.js · Express 5 · TypeScript · Mongoose 9 · JWT · bcryptjs |
+| Database | MongoDB (database `mbooking`) |
+| Thanh toán | VNPay Sandbox (WebView + server-side verify) |
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+---
 
-## Join the community
+## ⚙️ Yêu cầu môi trường
 
-Join our community of developers creating universal apps.
+- **Node.js 20+** + npm
+- **MongoDB** — mặc định `mongodb://127.0.0.1:27017/mbooking`
+  ```bash
+  docker run -d -p 27017:27017 --name cinez-mongo mongo:7
+  ```
+- **Expo Go** (iOS/Android) hoặc emulator
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+
+## 🚀 Cài đặt & chạy
+
+### 1. MongoDB
+Đảm bảo MongoDB đang chạy ở `mongodb://127.0.0.1:27017`.
+
+### 2. Backend API
+
+```bash
+cd api
+cp .env.example .env
+npm install
+npm run dev        # tsx watch server.ts → http://localhost:5000
+```
+
+| Script | Lệnh | Mô tả |
+|--------|------|-------|
+| `npm run dev` | `tsx watch server.ts` | Dev, tự reload |
+| `npm run build` | `tsc` | Build ra `dist/` |
+| `npm start` | `node dist/server.js` | Production |
+| `npm run seed` | `tsx scripts/seed.ts` | Seed dữ liệu mẫu |
+| `npm run seed-full` | `tsx scripts/seed-full.ts` | Seed nhiều dữ liệu hơn |
+
+### 3. Cấu hình VNPay
+
+Trong `api/.env`:
+
+```env
+VNPAY_TMN_CODE=TD3422D1
+VNPAY_HASH_SECRET=SMKTJ11T9JQDIZQPCF7E8ZIJ6DXV969Z
+VNPAY_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+VNPAY_RETURN_URL=http://localhost:5000/api/payments/vnpay/return
+```
+
+Thẻ test VNPay sandbox:
+- Ngân hàng: NCB
+- Số thẻ: `9704198526191432198`
+- Tên: `NGUYEN VAN A`
+- Ngày: `07/15`
+- OTP: `123456`
+
+### 4. Mobile app
+
+```bash
+cd mobile-app
+npm install
+npx expo start
+```
+
+Cấu hình URL API trong `mobile-app/services/api.ts`:
+```ts
+baseURL: "http://<IP-LAN>:5000/api",  // IP máy chạy backend
+```
+
+### 5. Web admin
+
+```bash
+cd webadmin
+npm install
+npm start
+```
+
+---
+
+## 🔌 API endpoints
+
+| Method | Endpoint | Auth | Mô tả |
+|--------|----------|------|-------|
+| POST | `/api/auth/register` | — | Đăng ký |
+| POST | `/api/auth/login` | — | Đăng nhập → JWT |
+| GET | `/api/auth/me` | ✅ | Thông tin user |
+| GET | `/api/movies?status=now_playing\|coming_soon` | — | Danh sách phim |
+| GET | `/api/movies/:id` | — | Chi tiết phim + suất chiếu |
+| GET | `/api/movies/showtimes/:showtimeId` | — | Chi tiết suất chiếu (ghế trống) |
+| GET | `/api/cinemas?city=` | — | Danh sách rạp |
+| POST | `/api/bookings` | ✅ | Tạo đơn đặt vé |
+| GET | `/api/bookings/my-history` | ✅ | Lịch sử vé (populated) |
+| GET | `/api/bookings/mine` | ✅ | Vé của tôi |
+| POST | `/api/bookings/:id/cancel` | ✅ | Hủy đơn pending |
+| GET | `/api/bookings/:id` | ✅ | Chi tiết đơn vé |
+| POST | `/api/payments/vnpay/create-url` | ✅ | Tạo URL thanh toán VNPay |
+| POST | `/api/payments/vnpay/confirm` | ✅ | Xác nhận kết quả VNPay (từ app) |
+| GET | `/api/payments/vnpay/return` | — | Return URL từ VNPay |
+| GET | `/api/payments/vnpay/ipn` | — | IPN từ VNPay (server-side) |
+| GET | `/api/payments/booking/:bookingId` | ✅ | Trạng thái thanh toán |
+| GET | `/api/combos` | — | Danh sách combo/bắp nước |
+| GET | `/api/promotions` | — | Khuyến mãi |
+| POST | `/api/promotions/apply` | — | Áp mã giảm giá |
+| GET | `/api/reviews?movieId=` | — | Đánh giá phim |
+| POST | `/api/reviews` | ✅ | Tạo đánh giá |
+
+---
+
+## 🌱 Seed dữ liệu
+
+```bash
+cd api
+npm run seed         # seed cơ bản
+npm run seed-full    # seed nhiều dữ liệu hơn
+```
+
+---
+
+## 🔐 Luồng đặt vé
+
+```
+Đăng nhập → Chọn phim → Chọn suất → Chọn ghế (sơ đồ 18 cột) →
+Chọn combo → Thanh toán (VNPay WebView / Tiền mặt) → Vé QR
+```
+
+---
+
+## ✅ Đã hoàn thành
+
+- [x] Sơ đồ ghế 18 cột: phân loại **Thường / VIP / Couple** (bậc thang)
+- [x] Màn hình vòng cung + legend 5 loại ghế
+- [x] Thanh toán VNPay (WebView + xác thực chữ ký HMAC-SHA512)
+- [x] Hiển thị poster phim (fix domain `image.tmdb.org`)
+- [x] Lịch sử vé + QR code
+- [x] Đăng ký/đăng nhập JWT
+- [x] Seed dữ liệu mẫu (phim, suất chiếu, combo)
+- [x] Web admin: quản lý phim, suất chiếu, thống kê
+
+
+
+---
+
+## 📄 Giấy phép
+
+Dự án phục vụ mục đích học tập (Đồ án tốt nghiệp).

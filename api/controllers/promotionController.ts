@@ -4,7 +4,7 @@ import Promotion from "../models/promotionModel";
 export const getPromotions = async (_req: Request, res: Response): Promise<void> => {
   try {
     const now = new Date();
-    const promos = await Promotion.find({ endDate: { $gte: now }, active: true });
+    const promos = await Promotion.find({ endDate: { $gte: now }, status: "active" });
     res.status(200).json({ success: true, data: promos });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -19,7 +19,7 @@ export const applyPromo = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const promo = await Promotion.findOne({ code: (code as string).toUpperCase(), active: true });
+    const promo = await Promotion.findOne({ code: (code as string).toUpperCase(), status: "active" });
     if (!promo) {
       res.status(404).json({ success: false, message: "Mã khuyến mãi không hợp lệ!" });
       return;

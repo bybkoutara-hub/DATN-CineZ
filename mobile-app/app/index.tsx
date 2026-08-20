@@ -3,22 +3,32 @@ import { StatusBar } from "expo-status-bar";
 import React, { useRef, useState } from "react";
 import {
   Animated,
+  Dimensions,
   Image,
   Modal,
   Platform,
   Pressable,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 
+const POSTER_WIDTH = Dimensions.get("window").width - 64; // 32px padding mỗi bên
+const POSTERS = [
+  require("../assets/images/infinity_war.png"),
+  require("../assets/images/batman.png"),
+  require("../assets/images/avatarthemay.png"),
+];
+
 export default function WelcomeScreen() {
   const router = useRouter();
 
   const [langModalVisible, setLangModalVisible] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("English");
+  const [activePosterIndex, setActivePosterIndex] = useState(0);
   const slideAnim = useRef(new Animated.Value(400)).current;
 
   const openLangModal = () => {
@@ -62,14 +72,34 @@ export default function WelcomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* 2. KHU VỰC BANNER POSTER PHIM */}
+      {/* 2. KHU VỰC BANNER POSTER PHIM (trượt trái phải) */}
       <View style={styles.imageSection}>
-        <View style={styles.imageContainer}>
-          <Image
-            source={require("../assets/images/infinity_war.png")} // Đảm bảo đúng file ảnh của bạn
-            style={styles.posterImage}
-            contentFit="cover"
-          />
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          style={styles.posterScroll}
+          onMomentumScrollEnd={(e) => {
+            setActivePosterIndex(
+              Math.round(e.nativeEvent.contentOffset.x / POSTER_WIDTH),
+            );
+          }}
+        >
+          {POSTERS.map((poster, index) => (
+            <View key={index} style={styles.posterSlide}>
+              <Image source={poster} style={styles.posterImage} resizeMode="cover" />
+            </View>
+          ))}
+        </ScrollView>
+
+        <View style={styles.posterDotsContainer}>
+          {POSTERS.map((_, i) => (
+            <View
+              key={i}
+              style={[styles.dot, activePosterIndex === i && styles.activeDot]}
+            />
+          ))}
         </View>
       </View>
 
@@ -78,13 +108,6 @@ export default function WelcomeScreen() {
         <View style={styles.textContainer}>
           <Text style={styles.titleText}>Xin chào CineZ!</Text>
           <Text style={styles.subtitleText}>Tận hưởng những bộ phim yêu thích</Text>
-        </View>
-
-        {/* CHẤM TRÒN CHUYỂN TRANG */}
-        <View style={styles.indicatorContainer}>
-          <View style={[styles.dot, styles.activeDot]} />
-          <View style={styles.dot} />
-          <View style={styles.dot} />
         </View>
 
         {/* HỆ THỐNG NÚT BẤM */}
@@ -250,15 +273,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 32,
   },
-  imageContainer: {
+  posterScroll: {
+    flex: 1,
     width: "100%",
+  },
+  posterSlide: {
+    width: POSTER_WIDTH,
     height: "100%",
-    borderRadius: 28,
-    overflow: "hidden",
   },
   posterImage: {
     width: "100%",
     height: "100%",
+    borderRadius: 28,
+  },
+  posterDotsContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 12,
+    gap: 6,
   },
   bottomSection: {
     flex: 48,
@@ -282,12 +315,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 8,
     textAlign: "center",
-  },
-  indicatorContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 36,
   },
   dot: {
     width: 8,

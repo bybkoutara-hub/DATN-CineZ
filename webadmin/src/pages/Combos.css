@@ -11,3 +11,26 @@
   border-color: var(--accent);
   box-shadow: var(--shadow-glow);
 }
+
+.combo-card__img-fallback {
+  aspect-ratio: 1;
+  border-radius: 10px 10px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: linear-gradient(135deg, var(--bg-input) 0%, var(--bg-card) 100%);
+  border-bottom: 1px solid var(--border);
+}
+.combo-card__img-fallback svg { color: var(--text-muted); }
+
+.combo-card__img-wrap {
+  position: relative;
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+}
+.combo-card__img-wrap img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}

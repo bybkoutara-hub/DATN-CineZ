@@ -648,6 +648,13 @@ table {
 .text-right { text-align: right; }
 .text-sm { font-size: var(--font-size-sm); }
 .text-muted { color: var(--text-secondary); }
+.text-accent { color: var(--text-accent); }
+.text-danger { color: var(--danger); }
+.text-warning { color: var(--warning); }
+.text-secondary { color: var(--text-secondary); }
+.text-lg { font-size: var(--font-size-lg); }
+.text-xl { font-size: var(--font-size-xl); }
+.text-xs { font-size: var(--font-size-xs); }
 .font-semibold { font-weight: 600; }
 .font-bold { font-weight: 700; }
 .truncate {
@@ -663,6 +670,114 @@ table {
 .mb-sm { margin-bottom: var(--space-sm); }
 .mb-md { margin-bottom: var(--space-md); }
 .mb-lg { margin-bottom: var(--space-lg); }
+.mb-xs { margin-bottom: var(--space-xs); }
+.pt-sm { padding-top: var(--space-sm); }
+.py-lg { padding-top: var(--space-lg); padding-bottom: var(--space-lg); }
+.py-xl { padding-top: var(--space-xl); padding-bottom: var(--space-xl); }
+.py-2xl { padding-top: var(--space-2xl); padding-bottom: var(--space-2xl); }
+.p-0 { padding: 0; }
+.p-md { padding: var(--space-md); }
+.px-2 { padding-left: var(--space-sm); padding-right: var(--space-sm); }
+.mx-1 { margin-left: 4px; margin-right: 4px; }
+
+/* Positioning & sizing */
+.relative { position: relative; }
+.absolute { position: absolute; }
+.w-full { width: 100%; }
+.rounded { border-radius: var(--radius-md); }
+.pl-10 { padding-left: 38px; }
+
+.animate-spin { animation: spin 1s linear infinite; }
+
+/* ============================================
+   Shared Component Styles (management pages)
+   ============================================ */
+
+/* Search box with icon overlay */
+.search-box { position: relative; }
+.search-box svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.search-box .form-input { padding-left: 38px; }
+
+/* Themed alert banners (replace light inline styles) */
+.page-alert {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid;
+  margin-bottom: var(--space-lg);
+  animation: fadeInDown var(--transition-base);
+}
+.page-alert-error {
+  background: var(--danger-bg);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: var(--danger);
+}
+.page-alert-success {
+  background: var(--success-bg);
+  border-color: rgba(34, 197, 94, 0.25);
+  color: var(--success);
+}
+.page-alert svg { flex-shrink: 0; }
+
+/* Table loading state */
+.table-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 200px;
+  color: var(--text-secondary);
+}
+.table-loading svg { color: var(--accent); animation: spin 1s linear infinite; }
+
+/* Avatar placeholder */
+.avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Extra buttons */
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+}
+.btn-outline {
+  background: transparent;
+  color: var(--accent-light);
+  border: 1px solid var(--border-accent);
+}
+.btn-outline:hover {
+  background: var(--bg-hover);
+}
+
+/* Extra badge */
+.badge-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
 
 /* ============================================
    Responsive

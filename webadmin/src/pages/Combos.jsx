@@ -93,19 +93,17 @@ const Combos = () => {
       <div className="grid grid-4 gap-lg">
         {filteredCombos.map(combo => (
           <div key={combo._id} className="card glass combo-card p-0 flex flex-col">
-            <div className="relative">
+            <div className="combo-card__img-wrap">
               {imgErrors[combo._id] ? (
-                <div className="w-full flex items-center justify-center bg-gray-100" style={{aspectRatio: '1', borderRadius: '10px 10px 0 0'}}>
-                  <FiShoppingBag size={48} className="text-muted" />
+                <div className="combo-card__img-fallback">
+                  <FiShoppingBag size={48} />
                 </div>
               ) : (
                 <img
                   src={combo.image}
                   alt={combo.name}
-                  className="w-full"
                   loading="lazy"
                   onError={() => setImgErrors(prev => ({...prev, [combo._id]: true}))}
-                  style={{aspectRatio: '1', objectFit: 'cover', borderRadius: '10px 10px 0 0'}}
                 />
               )}
               <div className="absolute top-2 right-2">

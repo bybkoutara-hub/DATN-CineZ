@@ -162,36 +162,14 @@ const Rooms = () => {
       </div>
 
       {error && (
-        <div style={{
-          background: '#fee2e2',
-          border: '1px solid #fecaca',
-          color: '#dc2626',
-          padding: '12px 16px',
-          borderRadius: '8px',
-          marginBottom: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          animation: 'slideDown 0.3s ease-out'
-        }}>
+        <div className="page-alert page-alert-error">
           <FiAlertCircle size={20} />
           <span>{error}</span>
         </div>
       )}
 
       {successMessage && (
-        <div style={{
-          background: '#dcfce7',
-          border: '1px solid #bbf7d0',
-          color: '#16a34a',
-          padding: '12px 16px',
-          borderRadius: '8px',
-          marginBottom: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          animation: 'slideDown 0.3s ease-out'
-        }}>
+        <div className="page-alert page-alert-success">
           <FiCheckCircle size={20} />
           <span>{successMessage}</span>
         </div>
@@ -212,15 +190,9 @@ const Rooms = () => {
         </div>
 
         {loading ? (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: '200px',
-            color: '#64748b'
-          }}>
-            <FiLoader size={32} style={{ animation: 'spin 1s linear infinite' }} />
-            <span style={{ marginLeft: '12px' }}>Đang tải dữ liệu...</span>
+          <div className="table-loading">
+            <FiLoader size={28} />
+            <span>Đang tải dữ liệu...</span>
           </div>
         ) : (
           <div className="table-responsive">

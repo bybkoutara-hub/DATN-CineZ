@@ -43,7 +43,7 @@ const mapMember = (m) => ({
   tier: m.tier || 'member',
   totalSpent: m.totalSpent ?? 0,
   bookingCount: m.bookingCount ?? 0,
-  status: m.active ? 'active' : 'blocked',
+  status: m.status === 'active' ? 'active' : 'blocked',
 });
 
 const mapBooking = (b) => {
@@ -137,7 +137,7 @@ export default function Members() {
     if (!showEditModal) return;
     try {
       const res = await memberAPI.update(showEditModal._id, {
-        active: editForm.status === 'active',
+        status: editForm.status === 'active' ? 'active' : 'inactive',
       });
       if (res.success) {
         setMembers((prev) =>

@@ -2,7 +2,7 @@ import axios from "axios";
 import { Alert } from "react-native/Libraries/Alert/Alert";
 
 // Đảm bảo dùng IP máy ảo Android Studio (10.0.2.2) mà bạn đã cấu hình thành công trước đó
-const BASE_URL = "http://10.0.2.2:5001/api/comments";
+const BASE_URL = "http://192.168.50.114:5000/api/comments";
 
 // Hàm lấy danh sách bình luận (Mở cửa tự do)
 export const fetchMovieComments = async (movieId: string) => {

@@ -2,10 +2,10 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   FiSearch, FiX, FiEye, FiFilter, FiChevronLeft,
   FiChevronRight, FiFileText, FiDownload, FiCalendar,
-  FiCreditCard, FiClock, FiUser, FiFilm, FiXCircle, FiPhone,
+  FiCreditCard, FiClock, FiUser, FiFilm, FiPhone,
   FiRefreshCw
 } from 'react-icons/fi';
-import { bookingAPI, invoiceAPI } from '../api/apiService';
+import { bookingAPI } from '../api/apiService';
 import './Invoices.css';
 
 const formatCurrency = (v) => new Intl.NumberFormat('vi-VN').format(v) + ' VNĐ';
@@ -37,16 +37,29 @@ const formatDateTime = (iso) => {
   return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} - ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
+// Ngày (YYYY-MM-DD) theo giờ Việt Nam (+07:00) — tránh lệch 1 ngày do UTC
+const toVNDateStr = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const vn = new Date(d.getTime() + 7 * 3600 * 1000);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${vn.getUTCFullYear()}-${pad(vn.getUTCMonth() + 1)}-${pad(vn.getUTCDate())}`;
+};
+
 const mapBookingToInvoice = (b) => {
   const seatsArr = Array.isArray(b.seats) ? b.seats : [];
-  const comboArr = Array.isArray(b.combo) ? b.combo : [];
-  const comboTotal = comboArr.reduce((s, c) => s + (c.price || 0), 0);
-  const seatTotal = (b.totalPrice || 0) - comboTotal;
+  const comboArr = Array.isArray(b.combos) ? b.combos : [];
+  const comboTotal = comboArr.reduce(
+    (s, c) => s + (c.price || 0) * (c.items || c.quantity || 1),
+    0
+  );
+  const seatTotal = (b.totalPrice || 0) + (b.discount || 0) - comboTotal;
   const seatPrice = seatsArr.length > 0 ? Math.round(Math.max(0, seatTotal) / seatsArr.length) : 0;
 
   const tickets = seatsArr.map((seatId) => ({
     seatId,
-    basPrice: seatPrice,
+    basePrice: seatPrice,
     seatType: 'standard',
     surcharge: 0,
   }));
@@ -54,6 +67,9 @@ const mapBookingToInvoice = (b) => {
   // Backend populate sẵn: booking.user (User) và booking.showtime -> showtime.movie (Movie)
   const user = b.user || {};
   const showtime = b.showtime || {};
+  const paymentStatus = b.status === 'refunded'
+    ? 'refunded'
+    : (b.paymentStatus || b.status || 'pending');
 
   return {
     _id: b._id,
@@ -63,21 +79,22 @@ const mapBookingToInvoice = (b) => {
     customerPhone: user?.phone || '',
     movieTitle: showtime?.movie?.title || 'N/A',
     roomName: showtime?.roomName || 'N/A',
-    showDate: showtime?.startTime ? new Date(showtime.startTime).toISOString().slice(0, 10) : '',
-    showTime: showtime?.startTime ? formatDateTime(showtime.startTime) : '',
+    showDate: toVNDateStr(showtime?.startTime),
+    showTime: formatDateTime(showtime?.startTime),
     tickets,
-    combos: (Array.isArray(b.combos) ? b.combos : comboArr).map((c) => ({
+    combos: comboArr.map((c) => ({
       name: c.name || 'Combo',
       quantity: c.items || c.quantity || 1,
       price: c.price || 0,
     })),
     seats: seatsArr.join(', '),
-    subtotal: b.totalPrice || 0,
+    subtotal: (b.totalPrice || 0) + (b.discount || 0),
     discount: b.discount || 0,
     total: b.totalPrice || 0,
     paymentMethod: b.paymentMethod || 'cash',
-    paymentStatus: b.paymentStatus || b.status || 'pending',
+    paymentStatus,
     createdAt: b.createdAt || '',
+    createdDate: toVNDateStr(b.createdAt),
   };
 };
 
@@ -97,16 +114,10 @@ export default function Invoices() {
       setLoading(true);
       try {
         const res = await bookingAPI.getAll();
-        const data = Array.isArray(res.data) ? res.data : [];
-        setInvoices(data.map(mapBookingToInvoice));
-      } catch {
-        try {
-          const res = await invoiceAPI.getAll();
-          const data = Array.isArray(res.data) ? res.data : [];
-          setInvoices(data.map(mapBookingToInvoice));
-        } catch {
-          setInvoices([]);
-        }
+        setInvoices(Array.isArray(res.data) ? res.data.map(mapBookingToInvoice) : []);
+      } catch (err) {
+        console.error('Lỗi tải danh sách đặt vé:', err);
+        setInvoices([]);
       } finally {
         setLoading(false);
       }
@@ -125,7 +136,7 @@ export default function Invoices() {
           matchSearch = (inv.customerId || '').toLowerCase().includes(term) ||
                        (inv.customerName || '').toLowerCase().includes(term);
         } else if (searchType === 'date') {
-          matchSearch = (inv.createdAt || '').includes(searchTerm);
+          matchSearch = (inv.createdDate || '').includes(searchTerm);
         } else {
           matchSearch = (inv.invoiceNumber || '').toLowerCase().includes(term) ||
                        (inv.customerName || '').toLowerCase().includes(term) ||
@@ -135,8 +146,8 @@ export default function Invoices() {
       const matchStatus = filterPaymentStatus === 'all' ||
         (filterPaymentStatus === 'paid' && (inv.paymentStatus === 'paid' || inv.paymentStatus === 'completed')) ||
         inv.paymentStatus === filterPaymentStatus;
-      const matchDateFrom = !filterDateFrom || (inv.showDate && inv.showDate >= filterDateFrom);
-      const matchDateTo = !filterDateTo || (inv.showDate && inv.showDate <= filterDateTo);
+      const matchDateFrom = !filterDateFrom || (inv.createdDate && inv.createdDate >= filterDateFrom);
+      const matchDateTo = !filterDateTo || (inv.createdDate && inv.createdDate <= filterDateTo);
       return matchSearch && matchStatus && matchDateFrom && matchDateTo;
     });
   }, [invoices, searchTerm, searchType, filterPaymentStatus, filterDateFrom, filterDateTo]);
@@ -153,20 +164,12 @@ export default function Invoices() {
   const paidCount = filtered.filter(i => isPaidStatus(i.paymentStatus)).length;
   const pendingCount = filtered.filter(i => i.paymentStatus === 'pending').length;
 
-  const handleExportPDF = async () => {
-    try {
-      const params = {};
-      if (filterDateFrom) params.from = filterDateFrom;
-      if (filterDateTo) params.to = filterDateTo;
-      if (filterPaymentStatus !== 'all') params.paymentStatus = filterPaymentStatus;
-      const res = await bookingAPI.getAll(params);
-      const data = Array.isArray(res.data) ? res.data : [];
-      const total = data.length;
-      const revenue = data.filter(b => b.paymentStatus === 'paid' || b.paymentStatus === 'completed').reduce((s, b) => s + (b.totalAmount || 0), 0);
-      alert(`Xuất báo cáo thành công!\nTổng số hóa đơn: ${total}\nTổng doanh thu: ${formatCurrency(revenue)}`);
-    } catch {
-      alert('Không thể xuất báo cáo. Vui lòng thử lại.');
+  const handleExportPDF = () => {
+    if (filtered.length === 0) {
+      alert('Không có dữ liệu để xuất báo cáo.');
+      return;
     }
+    window.print();
   };
 
   return (
@@ -253,9 +256,9 @@ export default function Invoices() {
             >
               <option value="all">Tất cả trạng thái</option>
               <option value="paid">Đã thanh toán</option>
-              <option value="completed">Đã thanh toán (completed)</option>
               <option value="pending">Chờ xử lý</option>
               <option value="cancelled">Đã hủy</option>
+              <option value="refunded">Đã hoàn tiền</option>
             </select>
           </div>
           <div className="invoices-filter-group invoices-filter-group--date">
@@ -339,7 +342,7 @@ export default function Invoices() {
                         borderColor: paymentStatusConfig[inv.paymentStatus]?.color,
                       }}
                     >
-                      {paymentStatusConfig[inv.paymentStatus]?.label}
+                      {paymentStatusConfig[inv.paymentStatus]?.label || inv.paymentStatus || 'Không xác định'}
                     </span>
                   </td>
                   <td><span className="invoices-date">{formatDateTime(inv.createdAt)}</span></td>
@@ -462,7 +465,8 @@ export default function Invoices() {
                     </div>
                     <div className="invoices-receipt__detail-row">
                       <span className="invoices-receipt__detail-label">Ngày & Suất:</span>
-                      <span className="invoices-receipt__detail-value">{showDetailModal.showDate} lúc {showDetailModal.showTime}</span>                    </div>
+                      <span className="invoices-receipt__detail-value">{showDetailModal.showTime}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -481,12 +485,12 @@ export default function Invoices() {
                           </span>
                         </div>
                         <div className="invoices-receipt__ticket-prices">
-                          <span>Giá cơ bản: {formatCurrency(ticket.basPrice)}</span>
+                          <span>Giá cơ bản: {formatCurrency(ticket.basePrice)}</span>
                           {ticket.surcharge > 0 && (
                             <span>+ Phụ thu: {formatCurrency(ticket.surcharge)}</span>
                           )}
                           <span className="invoices-receipt__ticket-total">
-                            = {formatCurrency(ticket.basPrice + ticket.surcharge)}
+                            = {formatCurrency(ticket.basePrice + ticket.surcharge)}
                           </span>
                         </div>
                       </div>
@@ -563,7 +567,7 @@ export default function Invoices() {
                         borderColor: paymentStatusConfig[showDetailModal.paymentStatus]?.color,
                       }}
                     >
-                      {paymentStatusConfig[showDetailModal.paymentStatus]?.label}
+                      {paymentStatusConfig[showDetailModal.paymentStatus]?.label || showDetailModal.paymentStatus || 'Không xác định'}
                     </span>
                   </div>
                 </div>
